@@ -1,0 +1,17 @@
+{
+    "sqltools.connections": [
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5433,
+            "driver": "PostgreSQL",
+            "name": "PG Local",
+            "database": "fyp_db",
+            "username": "postgres",
+            "password": "leejw1354",
+            "connectionTimeout": 30
+        }
+    ],
+    "css.lint.unknownAtRules": "ignore"
+}

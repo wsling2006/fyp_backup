@@ -1,0 +1,49 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { User } from './users/user.entity';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { EmployeesModule } from './employees/employees.module';
+import { HRModule } from './employees/hr.module';
+import { AccountingModule } from './accounting/accounting.module';
+import { AccountantFilesModule } from './accountant-files/accountant-files.module';
+
+@Module({
+  imports: [
+    // Load .env file globally
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+
+    // Database connection setup
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get<string>('DB_HOST', 'localhost'),
+        port: parseInt(configService.get<string>('DB_PORT', '5433'), 10),
+        username: configService.get<string>('DB_USERNAME', 'postgres'),
+        password: configService.get<string>('DB_PASSWORD', 'leejw1354'),
+        database: configService.get<string>('DB_NAME', 'fyp_db'),
+        autoLoadEntities: true, // automatically loads entities from feature modules
+        synchronize: true,      // DEV ONLY; set false in production
+      }),
+    }),
+
+    // Register your entities
+    TypeOrmModule.forFeature([User]),
+
+    // Feature modules
+    UsersModule,
+    AuthModule,
+    EmployeesModule,
+    HRModule,
+    AccountingModule,
+    AccountantFilesModule,
+  ],
+  controllers: [],
+  providers: [],
+})
+export class AppModule {}

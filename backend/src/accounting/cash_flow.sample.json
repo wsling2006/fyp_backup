@@ -1,0 +1,6 @@
+[
+  {"month": "January", "year": 2024, "cash_in": 220000, "cash_out": 180000, "net_cash": 40000, "notes": "Normal operations"},
+  {"month": "February", "year": 2024, "cash_in": 200000, "cash_out": 195000, "net_cash": 5000, "notes": "Increased marketing spend"},
+  {"month": "March", "year": 2024, "cash_in": 240000, "cash_out": 200000, "net_cash": 40000, "notes": "Good sales month"},
+  {"month": "April", "year": 2024, "cash_in": 180000, "cash_out": 210000, "net_cash": -30000, "notes": "Inventory restock"}
+]

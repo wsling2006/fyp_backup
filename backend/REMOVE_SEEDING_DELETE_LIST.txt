@@ -1,0 +1,25 @@
+Files to delete:
+- src/employees/activitylog.sample.json
+- src/employees/activitylog.seed.service.ts
+- src/employees/announcement.sample.json
+- src/employees/announcement.seed.service.ts
+- src/employees/attendance.sample.json
+- src/employees/attendance.seed.service.ts
+- src/employees/document.sample.json
+- src/employees/document.seed.service.ts
+- src/employees/employee.sample.json
+- src/employees/employee.seed.service.ts
+- src/accounting/annual_expense.sample.json
+- src/accounting/annual_expense.seed.service.ts
+- src/accounting/cash_flow.sample.json
+- src/accounting/cash_flow.seed.service.ts
+- src/accounting/company_revenue.sample.json
+- src/accounting/company_revenue.seed.service.ts
+- src/accounting/financial_statement.sample.json
+- src/accounting/financial_statement.seed.service.ts
+- src/accounting/payroll_report.sample.json
+- src/accounting/payroll_report.seed.service.ts
+- src/accounting/purchase_request.sample.json
+- src/accounting/purchase_request.seed.service.ts
+- src/accounting/supplier.sample.json
+- src/accounting/supplier.seed.service.ts

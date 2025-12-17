@@ -1,0 +1,342 @@
+[
+  {
+    "employee_email": "alice.smith@example.com",
+    "leave_type": "Annual",
+    "start_date": "2023-01-10",
+    "end_date": "2023-01-15",
+    "status": "approved",
+    "approved_by": "hr.manager@example.com"
+  },
+  {
+    "employee_email": "bob.jones@example.com",
+    "leave_type": "Sick",
+    "start_date": "2023-02-05",
+    "end_date": "2023-02-07",
+    "status": "pending",
+    "approved_by": null
+  },
+  {
+    "employee_email": "carol.lee@example.com",
+    "leave_type": "Annual",
+    "start_date": "2023-03-12",
+    "end_date": "2023-03-16",
+    "status": "approved",
+    "approved_by": "hr.manager@example.com"
+  },
+  {
+    "employee_email": "dan.wong@example.com",
+    "leave_type": "Maternity",
+    "start_date": "2023-04-01",
+    "end_date": "2023-04-30",
+    "status": "approved",
+    "approved_by": "super_admin@example.com"
+  },
+  {
+    "employee_email": "eve.kim@example.com",
+    "leave_type": "Annual",
+    "start_date": "2023-05-10",
+    "end_date": "2023-05-15",
+    "status": "pending",
+    "approved_by": null
+  },
+  {
+    "employee_email": "frank.chan@example.com",
+    "leave_type": "Sick",
+    "start_date": "2023-06-02",
+    "end_date": "2023-06-04",
+    "status": "approved",
+    "approved_by": "hr.manager@example.com"
+  },
+  {
+    "employee_email": "grace.lim@example.com",
+    "leave_type": "Annual",
+    "start_date": "2023-07-15",
+    "end_date": "2023-07-20",
+    "status": "approved",
+    "approved_by": "hr.manager@example.com"
+  },
+  {
+    "employee_email": "hank.tan@example.com",
+    "leave_type": "Annual",
+    "start_date": "2023-08-10",
+    "end_date": "2023-08-15",
+    "status": "pending",
+    "approved_by": null
+  },
+  {
+    "employee_email": "irene.ong@example.com",
+    "leave_type": "Sick",
+    "start_date": "2023-09-05",
+    "end_date": "2023-09-07",
+    "status": "approved",
+    "approved_by": "hr.manager@example.com"
+  },
+  {
+    "employee_email": "jack.lau@example.com",
+    "leave_type": "Annual",
+    "start_date": "2023-10-12",
+    "end_date": "2023-10-16",
+    "status": "approved",
+    "approved_by": "super_admin@example.com"
+  },
+  {
+    "employee_email": "kate.yeoh@example.com",
+    "leave_type": "Annual",
+    "start_date": "2023-11-10",
+    "end_date": "2023-11-15",
+    "status": "pending",
+    "approved_by": null
+  },
+  {
+    "employee_email": "luke.choi@example.com",
+    "leave_type": "Sick",
+    "start_date": "2023-12-02",
+    "end_date": "2023-12-04",
+    "status": "approved",
+    "approved_by": "hr.manager@example.com"
+  },
+  {
+    "employee_email": "mia.tan@example.com",
+    "leave_type": "Annual",
+    "start_date": "2023-01-15",
+    "end_date": "2023-01-20",
+    "status": "approved",
+    "approved_by": "hr.manager@example.com"
+  },
+  {
+    "employee_email": "nate.ong@example.com",
+    "leave_type": "Annual",
+    "start_date": "2023-02-10",
+    "end_date": "2023-02-15",
+    "status": "pending",
+    "approved_by": null
+  },
+  {
+    "employee_email": "olivia.lim@example.com",
+    "leave_type": "Sick",
+    "start_date": "2023-03-05",
+    "end_date": "2023-03-07",
+    "status": "approved",
+    "approved_by": "hr.manager@example.com"
+  },
+  {
+    "employee_email": "paul.chan@example.com",
+    "leave_type": "Annual",
+    "start_date": "2023-04-12",
+    "end_date": "2023-04-16",
+    "status": "approved",
+    "approved_by": "super_admin@example.com"
+  },
+  {
+    "employee_email": "quinn.lau@example.com",
+    "leave_type": "Annual",
+    "start_date": "2023-05-10",
+    "end_date": "2023-05-15",
+    "status": "pending",
+    "approved_by": null
+  },
+  {
+    "employee_email": "ryan.yeoh@example.com",
+    "leave_type": "Sick",
+    "start_date": "2023-06-02",
+    "end_date": "2023-06-04",
+    "status": "approved",
+    "approved_by": "hr.manager@example.com"
+  },
+  {
+    "employee_email": "sara.choi@example.com",
+    "leave_type": "Annual",
+    "start_date": "2023-07-15",
+    "end_date": "2023-07-20",
+    "status": "approved",
+    "approved_by": "hr.manager@example.com"
+  },
+  {
+    "employee_email": "tom.lim@example.com",
+    "leave_type": "Annual",
+    "start_date": "2023-08-10",
+    "end_date": "2023-08-15",
+    "status": "pending",
+    "approved_by": null
+  },
+  {
+    "id": 1,
+    "employeeId": 1,
+    "type": "annual",
+    "startDate": "2025-01-10",
+    "endDate": "2025-01-15",
+    "status": "approved",
+    "reason": "Family trip"
+  },
+  {
+    "id": 2,
+    "employeeId": 2,
+    "type": "sick",
+    "startDate": "2025-02-05",
+    "endDate": "2025-02-07",
+    "status": "approved",
+    "reason": "Flu"
+  },
+  {
+    "id": 3,
+    "employeeId": 3,
+    "type": "annual",
+    "startDate": "2025-03-12",
+    "endDate": "2025-03-14",
+    "status": "pending",
+    "reason": "Personal"
+  },
+  {
+    "id": 4,
+    "employeeId": 4,
+    "type": "emergency",
+    "startDate": "2025-04-01",
+    "endDate": "2025-04-02",
+    "status": "rejected",
+    "reason": "Urgent matter"
+  },
+  {
+    "id": 5,
+    "employeeId": 5,
+    "type": "annual",
+    "startDate": "2025-05-20",
+    "endDate": "2025-05-25",
+    "status": "approved",
+    "reason": "Vacation"
+  },
+  {
+    "id": 6,
+    "employeeId": 6,
+    "type": "sick",
+    "startDate": "2025-06-10",
+    "endDate": "2025-06-12",
+    "status": "approved",
+    "reason": "Medical"
+  },
+  {
+    "id": 7,
+    "employeeId": 7,
+    "type": "annual",
+    "startDate": "2025-07-15",
+    "endDate": "2025-07-20",
+    "status": "pending",
+    "reason": "Family event"
+  },
+  {
+    "id": 8,
+    "employeeId": 8,
+    "type": "emergency",
+    "startDate": "2025-08-03",
+    "endDate": "2025-08-04",
+    "status": "approved",
+    "reason": "Emergency"
+  },
+  {
+    "id": 9,
+    "employeeId": 9,
+    "type": "annual",
+    "startDate": "2025-09-10",
+    "endDate": "2025-09-12",
+    "status": "approved",
+    "reason": "Travel"
+  },
+  {
+    "id": 10,
+    "employeeId": 10,
+    "type": "sick",
+    "startDate": "2025-10-01",
+    "endDate": "2025-10-03",
+    "status": "pending",
+    "reason": "Fever"
+  },
+  {
+    "id": 11,
+    "employeeId": 11,
+    "type": "annual",
+    "startDate": "2025-11-05",
+    "endDate": "2025-11-10",
+    "status": "approved",
+    "reason": "Holiday"
+  },
+  {
+    "id": 12,
+    "employeeId": 12,
+    "type": "emergency",
+    "startDate": "2025-12-01",
+    "endDate": "2025-12-02",
+    "status": "approved",
+    "reason": "Family"
+  },
+  {
+    "id": 13,
+    "employeeId": 13,
+    "type": "annual",
+    "startDate": "2025-01-20",
+    "endDate": "2025-01-22",
+    "status": "pending",
+    "reason": "Personal"
+  },
+  {
+    "id": 14,
+    "employeeId": 14,
+    "type": "sick",
+    "startDate": "2025-02-15",
+    "endDate": "2025-02-16",
+    "status": "approved",
+    "reason": "Medical"
+  },
+  {
+    "id": 15,
+    "employeeId": 15,
+    "type": "annual",
+    "startDate": "2025-03-10",
+    "endDate": "2025-03-12",
+    "status": "approved",
+    "reason": "Family"
+  },
+  {
+    "id": 16,
+    "employeeId": 16,
+    "type": "emergency",
+    "startDate": "2025-04-20",
+    "endDate": "2025-04-21",
+    "status": "pending",
+    "reason": "Urgent"
+  },
+  {
+    "id": 17,
+    "employeeId": 17,
+    "type": "annual",
+    "startDate": "2025-05-01",
+    "endDate": "2025-05-03",
+    "status": "approved",
+    "reason": "Travel"
+  },
+  {
+    "id": 18,
+    "employeeId": 18,
+    "type": "sick",
+    "startDate": "2025-06-05",
+    "endDate": "2025-06-07",
+    "status": "approved",
+    "reason": "Medical"
+  },
+  {
+    "id": 19,
+    "employeeId": 19,
+    "type": "annual",
+    "startDate": "2025-07-10",
+    "endDate": "2025-07-12",
+    "status": "pending",
+    "reason": "Personal"
+  },
+  {
+    "id": 20,
+    "employeeId": 20,
+    "type": "emergency",
+    "startDate": "2025-08-15",
+    "endDate": "2025-08-16",
+    "status": "approved",
+    "reason": "Emergency"
+  }
+]

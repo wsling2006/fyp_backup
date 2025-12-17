@@ -1,0 +1,6 @@
+[
+  {"year": 2024, "category": "salary", "amount": 850000.00, "notes": "Company-wide salary total"},
+  {"year": 2024, "category": "marketing", "amount": 120000.00, "notes": "Campaign A + B"},
+  {"year": 2024, "category": "utilities", "amount": 35000.00, "notes": "Electricity + water"},
+  {"year": 2024, "category": "office_supplies", "amount": 15000.00, "notes": "General items"}
+]

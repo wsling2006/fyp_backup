@@ -1,0 +1,4 @@
+[
+  {"supplier_name": "ABC Supplies Sdn Bhd", "category": "Office Supplies", "phone": "03-5521 1133", "email": "sales@abc.com", "document_path": "/docs/suppliers/abc_contract.pdf", "uploaded_at": "2025-12-01T09:00:00"},
+  {"supplier_name": "TechOne Solutions", "category": "IT Equipment", "phone": "03-4433 8899", "email": "info@techone.my", "document_path": "/docs/suppliers/techone_agreement.pdf", "uploaded_at": "2025-12-01T09:00:00"}
+]

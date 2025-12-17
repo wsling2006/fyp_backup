@@ -1,0 +1,41 @@
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { AttendanceService } from './attendance.service';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '../users/roles.enum';
+
+@Controller('attendance')
+@UseGuards(RolesGuard)
+export class AttendanceController {
+  constructor(private readonly attendanceService: AttendanceService) {}
+
+  @Get()
+  @Roles(Role.HR, Role.SUPER_ADMIN)
+  findAll() {
+    return this.attendanceService.findAll();
+  }
+
+  @Get(':id')
+  @Roles(Role.HR, Role.SUPER_ADMIN)
+  findOne(@Param('id') id: string) {
+    return this.attendanceService.findOne(id);
+  }
+
+  @Post()
+  @Roles(Role.HR, Role.SUPER_ADMIN)
+  create(@Body() data) {
+    return this.attendanceService.create(data);
+  }
+
+  @Put(':id')
+  @Roles(Role.HR, Role.SUPER_ADMIN)
+  update(@Param('id') id: string, @Body() data) {
+    return this.attendanceService.update(id, data);
+  }
+
+  @Delete(':id')
+  @Roles(Role.HR, Role.SUPER_ADMIN)
+  remove(@Param('id') id: string) {
+    return this.attendanceService.remove(id);
+  }
+}

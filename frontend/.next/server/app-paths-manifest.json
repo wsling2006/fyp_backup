@@ -1,0 +1,6 @@
+{
+  "/dashboard/accountant/page": "app/dashboard/accountant/page.js",
+  "/dashboard/superadmin/page": "app/dashboard/superadmin/page.js",
+  "/login/page": "app/login/page.js",
+  "/verify-otp/page": "app/verify-otp/page.js"
+}

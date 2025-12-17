@@ -1,0 +1,49 @@
+### Register
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "email": "leejingwei123@gmail.com",
+  "password": "ctxd dlkq khkx kpwk"
+}
+
+### Login as Super Admin
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "leejingwei123@gmail.com",
+  "password": "ctxd dlkq khkx kpwk"
+}
+
+### Login (other user)
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "employee@example.com",
+  "password": "your_password_here"
+}
+
+### Create User (Super Admin Only)
+# First login to get access_token, then copy it below
+POST http://localhost:3000/users/create
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "email": "newuser@example.com",
+  "password": "password123",
+  "role": "accountant"
+}
+
+### Assign Role (Super Admin Only)
+# First login to get access_token, then copy it below
+POST http://localhost:3000/users/assign-role
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "email": "employee@example.com",
+  "role": "human_resources"
+}

@@ -1,0 +1,6 @@
+Seeding removal plan:
+- Remove all *.seed.service.ts files
+- Remove all *.sample.json files
+- Remove all seed service imports and usages from main.ts
+- Remove seed service providers from modules
+- Remove any references to seeding in README or docs

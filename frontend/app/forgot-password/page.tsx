@@ -7,6 +7,9 @@ import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default function ForgotPasswordPage() {
   const { forgotPassword, loading, error } = useAuth();
   const router = useRouter();

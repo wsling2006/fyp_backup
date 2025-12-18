@@ -170,8 +170,10 @@ export class AccountantFilesService {
    * @returns Promise<AccountantFile[]> - Array of file metadata
    */
   list() {
+    // Include uploader relation so frontend can show who uploaded the file
     return this.repo.find({
-      select: ['id', 'filename', 'mimetype', 'size', 'created_at'],
+      select: ['id', 'filename', 'mimetype', 'size', 'created_at', 'uploaded_by_id'],
+      relations: ['uploaded_by'],
       order: { created_at: 'DESC' },
     });
   }

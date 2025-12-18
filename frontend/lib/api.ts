@@ -1,11 +1,8 @@
 import axios from 'axios';
 
-// Prefer env var; otherwise on the browser, derive http(s)://<host>:3000 (Nest backend)
-// Finally, fall back to localhost:3000
-const browserBase = typeof window !== 'undefined'
-  ? `${window.location.protocol}//${window.location.hostname}:3000`
-  : undefined;
-const baseURL = process.env.NEXT_PUBLIC_API_URL || browserBase || 'http://localhost:3000';
+// PRODUCTION-READY: Use environment variable or fallback safely
+// For EC2 deployment, set NEXT_PUBLIC_API_URL in .env.production
+const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 const api = axios.create({
   baseURL,
@@ -15,14 +12,19 @@ const api = axios.create({
   },
 });
 
+// Attach JWT token from localStorage (client-side only)
 api.interceptors.request.use((config) => {
-  try {
-    if (typeof window !== 'undefined') {
+  // Only access localStorage in browser context
+  if (typeof window !== 'undefined') {
+    try {
       const token = localStorage.getItem('token');
-      if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (e) {
+      // Silently fail if localStorage unavailable (SSR, incognito, etc.)
+      console.warn('[API] Failed to read token from localStorage:', e);
     }
-  } catch (e) {
-    // ignore in SSR or unexpected errors
   }
   return config;
 });

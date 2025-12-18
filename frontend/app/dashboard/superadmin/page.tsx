@@ -7,6 +7,9 @@ import Input from "../../../components/ui/Input";
 import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
 
+// Force dynamic rendering for auth-dependent page
+export const dynamic = 'force-dynamic';
+
 interface UserItem {
   id: string;
   email: string;

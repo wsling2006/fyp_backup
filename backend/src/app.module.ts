@@ -27,8 +27,9 @@ import { AccountantFilesModule } from './accountant-files/accountant-files.modul
         username: configService.get<string>('DB_USERNAME', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'leejw1354'),
         database: configService.get<string>('DB_NAME', 'fyp_db'),
-        autoLoadEntities: true, // automatically loads entities from feature modules
-        synchronize: true,      // DEV ONLY; set false in production
+        autoLoadEntities: true,
+        // PRODUCTION: Set synchronize to false and use migrations instead
+        synchronize: configService.get<string>('NODE_ENV') !== 'production',
       }),
     }),
 

@@ -1,9 +1,0 @@
-{
-  "/login/page": "app/login/page.js",
-  "/dashboard/superadmin/page": "app/dashboard/superadmin/page.js",
-  "/verify-otp/page": "app/verify-otp/page.js",
-  "/dashboard/accountant/page": "app/dashboard/accountant/page.js",
-  "/forgot-password/page": "app/forgot-password/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/reset-password/page": "app/reset-password/page.js"
-}

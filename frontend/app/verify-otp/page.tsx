@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
+export const dynamic = 'force-dynamic';
 
-export default function VerifyOtpPage() {
+function VerifyOtpContent() {
   const { verifyOtp, loading: authLoading, error: authError } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -86,5 +87,13 @@ export default function VerifyOtpPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function VerifyOtpPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><Loader /></div>}>
+      <VerifyOtpContent />
+    </Suspense>
   );
 }

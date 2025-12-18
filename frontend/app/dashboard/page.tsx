@@ -1,39 +1,60 @@
 "use client";
+import React from 'react';
 import { useAuth } from "../../context/AuthContext";
 import Button from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import { useRouter } from "next/navigation";
+export const dynamic = 'force-dynamic';
 
 export default function DashboardPage() {
   const { user, logout, loading } = useAuth();
   const router = useRouter();
 
-  if (!user && !loading) {
-    router.replace("/login");
-    return null;
-  }
+  // Redirects must run on client after mount, not during render
+  React.useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        router.replace("/login");
+      } else if (user.role === "super_admin") {
+        router.replace("/dashboard/superadmin");
+      } else if (user.role === "accountant") {
+        router.replace("/dashboard/accountant");
+      }
+    }
+  }, [user, loading, router]);
 
-  if (user && user.role === "super_admin") {
-    router.replace("/dashboard/superadmin");
-    return null;
-  }
-
-  if (user && user.role === "accountant") {
-    router.replace("/dashboard/accountant");
-    return null;
+  // While deciding/redirecting, show a lightweight loader
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+        <div className="text-center">
+          <Loader />
+          <p className="text-white mt-4 text-lg font-medium">Loading your workspace...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-lg shadow w-full max-w-md text-center">
-        {loading ? (
-          <Loader />
-        ) : (
-          <>
-            <h2 className="text-2xl font-bold mb-4 text-gray-900">Welcome {user?.email}</h2>
-            <Button onClick={logout} className="w-full">Logout</Button>
-          </>
-        )}
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
+      {/* Animated background */}
+      <div className="absolute inset-0">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      <div className="relative z-10 bg-white/10 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 p-10 w-full max-w-md text-center">
+        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-6 shadow-lg">
+          <span className="text-4xl">👋</span>
+        </div>
+        <h2 className="text-3xl font-bold mb-2 text-white">Welcome!</h2>
+        <p className="text-blue-200 mb-8 text-lg">{user?.email}</p>
+        <Button onClick={logout} variant="danger" className="w-full">
+          <span className="flex items-center justify-center space-x-2">
+            <span>Logout</span>
+            <span>🚪</span>
+          </span>
+        </Button>
       </div>
     </div>
   );

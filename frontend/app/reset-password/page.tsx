@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
+export const dynamic = 'force-dynamic';
 
 function validatePassword(password: string): string | null {
   if (password.length < 8) return "Password must be at least 8 characters.";
@@ -15,7 +16,7 @@ function validatePassword(password: string): string | null {
   return null;
 }
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const { resetPassword, loading, error } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -36,9 +37,15 @@ export default function ResetPasswordPage() {
   const allRequirementsMet = hasLen && hasUpper && hasLower && hasDigit && hasSpecial && passwordsMatch;
 
   // Ensure OTP is present even on page refresh
+  // SSR-safe: only access sessionStorage in browser
   useEffect(() => {
     const queryEmail = searchParams.get("email");
-    const queryOtpReset = searchParams.get("otp_reset") || sessionStorage.getItem("resetOtp");
+    let queryOtpReset = searchParams.get("otp_reset");
+    
+    // Fallback to sessionStorage only in browser
+    if (!queryOtpReset && typeof window !== 'undefined') {
+      queryOtpReset = sessionStorage.getItem("resetOtp");
+    }
 
     if (!queryEmail || !queryOtpReset) {
       setFormError("OTP not requested. Please retry the process.");
@@ -70,8 +77,10 @@ export default function ResetPasswordPage() {
 
     const success = await resetPassword(email, otp, newPassword, confirmPassword);
     if (success) {
-      // Clear OTP from sessionStorage
-      sessionStorage.removeItem("resetOtp");
+      // Clear OTP from sessionStorage (browser only)
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem("resetOtp");
+      }
       router.push("/login?reset=success");
     }
   };
@@ -124,5 +133,13 @@ export default function ResetPasswordPage() {
         </Button>
       </form>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><Loader /></div>}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }

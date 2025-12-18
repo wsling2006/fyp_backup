@@ -7,12 +7,16 @@ import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
 import { useRouter } from 'next/navigation';
 
+// Force dynamic rendering for auth-dependent page
+export const dynamic = 'force-dynamic';
+
 interface FileItem {
   id: string;
   filename: string;
   mimetype: string;
   size: number;
   created_at: string;
+  uploaded_by?: { id: string; email: string } | null;
 }
 
 export default function AccountantDashboard() {
@@ -225,17 +229,19 @@ export default function AccountantDashboard() {
       )}
 
       <div className="border rounded">
-        <div className="grid grid-cols-4 gap-4 p-3 font-semibold bg-gray-50">
+        <div className="grid grid-cols-5 gap-4 p-3 font-semibold bg-gray-50">
           <div>Filename</div>
           <div>Type</div>
           <div>Size</div>
+          <div>Uploaded By</div>
           <div>Action</div>
         </div>
         {files.map(f => (
-          <div key={f.id} className="grid grid-cols-4 gap-4 p-3 border-t">
+          <div key={f.id} className="grid grid-cols-5 gap-4 p-3 border-t">
             <div>{f.filename}</div>
             <div className="text-xs text-gray-600">{f.mimetype}</div>
             <div className="text-xs">{(f.size / 1024).toFixed(1)} KB</div>
+            <div className="text-xs">{f.uploaded_by?.email || 'Unknown'}</div>
             <div>
               <div className="flex items-center gap-2">
                 <Button onClick={() => download(f.id, f.filename)} disabled={uploading}>Download</Button>

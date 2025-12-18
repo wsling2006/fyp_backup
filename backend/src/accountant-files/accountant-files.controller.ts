@@ -131,7 +131,16 @@ export class AccountantFilesController {
   @Get()
   async list() {
     const items = await this.service.list();
-    return { files: items };
+    // Map results to include uploader info without exposing sensitive fields
+    const mapped = items.map(i => ({
+      id: i.id,
+      filename: i.filename,
+      mimetype: i.mimetype,
+      size: i.size,
+      created_at: i.created_at,
+      uploaded_by: i.uploaded_by ? { id: i.uploaded_by.id, email: i.uploaded_by.email } : null,
+    }));
+    return { files: mapped };
   }
 
   /**

@@ -94,6 +94,11 @@ export class UsersService {
     // reset failed attempts when applying manual suspension
     if (until && until > new Date()) {
       user.failed_login_attempts = 0;
+      user.suspended = true;
+    }
+    // If clearing suspension (null or past), mark suspended false
+    if (!until || (until && until <= new Date())) {
+      user.suspended = false;
     }
     return this.usersRepo.save(user);
   }

@@ -55,6 +55,9 @@ export class User {
   @Column({ default: true })
   is_active: boolean;
 
+  @Column({ default: false })
+  suspended: boolean;
+
   @Column({ type: 'timestamp', nullable: true })
   last_login_at: Date;
 

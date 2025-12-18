@@ -5,6 +5,7 @@ import { useAuth } from "../../../context/AuthContext";
 import api from "../../../lib/api";
 import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
+import { useRouter } from 'next/navigation';
 
 interface FileItem {
   id: string;
@@ -16,6 +17,7 @@ interface FileItem {
 
 export default function AccountantDashboard() {
   const { user, token, logout } = useAuth();
+  const router = useRouter();
   const [files, setFiles] = useState<FileItem[]>([]);
   // selectedFile holds the file chosen by the user before upload
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -188,7 +190,14 @@ export default function AccountantDashboard() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Accountant Dashboard</h1>
+        <div className="flex items-center gap-4">
+          {user?.role === 'super_admin' && (
+            <Button onClick={() => router.push('/dashboard/superadmin')} className="bg-gray-200 text-black hover:bg-gray-300 w-auto px-3 py-1">
+              Back
+            </Button>
+          )}
+          <h1 className="text-2xl font-bold">Accountant Dashboard</h1>
+        </div>
         <div className="flex items-center gap-3">
           {/* File picker: user chooses file first */}
           <label className="cursor-pointer bg-white border rounded px-3 py-2">

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import * as argon2 from 'argon2';
 import { JwtService } from '@nestjs/jwt';
@@ -31,6 +31,23 @@ export class AuthService {
     const user = await this.usersService.findByEmail(email);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
+    // Block deactivated accounts
+    if (user.is_active === false) {
+      throw new ForbiddenException({
+        message: 'Your account is inactive. Please contact an administrator.',
+        inactive: true,
+        email: user.email,
+      });
+    }
+
+    if (user.suspended) {
+      throw new ForbiddenException({
+        message: 'Your account has been suspended. Please contact an administrator.',
+        suspended: true,
+        email: user.email,
+      });
+    }
+
     if (user.isAccountLocked()) {
       const isLockoutFlow = !!(user.otp_reset && user.otp_reset_expires_at && user.otp_reset_expires_at > new Date()) || !!(user.otp_code && user.otp_expires_at && user.otp_expires_at > new Date());
       if (isLockoutFlow) {
@@ -38,7 +55,6 @@ export class AuthService {
           message: 'Account is locked. Please follow the instructions sent to your email.',
           locked: true,
           email: user.email,
-          reason: 'lockout',
         });
       }
       // Manual suspension (no OTP set)
@@ -126,6 +142,13 @@ export class AuthService {
 
     // First, check if the OTP is for password reset (account lock or forgot password)
     if (user.otp_reset && user.otp_reset_expires_at && user.otp_reset_expires_at > new Date()) {
+      // Disallow reset flow for suspended accounts
+      if (user.is_active === false) {
+        throw new ForbiddenException('Account inactive. Password reset not allowed until reactivated by an administrator.');
+      }
+      if (user.suspended) {
+        throw new ForbiddenException('Account suspended. Password reset not allowed until reactivated by an administrator.');
+      }
       if (user.otp_reset !== otp) throw new UnauthorizedException('Invalid OTP for password reset');
 
       // Do NOT clear otp_reset here; keep it until reset-password completes
@@ -163,6 +186,13 @@ export class AuthService {
   async forgotPassword(email: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) throw new UnauthorizedException('User not found');
+    if (user.is_active === false) {
+      throw new ForbiddenException('Account inactive. Contact admin to reactivate before requesting a password reset.');
+    }
+    if (user.suspended) {
+      // Do not allow password reset for suspended accounts
+      throw new ForbiddenException('Account suspended. Contact admin to reactivate before requesting a password reset.');
+    }
     const otp = this.generateOtp();
     // Set password reset OTP
     user.otp_reset = otp;
@@ -174,19 +204,25 @@ export class AuthService {
 
   async verifyResetOtp(email: string, otp: string) {
     const user = await this.usersService.findByEmail(email);
-    if (!user || !user.otp_code || !user.otp_expires_at) throw new UnauthorizedException('OTP not requested');
-    if (user.otp_code !== otp) throw new UnauthorizedException('Invalid OTP');
-    if (user.otp_expires_at < new Date()) throw new UnauthorizedException('OTP expired');
-    user.account_locked_until = null;
-    user.failed_login_attempts = 0;
-    await this.usersService.create(user);
-    return { message: 'OTP verified, you may now reset your password' };
+    if (!user || !user.otp_reset || !user.otp_reset_expires_at) throw new UnauthorizedException('OTP not requested');
+    if (user.is_active === false) throw new ForbiddenException('Account inactive. Password reset not allowed until reactivated by an administrator.');
+    if (user.suspended) throw new ForbiddenException('Account suspended. Password reset not allowed until reactivated by an administrator.');
+    if (user.otp_reset !== otp) throw new UnauthorizedException('Invalid OTP');
+    if (user.otp_reset_expires_at < new Date()) throw new UnauthorizedException('OTP expired');
+    // Do not clear otp_reset here; reset-password endpoint will clear it on completion
+    return { otp_reset: otp, message: 'OTP verified, you may now reset your password' };
   }
 
   async resetPassword(email: string, otp_reset: string, newPassword: string, confirmPassword: string) {
     if (newPassword !== confirmPassword) throw new UnauthorizedException('Passwords do not match');
     const user = await this.usersService.findByEmail(email);
     if (!user || !user.otp_reset || !user.otp_reset_expires_at) throw new UnauthorizedException('OTP not requested');
+    if (user.is_active === false) {
+      throw new ForbiddenException('Account inactive. Password reset not allowed until account is reactivated by an administrator.');
+    }
+    if (user.suspended) {
+      throw new ForbiddenException('Account suspended. Password reset not allowed until account is reactivated by an administrator.');
+    }
     if (user.otp_reset !== otp_reset) throw new UnauthorizedException('Invalid OTP');
     if (user.otp_reset_expires_at < new Date()) throw new UnauthorizedException('OTP expired');
     user.password_hash = await argon2.hash(newPassword);

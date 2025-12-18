@@ -6,6 +6,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   icon?: React.ReactNode;
+  labelClassName?: string;
 }
 
 const Input: React.FC<InputProps> = ({ 
@@ -13,12 +14,13 @@ const Input: React.FC<InputProps> = ({
   label,
   error,
   icon,
+  labelClassName,
   ...props 
 }) => {
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <label className={labelClassName || "block text-sm font-semibold text-gray-700 mb-2"}>
           {label}
         </label>
       )}

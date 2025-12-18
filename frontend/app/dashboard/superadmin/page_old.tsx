@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../context/AuthContext";
 import api from "../../../lib/api";
@@ -9,6 +9,7 @@ import Loader from "../../../components/ui/Loader";
 import StatsCard from "../../../components/ui/StatsCard";
 import { Card } from "../../../components/ui/Card";
 
+// Force dynamic rendering for auth-dependent page
 export const dynamic = 'force-dynamic';
 
 interface UserItem {
@@ -20,6 +21,7 @@ interface UserItem {
   account_locked_until?: string | null;
 }
 
+// New: Accountant file item shape for listing
 interface AccountantFileItem {
   id: string;
   filename: string;
@@ -29,7 +31,7 @@ interface AccountantFileItem {
 }
 
 export default function SuperAdminDashboard() {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const router = useRouter();
 
   const [stats, setStats] = useState<{ total: number } | null>(null);
@@ -37,12 +39,14 @@ export default function SuperAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Create user form
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState("sales_department");
   const [createMsg, setCreateMsg] = useState<string | null>(null);
   const [suspendUntil, setSuspendUntil] = useState<Record<string, string>>({});
 
+  // New: Accountant files state
   const [acctFiles, setAcctFiles] = useState<AccountantFileItem[]>([]);
   const [acctError, setAcctError] = useState<string | null>(null);
 
@@ -81,6 +85,7 @@ export default function SuperAdminDashboard() {
     ]);
     setStats(countRes.data);
     setUsers(usersRes.data.users);
+    // Also refresh accountant files
     try {
       const filesRes = await api.get("/accountant-files");
       setAcctFiles(filesRes.data?.files ?? []);
@@ -93,7 +98,7 @@ export default function SuperAdminDashboard() {
     e.preventDefault();
     setCreateMsg(null);
     try {
-      await api.post("/users/create", {
+      const res = await api.post("/users/create", {
         email: newEmail,
         password: newPassword,
         role: newRole,
@@ -101,7 +106,11 @@ export default function SuperAdminDashboard() {
       setCreateMsg("User created successfully");
       setNewEmail("");
       setNewPassword("");
-      await reload();
+      // reload
+      const usersRes = await api.get("/users");
+      setUsers(usersRes.data.users);
+      const countRes = await api.get("/users/count");
+      setStats(countRes.data);
     } catch (e: any) {
       setCreateMsg(e.response?.data?.message || "Failed to create user");
     }
@@ -110,7 +119,7 @@ export default function SuperAdminDashboard() {
   const handleSuspend = async (userId: string) => {
     try {
       const until = suspendUntil[userId];
-      if (!until) return;
+      if (!until) return; // require a date/time to suspend
       await api.post("/users/suspend", { id: userId, until });
       await reload();
     } catch (e: any) {
@@ -120,7 +129,7 @@ export default function SuperAdminDashboard() {
 
   const handleClearSuspend = async (userId: string) => {
     try {
-      await api.post("/users/suspend", { id: userId });
+      await api.post("/users/suspend", { id: userId }); // no until -> clear
       await reload();
     } catch (e: any) {
       alert(e.response?.data?.message || "Failed to clear suspension");
@@ -137,6 +146,7 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  // New: Download accountant file
   const downloadFile = async (id: string, filename: string) => {
     try {
       const res = await api.get(`/accountant-files/${id}`, { responseType: 'blob' });
@@ -153,6 +163,7 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  // Calculate additional stats
   const recentLogins = users.filter(u => {
     if (!u.last_login_at) return false;
     const daysSince = (Date.now() - new Date(u.last_login_at).getTime()) / (1000 * 60 * 60 * 24);
@@ -166,6 +177,7 @@ export default function SuperAdminDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6 mb-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -199,6 +211,7 @@ export default function SuperAdminDashboard() {
           </Card>
         ) : (
           <>
+            {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <StatsCard
                 title="Total Users"
@@ -245,123 +258,65 @@ export default function SuperAdminDashboard() {
                 }
               />
             </div>
-
-            <Card variant="gradient" className="mb-8">
-              <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                <span className="text-2xl">➕</span>
-                <span>Create New User</span>
-              </h2>
               {createMsg && (
-                <div className={`mb-4 px-4 py-3 rounded-xl font-medium ${createMsg.includes('successfully') ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
+                <div className={`mb-3 text-sm ${createMsg.includes('successfully') ? 'text-green-600' : 'text-red-600'}`}>
                   {createMsg}
                 </div>
               )}
-              <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Input 
-                  type="email" 
-                  placeholder="Email" 
-                  value={newEmail} 
-                  onChange={(e) => setNewEmail(e.target.value)} 
-                  required 
-                />
-                <Input 
-                  type="password" 
-                  placeholder="Temp Password" 
-                  value={newPassword} 
-                  onChange={(e) => setNewPassword(e.target.value)} 
-                  required 
-                />
-                <select 
-                  className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all" 
-                  value={newRole} 
-                  onChange={(e) => setNewRole(e.target.value)}
-                >
+              <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <Input type="email" placeholder="Email" value={newEmail} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEmail(e.target.value)} required />
+                <Input type="password" placeholder="Temp Password" value={newPassword} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)} required />
+                <select className="border rounded px-3 py-2" value={newRole} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewRole(e.target.value)}>
                   <option value="sales_department">Sales</option>
                   <option value="human_resources">HR</option>
                   <option value="marketing">Marketing</option>
                   <option value="accountant">Accountant</option>
                   <option value="super_admin">Super Admin</option>
                 </select>
-                <Button type="submit" variant="success">
-                  <span className="flex items-center justify-center space-x-2">
-                    <span>Create User</span>
-                    <span>✨</span>
-                  </span>
-                </Button>
+                <Button type="submit">Create</Button>
               </form>
-            </Card>
+            </div>
 
-            <Card variant="gradient" className="mb-8">
-              <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                <span className="text-2xl">👥</span>
-                <span>User Management</span>
-              </h2>
+            {/* Users table */}
+            <div className="bg-white p-6 rounded shadow mb-6">
+              <h2 className="text-lg font-semibold mb-4">Users</h2>
               <div className="overflow-x-auto">
-                <table className="min-w-full">
+                <table className="min-w-full text-sm">
                   <thead>
-                    <tr className="border-b-2 border-white/20">
-                      <th className="py-3 px-4 text-left font-bold text-white">Email</th>
-                      <th className="py-3 px-4 text-left font-bold text-white">Role</th>
-                      <th className="py-3 px-4 text-left font-bold text-white">Last Login</th>
-                      <th className="py-3 px-4 text-left font-bold text-white">Created</th>
-                      <th className="py-3 px-4 text-left font-bold text-white">Status</th>
-                      <th className="py-3 px-4 text-left font-bold text-white">Actions</th>
+                    <tr className="text-left border-b">
+                      <th className="py-2 pr-4">Email</th>
+                      <th className="py-2 pr-4">Role</th>
+                      <th className="py-2 pr-4">Last Login</th>
+                      <th className="py-2 pr-4">Created</th>
+                      <th className="py-2 pr-4">Suspended Until</th>
+                      <th className="py-2 pr-4">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.map(u => (
-                      <tr key={u.id} className="border-b border-white/10 hover:bg-white/10 transition-colors">
-                        <td className="py-3 px-4 font-semibold text-white">{u.email}</td>
-                        <td className="py-3 px-4">
-                          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-lg text-sm font-bold capitalize">
-                            {u.role?.replace('_', ' ')}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-sm font-medium text-white">
-                          {u.last_login_at ? new Date(u.last_login_at).toLocaleDateString() : '-'}
-                        </td>
-                        <td className="py-3 px-4 text-sm font-medium text-white">
-                          {u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}
-                        </td>
-                        <td className="py-3 px-4">
+                      <tr key={u.id} className="border-b hover:bg-gray-50">
+                        <td className="py-2 pr-4">{u.email}</td>
+                        <td className="py-2 pr-4 capitalize">{u.role?.replace('_', ' ')}</td>
+                        <td className="py-2 pr-4">{u.last_login_at ? new Date(u.last_login_at).toLocaleString() : '-'}</td>
+                        <td className="py-2 pr-4">{u.created_at ? new Date(u.created_at).toLocaleString() : '-'}</td>
+                        <td className="py-2 pr-4">
                           {u.account_locked_until && new Date(u.account_locked_until) > new Date() ? (
-                            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-lg text-sm font-bold">
-                              Suspended
-                            </span>
+                            <span className="text-red-600">{new Date(u.account_locked_until).toLocaleString()}</span>
                           ) : (
-                            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-lg text-sm font-bold">
-                              Active
-                            </span>
+                            <span className="text-gray-500">Not suspended</span>
                           )}
                         </td>
-                        <td className="py-3 px-4">
-                          <div className="flex flex-col gap-2">
+                        <td className="py-2 pr-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                             <input
                               type="datetime-local"
-                              className="border-2 border-gray-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+                              className="border rounded px-2 py-1"
                               value={suspendUntil[u.id] || ''}
-                              onChange={(e) => setSuspendUntil(prev => ({ ...prev, [u.id]: e.target.value }))}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSuspendUntil(prev => ({ ...prev, [u.id]: e.target.value }))}
                             />
-                            <div className="flex gap-2">
-                              <button 
-                                onClick={() => handleSuspend(u.id)} 
-                                className="px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors"
-                              >
-                                Suspend
-                              </button>
-                              <button 
-                                onClick={() => handleClearSuspend(u.id)} 
-                                className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
-                              >
-                                Clear
-                              </button>
-                              <button 
-                                onClick={() => handleDelete(u.id, u.email)} 
-                                className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
-                              >
-                                Delete
-                              </button>
-                            </div>
+                            <Button onClick={() => handleSuspend(u.id)} className="whitespace-nowrap">Suspend</Button>
+                            <Button onClick={() => handleClearSuspend(u.id)} className="whitespace-nowrap bg-gray-500 hover:bg-gray-600">Clear</Button>
+                            <Button onClick={() => handleDelete(u.id, u.email)} className="whitespace-nowrap bg-red-600 hover:bg-red-700">Delete</Button>
                           </div>
                         </td>
                       </tr>
@@ -369,18 +324,14 @@ export default function SuperAdminDashboard() {
                   </tbody>
                 </table>
               </div>
-            </Card>
+            </div>
 
-            <Card variant="gradient">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  <span className="text-2xl">📁</span>
-                  <span>Accountant Files</span>
-                </h2>
+            {/* Accountant overview */}
+            <div className="bg-white p-6 rounded shadow">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">Accountant Files Overview</h2>
                 <div className="flex gap-2">
-                  <Button onClick={() => router.push('/dashboard/accountant')} variant="secondary">
-                    Open Accountant Dashboard
-                  </Button>
+                  <Button onClick={() => router.push('/dashboard/accountant')}>Open Accountant Dashboard</Button>
                   <Button onClick={async () => {
                     try {
                       const filesRes = await api.get('/accountant-files');
@@ -389,56 +340,40 @@ export default function SuperAdminDashboard() {
                     } catch (e: any) {
                       setAcctError(e.response?.data?.message || 'Failed to refresh files');
                     }
-                  }} variant="outline">
-                    🔄 Refresh
-                  </Button>
+                  }} className="bg-gray-600 hover:bg-gray-700">Refresh</Button>
                 </div>
               </div>
-              {acctError && (
-                <div className="mb-4 px-4 py-3 rounded-xl bg-red-100 text-red-800 border border-red-200 font-medium">
-                  {acctError}
-                </div>
-              )}
+              {acctError && <div className="text-red-600 text-sm mb-3">{acctError}</div>}
               <div className="overflow-x-auto">
-                <table className="min-w-full">
+                <table className="min-w-full text-sm">
                   <thead>
-                    <tr className="border-b-2 border-white/20">
-                      <th className="py-3 px-4 text-left font-bold text-white">Filename</th>
-                      <th className="py-3 px-4 text-left font-bold text-white">Type</th>
-                      <th className="py-3 px-4 text-left font-bold text-white">Size</th>
-                      <th className="py-3 px-4 text-left font-bold text-white">Uploaded</th>
-                      <th className="py-3 px-4 text-left font-bold text-white">Action</th>
+                    <tr className="text-left border-b">
+                      <th className="py-2 pr-4">Filename</th>
+                      <th className="py-2 pr-4">Type</th>
+                      <th className="py-2 pr-4">Size</th>
+                      <th className="py-2 pr-4">Uploaded</th>
+                      <th className="py-2 pr-4">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {acctFiles.map(f => (
-                      <tr key={f.id} className="border-b border-white/10 hover:bg-white/10 transition-colors">
-                        <td className="py-3 px-4 font-semibold text-white">{f.filename}</td>
-                        <td className="py-3 px-4 text-sm font-medium text-white">{f.mimetype}</td>
-                        <td className="py-3 px-4 text-sm font-medium text-white">{(f.size / 1024).toFixed(1)} KB</td>
-                        <td className="py-3 px-4 text-sm font-medium text-white">
-                          {new Date(f.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="py-3 px-4">
-                          <button 
-                            onClick={() => downloadFile(f.id, f.filename)}
-                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium transition-all transform hover:scale-105"
-                          >
-                            📥 Download
-                          </button>
+                      <tr key={f.id} className="border-b hover:bg-gray-50">
+                        <td className="py-2 pr-4">{f.filename}</td>
+                        <td className="py-2 pr-4 text-xs text-gray-600">{f.mimetype}</td>
+                        <td className="py-2 pr-4 text-xs">{(f.size / 1024).toFixed(1)} KB</td>
+                        <td className="py-2 pr-4">{new Date(f.created_at).toLocaleString()}</td>
+                        <td className="py-2 pr-4">
+                          <Button onClick={() => downloadFile(f.id, f.filename)}>Download</Button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
                 {acctFiles.length === 0 && (
-                  <div className="py-12 text-center text-gray-500">
-                    <div className="text-6xl mb-4">📂</div>
-                    <p className="text-lg font-medium">No files uploaded yet</p>
-                  </div>
+                  <div className="p-3 text-sm text-gray-500">No files uploaded yet.</div>
                 )}
               </div>
-            </Card>
+            </div>
           </>
         )}
       </div>

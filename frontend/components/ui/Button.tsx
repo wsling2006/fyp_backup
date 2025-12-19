@@ -20,11 +20,19 @@ const Button: React.FC<ButtonProps> = ({
     outline: "bg-transparent border-2 border-blue-600 text-blue-600 hover:bg-blue-50 shadow-none"
   };
 
+  // Check if custom width or specific classes are provided
+  const hasCustomWidth = className.includes('w-');
+  const hasCustomPadding = className.includes('px-') || className.includes('py-');
+  const hasCustomBackground = className.includes('bg-');
+  
   return (
     <button
       className={`
-        ${variantClasses[variant]}
-        rounded-xl px-6 py-3 w-full font-semibold
+        ${!hasCustomBackground ? variantClasses[variant] : ''}
+        rounded-xl 
+        ${!hasCustomPadding ? 'px-6 py-3' : ''} 
+        ${!hasCustomWidth ? 'w-full' : ''} 
+        font-semibold
         transition-all duration-300 
         transform hover:scale-[1.02] active:scale-[0.98]
         disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none

@@ -261,20 +261,24 @@ export default function AccountantDashboard() {
               <div className="text-xs">{f.uploaded_by?.email || 'Unknown'}</div>
               <div>
                 <div className="flex items-center gap-2">
-                  <Button onClick={() => download(f.id, f.filename)} disabled={uploading} className="w-24 text-center">
+                  <Button 
+                    onClick={() => download(f.id, f.filename)} 
+                    disabled={uploading} 
+                    className="w-24 px-4 py-2 text-sm text-center"
+                  >
                     Download
                   </Button>
                   <div className="relative group">
                     <Button 
                       onClick={() => canDelete && setDeleteDialog({ show: true, fileId: f.id, filename: f.filename })} 
                       disabled={uploading || !canDelete} 
-                      className={`w-20 text-center ${canDelete ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-400 cursor-not-allowed'}`}
+                      className={`w-20 px-4 py-2 text-sm text-center ${canDelete ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-400 cursor-not-allowed hover:bg-gray-400'}`}
                       title={deleteTooltip}
                     >
                       Delete
                     </Button>
                     {!canDelete && (
-                      <div className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                      <div className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-56 p-3 bg-gray-900 text-white text-sm rounded shadow-lg z-10 whitespace-normal">
                         {deleteTooltip}
                         <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
                           <div className="border-4 border-transparent border-t-gray-900"></div>

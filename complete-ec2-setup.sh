@@ -43,8 +43,13 @@ echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━�
 DB_NAME="fyp_db"
 DB_USER="fyp_user"
 
-# Drop existing database and user
+# Drop existing database and user (force terminate connections first)
 echo "Cleaning up old database..."
+
+# Terminate all connections to the database
+sudo -u postgres psql -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$DB_NAME';" 2>/dev/null || true
+
+# Drop database and user
 sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DB_NAME;" 2>/dev/null || true
 sudo -u postgres psql -c "DROP USER IF EXISTS $DB_USER;" 2>/dev/null || true
 echo -e "${GREEN}✓ Cleaned up old database${NC}"
@@ -59,10 +64,16 @@ else
     echo -e "${GREEN}✓ User '$DB_USER' password updated${NC}"
 fi
 
-# Create database
+# Create database (force if exists)
 echo "Creating database..."
-sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
-echo -e "${GREEN}✓ Database '$DB_NAME' created${NC}"
+if sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" 2>/dev/null; then
+    echo -e "${GREEN}✓ Database '$DB_NAME' created${NC}"
+else
+    echo "Database already exists (this shouldn't happen but continuing...)"
+    # Reassign ownership to the user
+    sudo -u postgres psql -c "ALTER DATABASE $DB_NAME OWNER TO $DB_USER;" 2>/dev/null || true
+    echo -e "${GREEN}✓ Database ownership updated${NC}"
+fi
 
 # Grant privileges
 echo "Granting privileges..."

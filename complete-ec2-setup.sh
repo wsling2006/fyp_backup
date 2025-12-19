@@ -49,10 +49,15 @@ sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DB_NAME;" 2>/dev/null || true
 sudo -u postgres psql -c "DROP USER IF EXISTS $DB_USER;" 2>/dev/null || true
 echo -e "${GREEN}✓ Cleaned up old database${NC}"
 
-# Create new user
+# Create new user or update password if exists
 echo "Creating database user..."
-sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"
-echo -e "${GREEN}✓ User '$DB_USER' created${NC}"
+if sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" 2>/dev/null; then
+    echo -e "${GREEN}✓ User '$DB_USER' created${NC}"
+else
+    echo "User already exists, updating password..."
+    sudo -u postgres psql -c "ALTER USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"
+    echo -e "${GREEN}✓ User '$DB_USER' password updated${NC}"
+fi
 
 # Create database
 echo "Creating database..."

@@ -19,10 +19,10 @@ module.exports = {
       // BACKEND (NestJS)
       // ==========================================
       name: 'backend',
-      script: './dist/main.js',
+      script: './dist/src/main.js', // Updated path to match actual build output
       cwd: './backend',
-      instances: 1, // Can be increased for load balancing (or use 'max' for CPU cores)
-      exec_mode: 'cluster', // Use cluster mode for better performance
+      instances: 1,
+      exec_mode: 'fork', // Use fork mode for single instance (more stable for NestJS)
       
       // Environment variables (production)
       env_production: {
@@ -63,8 +63,8 @@ module.exports = {
       script: 'node_modules/next/dist/bin/next',
       args: 'start -p ' + (process.env.FRONTEND_PORT || 3001),
       cwd: './frontend',
-      instances: 1, // Next.js handles concurrency internally
-      exec_mode: 'cluster',
+      instances: 1,
+      exec_mode: 'fork', // Use fork mode for Next.js (recommended for single instance)
       
       // Environment variables (production)
       env_production: {

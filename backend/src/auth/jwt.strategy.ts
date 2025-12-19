@@ -37,7 +37,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Account is inactive');
     }
     
-    return { id: user.id, email: user.email, role: user.role };
+    // Return normalized user object expected by controllers/requests
+    // Controllers expect req.user.userId and req.user.username
+    return { userId: user.id, username: user.email, role: user.role };
   }
 }
 

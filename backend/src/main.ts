@@ -5,11 +5,29 @@ import { UsersService } from './users/users.service';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // PRODUCTION-READY CORS: Use environment variable for frontend URL
+  // PRODUCTION-READY CORS: Support multiple origins (with and without port)
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
   
+  // Build allowed origins list: include both with port 3001 and without port
+  const allowedOrigins: string[] = [];
+  
+  // Add the configured frontend URL
+  allowedOrigins.push(frontendUrl);
+  
+  // If frontend URL doesn't have port 3001, add it
+  if (!frontendUrl.includes(':3001')) {
+    allowedOrigins.push(`${frontendUrl.replace(/\/$/, '')}:3001`);
+  }
+  
+  // Always allow localhost for development
+  if (!frontendUrl.includes('localhost')) {
+    allowedOrigins.push('http://localhost:3001');
+  }
+  
+  console.log('🔒 CORS enabled for origins:', allowedOrigins);
+  
   app.enableCors({
-    origin: frontendUrl,
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],

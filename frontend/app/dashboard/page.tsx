@@ -1,8 +1,8 @@
 "use client";
 import React from 'react';
-import { useAuth } from "../../context/AuthContext";
-import Button from "../../components/ui/Button";
-import Loader from "../../components/ui/Loader";
+import { useAuth } from "@/context/AuthContext";
+import Button from "@/components/ui/Button";
+import Loader from "@/components/ui/Loader";
 import { useRouter } from "next/navigation";
 export const dynamic = 'force-dynamic';
 

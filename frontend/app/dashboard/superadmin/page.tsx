@@ -1,13 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../../../context/AuthContext";
-import api from "../../../lib/api";
-import Input from "../../../components/ui/Input";
-import Button from "../../../components/ui/Button";
-import Loader from "../../../components/ui/Loader";
-import StatsCard from "../../../components/ui/StatsCard";
-import { Card } from "../../../components/ui/Card";
+import { useAuth } from "@/context/AuthContext";
+import api from "@/lib/api";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+import Loader from "@/components/ui/Loader";
+import StatsCard from "@/components/ui/StatsCard";
+import { Card } from "@/components/ui/Card";
 
 export const dynamic = 'force-dynamic';
 

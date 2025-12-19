@@ -1,10 +1,10 @@
 "use client";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useAuth } from "../../context/AuthContext";
-import Input from "../../components/ui/Input";
-import Button from "../../components/ui/Button";
-import Loader from "../../components/ui/Loader";
+import { useAuth } from "@/context/AuthContext";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+import Loader from "@/components/ui/Loader";
 export const dynamic = 'force-dynamic';
 
 function validatePassword(password: string): string | null {

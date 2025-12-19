@@ -1,7 +1,7 @@
-import '../app/globals.css';
-import ClientProviders from '../components/ClientProviders';
-import Sidebar from '../components/Sidebar';
-import { AuthProvider } from '../context/AuthContext';
+import '@/app/globals.css';
+import ClientProviders from '@/components/ClientProviders';
+import Sidebar from '@/components/Sidebar';
+import { AuthProvider } from '@/context/AuthContext';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

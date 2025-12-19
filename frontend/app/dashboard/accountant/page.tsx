@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAuth } from "../../../context/AuthContext";
-import api from "../../../lib/api";
-import Button from "../../../components/ui/Button";
-import Loader from "../../../components/ui/Loader";
+import { useAuth } from "@/context/AuthContext";
+import api from "@/lib/api";
+import Button from "@/components/ui/Button";
+import Loader from "@/components/ui/Loader";
 import { useRouter } from 'next/navigation';
 
 // Force dynamic rendering for auth-dependent page

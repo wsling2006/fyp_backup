@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../../context/AuthContext";
-import Input from "../../components/ui/Input";
-import Button from "../../components/ui/Button";
-import Loader from "../../components/ui/Loader";
+import { useAuth } from "@/context/AuthContext";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+import Loader from "@/components/ui/Loader";
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';

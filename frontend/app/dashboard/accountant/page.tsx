@@ -250,7 +250,7 @@ export default function AccountantDashboard() {
         {files.map(f => {
           const canDelete = canDeleteFile(f);
           const deleteTooltip = !canDelete 
-            ? "You don't have permission to delete this file. Only the uploader or super admin can delete it." 
+            ? "You have no permission to delete this file." 
             : "";
           
           return (
@@ -261,12 +261,14 @@ export default function AccountantDashboard() {
               <div className="text-xs">{f.uploaded_by?.email || 'Unknown'}</div>
               <div>
                 <div className="flex items-center gap-2">
-                  <Button onClick={() => download(f.id, f.filename)} disabled={uploading}>Download</Button>
+                  <Button onClick={() => download(f.id, f.filename)} disabled={uploading} className="w-24 text-center">
+                    Download
+                  </Button>
                   <div className="relative group">
                     <Button 
                       onClick={() => canDelete && setDeleteDialog({ show: true, fileId: f.id, filename: f.filename })} 
                       disabled={uploading || !canDelete} 
-                      className={`${canDelete ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-400 cursor-not-allowed'}`}
+                      className={`w-20 text-center ${canDelete ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-400 cursor-not-allowed'}`}
                       title={deleteTooltip}
                     >
                       Delete

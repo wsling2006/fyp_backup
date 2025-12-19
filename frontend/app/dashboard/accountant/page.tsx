@@ -28,8 +28,18 @@ export default function AccountantDashboard() {
   // uploading represents network + backend scanning in progress
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // Delete confirmation dialog state
+  const [deleteDialog, setDeleteDialog] = useState<{ show: boolean; fileId: string; filename: string } | null>(null);
 
   const allowedRole = user?.role === 'accountant' || user?.role === 'super_admin';
+
+  // Check if user can delete a file
+  // Super admins can delete any file, accountants can only delete their own files
+  const canDeleteFile = (file: FileItem): boolean => {
+    if (user?.role === 'super_admin') return true;
+    if (!file.uploaded_by) return false; // Can't delete files with unknown uploader
+    return file.uploaded_by.id === user?.id;
+  };
 
   useEffect(() => {
     if (!allowedRole) return;
@@ -170,14 +180,15 @@ export default function AccountantDashboard() {
 
   // Delete a file with confirmation and refresh the list
   const deleteFile = async (id: string, filename: string) => {
-    if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
     try {
       await api.delete(`/accountant-files/${id}`);
       setMessage('File deleted successfully');
+      setDeleteDialog(null);
       const list = await api.get('/accountant-files');
       setFiles(list.data.files || []);
     } catch (e: any) {
       setMessage(e.response?.data?.message || 'Delete failed');
+      setDeleteDialog(null);
       if (e.response?.status === 401 || e.response?.status === 403) logout();
     }
   };
@@ -236,26 +247,83 @@ export default function AccountantDashboard() {
           <div>Uploaded By</div>
           <div>Action</div>
         </div>
-        {files.map(f => (
-          <div key={f.id} className="grid grid-cols-5 gap-4 p-3 border-t">
-            <div>{f.filename}</div>
-            <div className="text-xs text-gray-600">{f.mimetype}</div>
-            <div className="text-xs">{(f.size / 1024).toFixed(1)} KB</div>
-            <div className="text-xs">{f.uploaded_by?.email || 'Unknown'}</div>
-            <div>
-              <div className="flex items-center gap-2">
-                <Button onClick={() => download(f.id, f.filename)} disabled={uploading}>Download</Button>
-                <Button onClick={() => deleteFile(f.id, f.filename)} disabled={uploading} className="bg-red-600 hover:bg-red-700">
-                  Delete
-                </Button>
+        {files.map(f => {
+          const canDelete = canDeleteFile(f);
+          const deleteTooltip = !canDelete 
+            ? "You don't have permission to delete this file. Only the uploader or super admin can delete it." 
+            : "";
+          
+          return (
+            <div key={f.id} className="grid grid-cols-5 gap-4 p-3 border-t">
+              <div>{f.filename}</div>
+              <div className="text-xs text-gray-600">{f.mimetype}</div>
+              <div className="text-xs">{(f.size / 1024).toFixed(1)} KB</div>
+              <div className="text-xs">{f.uploaded_by?.email || 'Unknown'}</div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <Button onClick={() => download(f.id, f.filename)} disabled={uploading}>Download</Button>
+                  <div className="relative group">
+                    <Button 
+                      onClick={() => canDelete && setDeleteDialog({ show: true, fileId: f.id, filename: f.filename })} 
+                      disabled={uploading || !canDelete} 
+                      className={`${canDelete ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-400 cursor-not-allowed'}`}
+                      title={deleteTooltip}
+                    >
+                      Delete
+                    </Button>
+                    {!canDelete && (
+                      <div className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                        {deleteTooltip}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                          <div className="border-4 border-transparent border-t-gray-900"></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         {files.length === 0 && (
           <div className="p-4 text-sm text-gray-500">No files uploaded yet.</div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deleteDialog?.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Confirm Delete</h3>
+              </div>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete <span className="font-semibold">"{deleteDialog.filename}"</span>? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button 
+                onClick={() => setDeleteDialog(null)} 
+                className="bg-gray-200 text-gray-800 hover:bg-gray-300"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => deleteFile(deleteDialog.fileId, deleteDialog.filename)} 
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

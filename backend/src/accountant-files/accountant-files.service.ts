@@ -171,11 +171,23 @@ export class AccountantFilesService {
    */
   list() {
     // Include uploader relation so frontend can show who uploaded the file
-    return this.repo.find({
-      select: ['id', 'filename', 'mimetype', 'size', 'created_at', 'uploaded_by_id'],
-      relations: ['uploaded_by'],
-      order: { created_at: 'DESC' },
-    });
+    // Note: When using select with relations, we need to use QueryBuilder
+    // to properly select both entity and relation fields
+    return this.repo
+      .createQueryBuilder('file')
+      .leftJoinAndSelect('file.uploaded_by', 'user')
+      .select([
+        'file.id',
+        'file.filename',
+        'file.mimetype',
+        'file.size',
+        'file.created_at',
+        'file.uploaded_by_id',
+        'user.id',
+        'user.email'
+      ])
+      .orderBy('file.created_at', 'DESC')
+      .getMany();
   }
 
   /**

@@ -294,31 +294,60 @@ export class AuthService {
 
   private async notifyAdminsIfNonOfficeHours(user: User) {
     try {
-      if (!this.isNonOfficeHours(user.last_login_at || new Date())) return;
+      const loginTime = user.last_login_at || new Date();
+      const isNonOffice = this.isNonOfficeHours(loginTime);
+      
+      console.log(`[Auth] Login time check for ${user.email}: ${loginTime.toLocaleString()}, Non-office hours: ${isNonOffice}`);
+      
+      if (!isNonOffice) {
+        console.log('[Auth] Login during office hours (8:00-18:00), no notification needed');
+        return;
+      }
+
       const superAdmins = await this.usersService.findSuperAdmins();
-      if (!superAdmins || superAdmins.length === 0) return;
+      console.log(`[Auth] Found ${superAdmins?.length || 0} active super admins for notification`);
+      
+      if (!superAdmins || superAdmins.length === 0) {
+        console.warn('[Auth] No active super admins found to send non-office hours notification');
+        return;
+      }
+
+      const emailUser = this.configService.get<string>('EMAIL_USER');
+      const emailPass = this.configService.get<string>('EMAIL_PASS');
+      
+      if (!emailUser || !emailPass) {
+        console.error('[Auth] EMAIL_USER or EMAIL_PASS not configured. Cannot send notification.');
+        return;
+      }
+
+      console.log(`[Auth] Sending non-office hours alert to ${superAdmins.length} super admin(s)`);
 
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: this.configService.get<string>('EMAIL_USER'),
-          pass: this.configService.get<string>('EMAIL_PASS'),
+          user: emailUser,
+          pass: emailPass,
         },
       });
 
       const sendPromises = superAdmins.map(admin =>
         transporter.sendMail({
-          from: this.configService.get<string>('EMAIL_USER'),
+          from: emailUser,
           to: admin.email,
           subject: 'Alert: User login outside office hours',
           text:
-            `User ${user.email} logged in at ${user.last_login_at?.toLocaleString() || new Date().toLocaleString()} ` +
+            `User ${user.email} logged in at ${loginTime.toLocaleString()} ` +
             `(outside office hours 08:00–18:00).\n\n` +
             `If this was not expected, please review and take action.`,
+        }).then(() => {
+          console.log(`[Auth] Successfully sent non-office hours alert to ${admin.email}`);
+        }).catch((err) => {
+          console.error(`[Auth] Failed to send alert to ${admin.email}:`, err.message);
         })
       );
 
       await Promise.allSettled(sendPromises);
+      console.log('[Auth] Non-office hours notification process completed');
     } catch (err) {
       // Log and continue; do not block login for email failures
       console.error('[Auth] Failed to send non-office hours alert:', err);

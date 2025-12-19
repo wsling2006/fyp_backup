@@ -264,7 +264,7 @@ export default function AccountantDashboard() {
                   <Button 
                     onClick={() => download(f.id, f.filename)} 
                     disabled={uploading} 
-                    className="w-24 px-4 py-2 text-sm text-center"
+                    className="w-24 px-4 py-2 text-sm text-center bg-indigo-600 hover:bg-indigo-700 text-white"
                   >
                     Download
                   </Button>
@@ -272,13 +272,13 @@ export default function AccountantDashboard() {
                     <Button 
                       onClick={() => canDelete && setDeleteDialog({ show: true, fileId: f.id, filename: f.filename })} 
                       disabled={uploading || !canDelete} 
-                      className={`w-20 px-4 py-2 text-sm text-center ${canDelete ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-400 cursor-not-allowed hover:bg-gray-400'}`}
+                      className={`w-24 px-4 py-2 text-sm text-center ${canDelete ? 'bg-red-600 hover:bg-red-700 text-white focus:ring-4 focus:ring-red-500/30' : 'bg-gray-400 cursor-not-allowed hover:bg-gray-400 text-black/60'}`}
                       title={deleteTooltip}
                     >
                       Delete
                     </Button>
                     {!canDelete && (
-                      <div className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-56 p-3 bg-gray-900 text-white text-sm rounded shadow-lg z-10 whitespace-normal">
+                      <div className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 max-w-md w-auto px-3 py-2 bg-gray-900 text-white text-sm rounded shadow-lg z-50 whitespace-normal break-words">
                         {deleteTooltip}
                         <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
                           <div className="border-4 border-transparent border-t-gray-900"></div>

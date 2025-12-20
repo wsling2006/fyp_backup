@@ -49,6 +49,7 @@ export class AccountantFilesService {
    * - Excel spreadsheets (.xlsx, .xls)
    * - Word documents (.docx, .doc)
    * - Plain text files (.txt)
+   * - CSV files (.csv)
    * 
    * Maximum file size: 10MB
    * 
@@ -67,6 +68,7 @@ export class AccountantFilesService {
       'application/msword', // .doc
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
       'text/plain',
+      'text/csv', // .csv
     ];
     const maxSize = 10 * 1024 * 1024; // 10MB in bytes
 
@@ -78,7 +80,7 @@ export class AccountantFilesService {
     // Validate MIME type
     if (!(isAllowedMime || isOctetTxt)) {
       throw new BadRequestException(
-        'Unsupported file type. Allowed types: PDF, Excel, Word, Plain text'
+        'Unsupported file type. Allowed types: PDF, Excel, Word, Plain text, CSV'
       );
     }
     

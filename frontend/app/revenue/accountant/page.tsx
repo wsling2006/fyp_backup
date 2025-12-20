@@ -235,7 +235,7 @@ export default function RevenueDashboard() {
           </div>
           <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border border-orange-200 rounded-lg p-4">
             <div className="text-sm text-orange-600 font-semibold">Avg Monthly Revenue</div>
-            <div className="text-2xl font-bold text-orange-900">{formatCurrency(growthMetrics.average_monthly_revenue * 100)}</div>
+            <div className="text-2xl font-bold text-orange-900">{formatCurrency(growthMetrics.average_monthly_revenue)}</div>
             <div className="text-xs text-orange-600 mt-1">Based on current year</div>
           </div>
           <div className="bg-gradient-to-br from-cyan-50 to-teal-50 border border-cyan-200 rounded-lg p-4">

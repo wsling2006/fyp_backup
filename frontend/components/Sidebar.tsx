@@ -15,6 +15,7 @@ const menu = [
   { label: 'Company Revenue', href: '/company-revenue', icon: '💰', roles: ['super_admin', 'accountant'] },
   { label: 'Cash Flow', href: '/cash-flow', icon: '💵', roles: ['super_admin', 'accountant'] },
   { label: 'Financial Statements', href: '/financial-statements', icon: '📈', roles: ['super_admin', 'accountant'] },
+  { label: 'Revenue Dashboard', href: '/dashboard/accountant/revenue', icon: '📊', roles: ['super_admin', 'accountant'] },
   { label: 'Purchase Requests', href: '/purchase-requests', icon: '🛒', roles: ['super_admin', 'accountant'] },
   { label: 'Suppliers', href: '/suppliers', icon: '🏢', roles: ['super_admin', 'accountant'] },
   { label: 'Annual Expenses', href: '/annual-expenses', icon: '💸', roles: ['super_admin', 'accountant'] },

@@ -102,8 +102,9 @@ export class RevenueService {
       },
     });
 
-    // Log record count
+    // Log record count and IDs for debugging
     console.log(`[AUDIT] VIEW_REVENUE returned ${revenues.length} records`);
+    console.log('[DEBUG] Record IDs:', revenues.map(r => ({ id: r.id, client: r.client, created_by_user_id: r.created_by_user_id })));
 
     return revenues;
   }
@@ -474,12 +475,17 @@ export class RevenueService {
    * @throws ForbiddenException if user is not the creator (and not SUPER_ADMIN)
    */
   async remove(id: string, userId: string): Promise<{ message: string; id: string }> {
+    console.log('[DELETE] Looking for revenue record:', { id, userId, idType: typeof id });
+    
     const revenue = await this.revenueRepository.findOne({
       where: { id },
       relations: ['created_by'],
     });
 
+    console.log('[DELETE] Found revenue record:', { found: !!revenue, id });
+
     if (!revenue) {
+      console.log('[DELETE] Record not found in database for id:', id);
       throw new NotFoundException(`Revenue record with ID ${id} not found`);
     }
 

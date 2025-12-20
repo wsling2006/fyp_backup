@@ -283,6 +283,7 @@ export class RevenueController {
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req: any) {
     const userId = req.user?.userId;
+    console.log('[CONTROLLER] DELETE request received:', { id, userId });
     return this.revenueService.remove(id, userId);
   }
 }

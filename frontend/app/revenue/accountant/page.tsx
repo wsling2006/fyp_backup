@@ -181,7 +181,13 @@ export default function RevenueDashboard() {
           )}
           <h1 className="text-2xl font-bold">Revenue Dashboard</h1>
         </div>
-        <Button onClick={() => setShowAddForm(!showAddForm)} className="w-auto px-4 py-2">
+        <Button onClick={() => {
+          setShowAddForm(!showAddForm);
+          if (!showAddForm) {
+            // Scroll to top when opening form
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }} className="w-auto px-4 py-2">
           {showAddForm ? 'Cancel' : 'Add Revenue'}
         </Button>
       </div>

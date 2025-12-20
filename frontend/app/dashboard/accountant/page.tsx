@@ -104,6 +104,7 @@ export default function AccountantDashboard() {
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'text/plain',
+      'text/csv',
     ];
     const maxSize = 10 * 1024 * 1024; // 10MB
 

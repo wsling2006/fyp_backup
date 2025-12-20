@@ -7,7 +7,7 @@ import Button from "@/components/ui/Button";
 import Loader from "@/components/ui/Loader";
 import Input from "@/components/ui/Input";
 import { useRouter } from 'next/navigation';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export const dynamic = 'force-dynamic';
 
@@ -170,9 +170,6 @@ export default function RevenueDashboard() {
     return `${currency} ${(cents / 100).toFixed(2)}`;
   };
 
-  // Colors for pie charts
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
-
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -286,28 +283,24 @@ export default function RevenueDashboard() {
         {bySource.length > 0 && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue by Source</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={bySource}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ index }) => {
-                    const item = bySource[index];
-                    return `${item.source}: ${formatCurrency(item.revenue)}`;
-                  }}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="revenue"
-                >
-                  {bySource.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value: any) => value ? formatCurrency(value) : '-'} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="space-y-3">
+              {bySource.map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">{item.source}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-32 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{
+                          width: `${(item.revenue / Math.max(...bySource.map((c) => c.revenue))) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900 w-24 text-right">{formatCurrency(item.revenue)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

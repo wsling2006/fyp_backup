@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import Loader from "@/components/ui/Loader";
 import Input from "@/components/ui/Input";
 import { useRouter } from 'next/navigation';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +42,13 @@ export default function RevenueDashboard() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+
+  // Analytics state
+  const [trends, setTrends] = useState<any[]>([]);
+  const [bySource, setBySource] = useState<any[]>([]);
+  const [byClient, setByClient] = useState<any[]>([]);
+  const [growthMetrics, setGrowthMetrics] = useState<any>(null);
+  const [monthlyComparison, setMonthlyComparison] = useState<any[]>([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -78,13 +86,24 @@ export default function RevenueDashboard() {
       if (filters.status) params.append('status', filters.status);
       if (filters.client) params.append('client', filters.client);
 
-      const [revenueRes, summaryRes] = await Promise.all([
+      // Fetch main revenue data and analytics in parallel
+      const [revenueRes, summaryRes, trendsRes, bySourceRes, byClientRes, growthRes, monthlyRes] = await Promise.all([
         api.get(`/revenue?${params.toString()}`),
         api.get(`/revenue/summary?${params.toString()}`),
+        api.get(`/revenue/analytics/trends?granularity=daily&${params.toString()}`).catch(() => ({ data: [] })),
+        api.get(`/revenue/analytics/by-source?${params.toString()}`).catch(() => ({ data: [] })),
+        api.get(`/revenue/analytics/by-client?${params.toString()}`).catch(() => ({ data: [] })),
+        api.get(`/revenue/analytics/growth`).catch(() => ({ data: null })),
+        api.get(`/revenue/analytics/monthly-comparison`).catch(() => ({ data: [] })),
       ]);
 
       setRevenues(revenueRes.data);
       setSummary(summaryRes.data);
+      setTrends(trendsRes.data || []);
+      setBySource(bySourceRes.data || []);
+      setByClient(byClientRes.data || []);
+      setGrowthMetrics(growthRes.data);
+      setMonthlyComparison(monthlyRes.data || []);
       setMessage(null);
     } catch (e: any) {
       setMessage(e.response?.data?.message || 'Failed to load revenue data');
@@ -151,6 +170,9 @@ export default function RevenueDashboard() {
     return `${currency} ${(cents / 100).toFixed(2)}`;
   };
 
+  // Colors for pie charts
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -173,7 +195,7 @@ export default function RevenueDashboard() {
         </div>
       )}
 
-      {/* Summary Cards */}
+      {/* Summary Cards - KPI Section */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -193,6 +215,127 @@ export default function RevenueDashboard() {
           </div>
         </div>
       )}
+
+      {/* Advanced KPI Cards - Growth & Averages */}
+      {growthMetrics && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
+            <div className="text-sm text-purple-600 font-semibold">Revenue Growth (MoM)</div>
+            <div className={`text-2xl font-bold ${growthMetrics.month_over_month_growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {growthMetrics.month_over_month_growth > 0 ? '+' : ''}{growthMetrics.month_over_month_growth.toFixed(2)}%
+            </div>
+            <div className="text-xs text-purple-600 mt-1">Month over Month</div>
+          </div>
+          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-lg p-4">
+            <div className="text-sm text-indigo-600 font-semibold">Revenue Growth (YoY)</div>
+            <div className={`text-2xl font-bold ${growthMetrics.year_over_year_growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {growthMetrics.year_over_year_growth > 0 ? '+' : ''}{growthMetrics.year_over_year_growth.toFixed(2)}%
+            </div>
+            <div className="text-xs text-indigo-600 mt-1">Year over Year</div>
+          </div>
+          <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border border-orange-200 rounded-lg p-4">
+            <div className="text-sm text-orange-600 font-semibold">Avg Monthly Revenue</div>
+            <div className="text-2xl font-bold text-orange-900">{formatCurrency(growthMetrics.average_monthly_revenue * 100)}</div>
+            <div className="text-xs text-orange-600 mt-1">Based on current year</div>
+          </div>
+          <div className="bg-gradient-to-br from-cyan-50 to-teal-50 border border-cyan-200 rounded-lg p-4">
+            <div className="text-sm text-cyan-600 font-semibold">Current Month</div>
+            <div className="text-2xl font-bold text-cyan-900">{formatCurrency(growthMetrics.current_month_revenue)}</div>
+            <div className="text-xs text-cyan-600 mt-1">This month's revenue</div>
+          </div>
+        </div>
+      )}
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue Over Time Chart */}
+        {trends.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Over Time</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={trends}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip formatter={(value: any) => value ? formatCurrency(value) : '-'} />
+                <Legend />
+                <Line type="monotone" dataKey="revenue" stroke="#3b82f6" name="Revenue" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Monthly Comparison Chart */}
+        {monthlyComparison.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Revenue Comparison</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={monthlyComparison}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip formatter={(value: any) => value ? formatCurrency(value) : '-'} />
+                <Legend />
+                <Bar dataKey="revenue" fill="#10b981" name="Revenue" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Revenue by Source */}
+        {bySource.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue by Source</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={bySource}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ index }) => {
+                    const item = bySource[index];
+                    return `${item.source}: ${formatCurrency(item.revenue)}`;
+                  }}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="revenue"
+                >
+                  {bySource.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value: any) => value ? formatCurrency(value) : '-'} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Revenue by Client */}
+        {byClient.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Clients by Revenue</h3>
+            <div className="space-y-3">
+              {byClient.slice(0, 5).map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">{item.client}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-32 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{
+                          width: `${(item.revenue / Math.max(...byClient.map((c) => c.revenue))) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900 w-24 text-right">{formatCurrency(item.revenue)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Add Revenue Form */}
       {showAddForm && (

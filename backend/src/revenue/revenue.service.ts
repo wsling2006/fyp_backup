@@ -177,4 +177,239 @@ export class RevenueService {
 
     return revenue;
   }
+
+  /**
+   * Get revenue trends over time (daily or monthly)
+   * 
+   * @param query - Filter parameters
+   * @param userId - User requesting data (for audit)
+   * @param granularity - 'daily' or 'monthly'
+   * @returns Array of revenue data points with dates
+   */
+  async getTrends(query: QueryRevenueDto, userId: string, granularity: 'daily' | 'monthly' = 'daily') {
+    console.log('[AUDIT] VIEW_REVENUE_TRENDS', {
+      userId,
+      timestamp: new Date().toISOString(),
+      granularity,
+      filters: query,
+    });
+
+    const revenues = await this.findAll(query, userId);
+    
+    // Group revenues by date
+    const grouped = new Map<string, number>();
+    
+    revenues.forEach((r) => {
+      const date = new Date(r.date);
+      let key: string;
+      
+      if (granularity === 'monthly') {
+        key = date.toISOString().substring(0, 7); // YYYY-MM
+      } else {
+        key = date.toISOString().substring(0, 10); // YYYY-MM-DD
+      }
+      
+      grouped.set(key, (grouped.get(key) || 0) + Number(r.amount));
+    });
+
+    // Convert to sorted array
+    const trends = Array.from(grouped.entries())
+      .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+      .map(([date, revenue]) => ({
+        date,
+        revenue,
+      }));
+
+    return trends;
+  }
+
+  /**
+   * Get revenue breakdown by source
+   * 
+   * @param query - Filter parameters
+   * @param userId - User requesting data (for audit)
+   * @returns Array of sources with their total revenue
+   */
+  async getBySource(query: QueryRevenueDto, userId: string) {
+    console.log('[AUDIT] VIEW_REVENUE_BY_SOURCE', {
+      userId,
+      timestamp: new Date().toISOString(),
+      filters: query,
+    });
+
+    const revenues = await this.findAll(query, userId);
+    
+    const sourceMap = new Map<string, { revenue: number; count: number }>();
+    
+    revenues.forEach((r) => {
+      const existing = sourceMap.get(r.source) || { revenue: 0, count: 0 };
+      sourceMap.set(r.source, {
+        revenue: existing.revenue + Number(r.amount),
+        count: existing.count + 1,
+      });
+    });
+
+    return Array.from(sourceMap.entries())
+      .sort(([, a], [, b]) => b.revenue - a.revenue)
+      .map(([source, data]) => ({
+        source,
+        revenue: data.revenue,
+        count: data.count,
+      }));
+  }
+
+  /**
+   * Get revenue breakdown by client
+   * 
+   * @param query - Filter parameters
+   * @param userId - User requesting data (for audit)
+   * @returns Array of clients with their total revenue
+   */
+  async getByClient(query: QueryRevenueDto, userId: string) {
+    console.log('[AUDIT] VIEW_REVENUE_BY_CLIENT', {
+      userId,
+      timestamp: new Date().toISOString(),
+      filters: query,
+    });
+
+    const revenues = await this.findAll(query, userId);
+    
+    const clientMap = new Map<string, { revenue: number; count: number }>();
+    
+    revenues.forEach((r) => {
+      const existing = clientMap.get(r.client) || { revenue: 0, count: 0 };
+      clientMap.set(r.client, {
+        revenue: existing.revenue + Number(r.amount),
+        count: existing.count + 1,
+      });
+    });
+
+    return Array.from(clientMap.entries())
+      .sort(([, a], [, b]) => b.revenue - a.revenue)
+      .map(([client, data]) => ({
+        client,
+        revenue: data.revenue,
+        count: data.count,
+      }));
+  }
+
+  /**
+   * Calculate revenue growth metrics (MoM, YoY)
+   * 
+   * @param userId - User requesting data (for audit)
+   * @returns Object with growth metrics
+   */
+  async getGrowthMetrics(userId: string) {
+    console.log('[AUDIT] VIEW_REVENUE_GROWTH', {
+      userId,
+      timestamp: new Date().toISOString(),
+    });
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    // Current month
+    const currentMonthStart = new Date(currentYear, currentMonth, 1);
+    const currentMonthEnd = new Date(currentYear, currentMonth + 1, 0);
+
+    // Last month
+    const lastMonthStart = new Date(currentYear, currentMonth - 1, 1);
+    const lastMonthEnd = new Date(currentYear, currentMonth, 0);
+
+    // Current year
+    const currentYearStart = new Date(currentYear, 0, 1);
+    const currentYearEnd = new Date(currentYear, 11, 31);
+
+    // Last year
+    const lastYearStart = new Date(currentYear - 1, 0, 1);
+    const lastYearEnd = new Date(currentYear - 1, 11, 31);
+
+    // Fetch revenues for all periods
+    const [currentMonthRevenues, lastMonthRevenues, currentYearRevenues, lastYearRevenues] = await Promise.all([
+      this.revenueRepository.find({
+        where: {
+          date: Between(currentMonthStart, currentMonthEnd),
+        },
+      }),
+      this.revenueRepository.find({
+        where: {
+          date: Between(lastMonthStart, lastMonthEnd),
+        },
+      }),
+      this.revenueRepository.find({
+        where: {
+          date: Between(currentYearStart, currentYearEnd),
+        },
+      }),
+      this.revenueRepository.find({
+        where: {
+          date: Between(lastYearStart, lastYearEnd),
+        },
+      }),
+    ]);
+
+    const sumRevenue = (revenues: Revenue[]) =>
+      revenues.reduce((sum, r) => sum + Number(r.amount), 0);
+
+    const currentMonthTotal = sumRevenue(currentMonthRevenues);
+    const lastMonthTotal = sumRevenue(lastMonthRevenues);
+    const currentYearTotal = sumRevenue(currentYearRevenues);
+    const lastYearTotal = sumRevenue(lastYearRevenues);
+
+    const momGrowth = lastMonthTotal > 0 ? ((currentMonthTotal - lastMonthTotal) / lastMonthTotal) * 100 : 0;
+    const yoyGrowth = lastYearTotal > 0 ? ((currentYearTotal - lastYearTotal) / lastYearTotal) * 100 : 0;
+
+    const avgMonthlyRevenue = currentYearTotal > 0 ? currentYearTotal / 12 : 0;
+
+    return {
+      current_month_revenue: currentMonthTotal,
+      last_month_revenue: lastMonthTotal,
+      month_over_month_growth: parseFloat(momGrowth.toFixed(2)),
+      current_year_revenue: currentYearTotal,
+      last_year_revenue: lastYearTotal,
+      year_over_year_growth: parseFloat(yoyGrowth.toFixed(2)),
+      average_monthly_revenue: parseFloat(avgMonthlyRevenue.toFixed(2)),
+    };
+  }
+
+  /**
+   * Get monthly comparison data
+   * 
+   * @param userId - User requesting data (for audit)
+   * @returns Array with current and last month comparison
+   */
+  async getMonthlyComparison(userId: string) {
+    console.log('[AUDIT] VIEW_REVENUE_MONTHLY_COMPARISON', {
+      userId,
+      timestamp: new Date().toISOString(),
+    });
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    // Get all months of current year
+    const monthlyData: any[] = [];
+    
+    for (let i = 0; i < 12; i++) {
+      const monthStart = new Date(currentYear, i, 1);
+      const monthEnd = new Date(currentYear, i + 1, 0);
+
+      const revenues = await this.revenueRepository.find({
+        where: {
+          date: Between(monthStart, monthEnd),
+        },
+      });
+
+      const revenue = revenues.reduce((sum, r) => sum + Number(r.amount), 0);
+      
+      monthlyData.push({
+        month: new Date(currentYear, i).toLocaleString('default', { month: 'short' }),
+        revenue,
+      });
+    }
+
+    return monthlyData;
+  }
 }

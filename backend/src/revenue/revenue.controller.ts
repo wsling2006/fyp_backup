@@ -146,4 +146,95 @@ export class RevenueController {
       updated_at: revenue.updated_at,
     };
   }
+
+  /**
+   * Get revenue trends over time
+   * 
+   * GET /revenue/analytics/trends?granularity=daily&start_date=2024-01-01&end_date=2024-12-31
+   * 
+   * Required role: ACCOUNTANT or SUPER_ADMIN
+   * 
+   * @param query - Filter parameters
+   * @param granularity - 'daily' or 'monthly' (default: daily)
+   * @param req - Request object with authenticated user
+   * @returns Array of revenue data points
+   */
+  @Get('analytics/trends')
+  async getTrends(@Query('granularity') granularity: 'daily' | 'monthly' = 'daily', @Query() query: QueryRevenueDto, @Request() req: any) {
+    const userId = req.user?.userId;
+    return this.revenueService.getTrends(query, userId, granularity);
+  }
+
+  /**
+   * Get revenue breakdown by source
+   * 
+   * GET /revenue/analytics/by-source?start_date=2024-01-01&end_date=2024-12-31
+   * 
+   * Required role: ACCOUNTANT or SUPER_ADMIN
+   * 
+   * @param query - Filter parameters
+   * @param req - Request object with authenticated user
+   * @returns Array of sources with revenue totals
+   */
+  @Get('analytics/by-source')
+  async getBySource(@Query() query: QueryRevenueDto, @Request() req: any) {
+    const userId = req.user?.userId;
+    return this.revenueService.getBySource(query, userId);
+  }
+
+  /**
+   * Get revenue breakdown by client
+   * 
+   * GET /revenue/analytics/by-client?start_date=2024-01-01&end_date=2024-12-31
+   * 
+   * Required role: ACCOUNTANT or SUPER_ADMIN
+   * 
+   * @param query - Filter parameters
+   * @param req - Request object with authenticated user
+   * @returns Array of clients with revenue totals
+   */
+  @Get('analytics/by-client')
+  async getByClient(@Query() query: QueryRevenueDto, @Request() req: any) {
+    const userId = req.user?.userId;
+    return this.revenueService.getByClient(query, userId);
+  }
+
+  /**
+   * Get revenue growth metrics (MoM, YoY, Average)
+   * 
+   * GET /revenue/analytics/growth
+   * 
+   * Required role: ACCOUNTANT or SUPER_ADMIN
+   * 
+   * Returns:
+   * - month_over_month_growth (%)
+   * - year_over_year_growth (%)
+   * - average_monthly_revenue
+   * 
+   * @param req - Request object with authenticated user
+   * @returns Growth metrics
+   */
+  @Get('analytics/growth')
+  async getGrowthMetrics(@Request() req: any) {
+    const userId = req.user?.userId;
+    return this.revenueService.getGrowthMetrics(userId);
+  }
+
+  /**
+   * Get monthly comparison data
+   * 
+   * GET /revenue/analytics/monthly-comparison
+   * 
+   * Required role: ACCOUNTANT or SUPER_ADMIN
+   * 
+   * Returns monthly revenue for current year
+   * 
+   * @param req - Request object with authenticated user
+   * @returns Array of monthly data
+   */
+  @Get('analytics/monthly-comparison')
+  async getMonthlyComparison(@Request() req: any) {
+    const userId = req.user?.userId;
+    return this.revenueService.getMonthlyComparison(userId);
+  }
 }

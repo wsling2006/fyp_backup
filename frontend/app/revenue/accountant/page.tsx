@@ -221,8 +221,8 @@ export default function RevenueDashboard() {
     // User can edit/delete if they created it
     // Check both created_by_user_id (direct UUID) and created_by.id (relationship)
     return (
-      record.created_by_user_id === user?.userId ||
-      record.created_by?.id === user?.userId
+      record.created_by_user_id === user?.id ||
+      record.created_by?.id === user?.id
     );
   };
 

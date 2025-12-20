@@ -12,7 +12,7 @@ const menu = [
   { label: 'Announcements', href: '/announcements', icon: '📢', roles: ['super_admin', 'HR'] },
   { label: 'Documents', href: '/documents', icon: '📁', roles: ['super_admin', 'HR'] },
   { label: 'Activity Logs', href: '/activity-logs', icon: '📝', roles: ['super_admin', 'HR'] },
-  { label: 'Company Revenue', href: '/company-revenue', icon: '💰', roles: ['super_admin', 'accountant'] },
+  { label: 'Company Revenue', href: '/dashboard/accountant/revenue', icon: '💰', roles: ['super_admin', 'accountant'] },
   { label: 'Cash Flow', href: '/cash-flow', icon: '💵', roles: ['super_admin', 'accountant'] },
   { label: 'Financial Statements', href: '/financial-statements', icon: '📈', roles: ['super_admin', 'accountant'] },
   { label: 'Purchase Requests', href: '/purchase-requests', icon: '🛒', roles: ['super_admin', 'accountant'] },

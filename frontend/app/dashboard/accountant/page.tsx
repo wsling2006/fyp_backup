@@ -220,7 +220,9 @@ export default function AccountantDashboard() {
               <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-gray-900 bg-clip-text text-transparent">Accountant Dashboard</h1>
               <p className="text-gray-500 mt-2 text-base font-medium">Securely manage financial documents, revenue records, and accounting files</p>
             </div>
-          </div>          {/* Action Buttons */}
+          </div>
+
+          {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-3 pt-3">
             {/* Revenue Dashboard Link */}
             <Button onClick={() => router.push('/dashboard/accountant/revenue')} className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
@@ -256,6 +258,7 @@ export default function AccountantDashboard() {
               )}
             </Button>
           </div>
+        </div>
       </div>
 
       {/* Status Messages */}
@@ -411,7 +414,6 @@ export default function AccountantDashboard() {
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 }

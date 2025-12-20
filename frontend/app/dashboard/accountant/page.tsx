@@ -214,6 +214,11 @@ export default function AccountantDashboard() {
           <h1 className="text-2xl font-bold">Accountant Dashboard</h1>
         </div>
         <div className="flex items-center gap-3">
+          {/* Revenue Dashboard Link */}
+          <Button onClick={() => router.push('/dashboard/accountant/revenue')} className="bg-green-600 hover:bg-green-700 w-auto px-4 py-2">
+            Revenue Dashboard
+          </Button>
+          
           {/* File picker: user chooses file first */}
           <label className="cursor-pointer bg-white border rounded px-3 py-2">
             <input type="file" className="hidden" onChange={handleFileSelect} />

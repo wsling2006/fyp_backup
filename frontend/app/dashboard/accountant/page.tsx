@@ -203,131 +203,207 @@ export default function AccountantDashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          {user?.role === 'super_admin' && (
-            <Button onClick={() => router.push('/dashboard/superadmin')} className="bg-gray-200 text-black hover:bg-gray-300 w-auto px-3 py-1">
-              Back
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 p-6 lg:p-10">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Section */}
+        <div className="space-y-5">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex-1 min-w-0">
+              {user?.role === 'super_admin' && (
+                <Button onClick={() => router.push('/dashboard/superadmin')} className="mb-3 bg-gray-100 hover:bg-gray-200 text-gray-700 w-auto px-4 py-2 text-sm font-medium rounded-lg transition-colors inline-flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back
+                </Button>
+              )}
+              <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-gray-900 bg-clip-text text-transparent">Accountant Dashboard</h1>
+              <p className="text-gray-500 mt-2 text-base font-medium">Securely manage financial documents, revenue records, and accounting files</p>
+            </div>
+          </div>          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-3 pt-3">
+            {/* Revenue Dashboard Link */}
+            <Button onClick={() => router.push('/dashboard/accountant/revenue')} className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span>Revenue Dashboard</span>
             </Button>
-          )}
-          <h1 className="text-2xl font-bold">Accountant Dashboard</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Revenue Dashboard Link */}
-          <Button onClick={() => router.push('/dashboard/accountant/revenue')} className="bg-green-600 hover:bg-green-700 w-auto px-4 py-2">
-            Revenue Dashboard
-          </Button>
-          
-          {/* File picker: user chooses file first */}
-          <label className="cursor-pointer bg-white border rounded px-3 py-2">
-            <input type="file" className="hidden" onChange={handleFileSelect} />
-            <span className="text-sm">Choose File</span>
-          </label>
+            
+            {/* File picker: user chooses file first */}
+            <label className="cursor-pointer inline-flex items-center gap-2 bg-blue-50 hover:bg-blue-100 border-2 border-blue-300 rounded-lg px-6 py-3 transition-all duration-200 font-semibold text-blue-700 hover:text-blue-800">
+              <input type="file" className="hidden" onChange={handleFileSelect} />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Choose File</span>
+            </label>
 
-          {/* Upload button: user explicitly starts upload; disabled while scanning */}
-          <Button onClick={handleUpload} disabled={uploading || !selectedFile}>
-            {uploading ? (
-              <span className="flex items-center gap-2"><Loader />Scanning file...</span>
-            ) : (
-              'Upload'
-            )}
-          </Button>
-        </div>
+            {/* Upload button: user explicitly starts upload; disabled while scanning */}
+            <Button onClick={handleUpload} disabled={uploading || !selectedFile} className={`inline-flex items-center gap-2 font-semibold px-6 py-3 rounded-lg transition-all duration-200 ${uploading || !selectedFile ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg'}`}>
+              {uploading ? (
+                <>
+                  <Loader />
+                  <span>Scanning...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span>Upload</span>
+                </>
+              )}
+            </Button>
+          </div>
       </div>
 
-      {/* Show the selected file name (if any) and messages */}
+      {/* Status Messages */}
       {selectedFile && (
-        <div className="text-sm text-gray-700">Selected: {selectedFile.name} ({(selectedFile.size/1024).toFixed(1)} KB)</div>
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg p-4 flex items-start gap-4 shadow-sm">
+          <svg className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M17.778 8.222c-4.296-4.296-11.26-4.296-15.556 0A11.94 11.94 0 001 10c2.773 4.649 7.748 7 12 7s9.228-2.351 12-7a11.94 11.94 0 00-1.222-1.778zM9.5 15a4.5 4.5 0 100-9 4.5 4.5 0 000 9zm0-2a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" clipRule="evenodd" />
+          </svg>
+          <div className="flex-1">
+            <p className="font-semibold text-blue-900 text-base">File Selected</p>
+            <p className="text-blue-700 mt-1 text-sm">{selectedFile.name} • {(selectedFile.size/1024).toFixed(1)} KB</p>
+          </div>
+        </div>
       )}
       {message && (
-        <div className="text-sm text-gray-700">{message}</div>
+        <div className={`rounded-lg p-4 flex items-start gap-4 shadow-sm border-l-4 ${message.includes('success') || message.includes('Upload successful') || message.includes('deleted') ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-500' : 'bg-gradient-to-r from-red-50 to-pink-50 border-red-500'}`}>
+          <svg className={`w-6 h-6 flex-shrink-0 mt-0.5 ${message.includes('success') || message.includes('Upload successful') || message.includes('deleted') ? 'text-green-600' : 'text-red-600'}`} fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d={message.includes('success') || message.includes('Upload successful') || message.includes('deleted') ? "M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" : "M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2z"} clipRule="evenodd" />
+          </svg>
+          <p className={`text-sm font-semibold ${message.includes('success') || message.includes('Upload successful') || message.includes('deleted') ? 'text-green-900' : 'text-red-900'}`}>{message}</p>
+        </div>
       )}
 
-      <div className="border rounded">
-        <div className="grid grid-cols-5 gap-4 p-3 font-semibold bg-gray-50">
-          <div>Filename</div>
-          <div>Type</div>
-          <div>Size</div>
-          <div>Uploaded By</div>
-          <div>Action</div>
+      {/* Files Table Card */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+        {/* Table Header */}
+        <div className="bg-gradient-to-r from-gray-900 via-blue-900 to-gray-900 px-8 py-6">
+          <h2 className="text-2xl font-bold text-white">Uploaded Files</h2>
+          <p className="text-gray-200 mt-1 text-sm font-medium">{files.length} file{files.length !== 1 ? 's' : ''} in total</p>
         </div>
-        {files.map(f => {
-          const canDelete = canDeleteFile(f);
-          const deleteTooltip = !canDelete 
-            ? "You have no permission to delete this file." 
-            : "";
-          
-          return (
-            <div key={f.id} className="grid grid-cols-5 gap-4 p-3 border-t">
-              <div>{f.filename}</div>
-              <div className="text-xs text-gray-600">{f.mimetype}</div>
-              <div className="text-xs">{(f.size / 1024).toFixed(1)} KB</div>
-              <div className="text-xs">{f.uploaded_by?.email || 'Unknown'}</div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    onClick={() => download(f.id, f.filename)} 
-                    disabled={uploading} 
-                    className="w-24 px-4 py-2 text-sm text-center bg-indigo-600 hover:bg-indigo-700 text-white"
-                  >
-                    Download
-                  </Button>
-                  <div className="relative group">
-                    <Button 
-                      onClick={() => canDelete && setDeleteDialog({ show: true, fileId: f.id, filename: f.filename })} 
-                      disabled={uploading || !canDelete} 
-                      className={`w-24 px-4 py-2 text-sm text-center ${canDelete ? 'bg-red-600 hover:bg-red-700 text-white focus:ring-4 focus:ring-red-500/30' : 'bg-gray-400 cursor-not-allowed hover:bg-gray-400 text-black/60'}`}
-                      title={deleteTooltip}
-                    >
-                      Delete
-                    </Button>
-                    {!canDelete && (
-                      <div className="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 max-w-md w-auto px-3 py-2 bg-gray-900 text-white text-sm rounded shadow-lg z-50 whitespace-normal break-words">
-                        {deleteTooltip}
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-                          <div className="border-4 border-transparent border-t-gray-900"></div>
+
+        {/* Table */}
+        {files.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th className="text-left px-8 py-4 text-xs font-bold text-gray-700 uppercase tracking-wider">Filename</th>
+                  <th className="text-left px-8 py-4 text-xs font-bold text-gray-700 uppercase tracking-wider">Type</th>
+                  <th className="text-left px-8 py-4 text-xs font-bold text-gray-700 uppercase tracking-wider">Size</th>
+                  <th className="text-left px-8 py-4 text-xs font-bold text-gray-700 uppercase tracking-wider">Uploaded By</th>
+                  <th className="text-right px-8 py-4 text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {files.map(f => {
+                  const canDelete = canDeleteFile(f);
+                  const deleteTooltip = !canDelete 
+                    ? "You have no permission to delete this file." 
+                    : "";
+                  
+                  return (
+                    <tr key={f.id} className="hover:bg-blue-50 transition-colors duration-150">
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-3">
+                          <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                            <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z" />
+                          </svg>
+                          <span className="font-semibold text-gray-900 text-sm">{f.filename}</span>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-        {files.length === 0 && (
-          <div className="p-4 text-sm text-gray-500">No files uploaded yet.</div>
+                      </td>
+                      <td className="px-8 py-5">
+                        <span className="inline-flex text-xs font-semibold text-gray-700 bg-gray-200 px-3 py-1.5 rounded-full">{f.mimetype}</span>
+                      </td>
+                      <td className="px-8 py-5 text-sm font-medium text-gray-700">{(f.size / 1024).toFixed(1)} KB</td>
+                      <td className="px-8 py-5 text-sm">
+                        <span className="text-gray-800 font-medium">{f.uploaded_by?.email || 'Unknown'}</span>
+                      </td>
+                      <td className="px-8 py-5 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button 
+                            onClick={() => download(f.id, f.filename)} 
+                            disabled={uploading} 
+                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 transition-colors duration-150"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Download
+                          </Button>
+                          <div className="relative group">
+                            <Button 
+                              onClick={() => canDelete && setDeleteDialog({ show: true, fileId: f.id, filename: f.filename })} 
+                              disabled={uploading || !canDelete} 
+                              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors duration-150 ${canDelete ? 'bg-red-100 hover:bg-red-200 text-red-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                              title={deleteTooltip}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Delete
+                            </Button>
+                            {!canDelete && (
+                              <div className="hidden group-hover:block absolute bottom-full right-0 mb-2 w-48 px-3 py-2 bg-gray-900 text-white text-xs rounded shadow-lg z-50">
+                                {deleteTooltip}
+                                <div className="absolute top-full right-3 -mt-1">
+                                  <div className="border-4 border-transparent border-t-gray-900"></div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="px-8 py-16 text-center">
+            <svg className="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p className="mt-4 text-gray-700 text-base font-semibold">No files uploaded yet</p>
+            <p className="text-gray-500 text-sm mt-2">Choose a file and click Upload to get started</p>
+          </div>
         )}
       </div>
 
       {/* Delete Confirmation Dialog */}
       {deleteDialog?.show && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 border border-gray-100">
+            <div className="flex items-center gap-4 mb-5">
+              <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <svg className="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Confirm Delete</h3>
+                <h3 className="text-xl font-bold text-gray-900">Confirm Delete</h3>
               </div>
             </div>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete <span className="font-semibold">"{deleteDialog.filename}"</span>? This action cannot be undone.
+            <p className="text-gray-600 mb-8 text-base">
+              Are you sure you want to delete <span className="font-bold text-gray-900">"{deleteDialog.filename}"</span>? This action cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">
               <Button 
                 onClick={() => setDeleteDialog(null)} 
-                className="bg-gray-200 text-gray-800 hover:bg-gray-300"
+                className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold px-6 py-2.5 rounded-lg transition-colors"
               >
                 Cancel
               </Button>
               <Button 
                 onClick={() => deleteFile(deleteDialog.fileId, deleteDialog.filename)} 
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2.5 rounded-lg transition-colors shadow-md"
               >
                 Delete
               </Button>
@@ -335,6 +411,7 @@ export default function AccountantDashboard() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

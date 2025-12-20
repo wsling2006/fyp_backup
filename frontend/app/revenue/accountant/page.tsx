@@ -8,6 +8,7 @@ import Loader from "@/components/ui/Loader";
 import Input from "@/components/ui/Input";
 import { useRouter } from 'next/navigation';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import jsPDF from 'jspdf';
 
 export const dynamic = 'force-dynamic';
 
@@ -149,6 +150,127 @@ export default function RevenueDashboard() {
     }
   };
 
+  const formatCurrency = (cents: number, currency: string = 'SGD') => {
+    return `${currency} ${(cents / 100).toFixed(2)}`;
+  };
+
+  // Export to CSV
+  const exportToCSV = () => {
+    if (revenues.length === 0) {
+      setMessage('No data to export');
+      return;
+    }
+
+    const headers = ['Date', 'Invoice ID', 'Client', 'Source', 'Amount', 'Status', 'Notes', 'Created By'];
+    const rows = revenues.map((r) => [
+      new Date(r.date).toLocaleDateString(),
+      r.invoice_id || '-',
+      r.client,
+      r.source,
+      formatCurrency(r.amount),
+      r.status,
+      r.notes || '-',
+      r.created_by?.email || 'Unknown',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `revenue-export-${new Date().toISOString().split('T')[0]}.csv`);
+    link.click();
+    setMessage('CSV exported successfully');
+  };
+
+  // Export to PDF
+  const exportToPDF = () => {
+    if (revenues.length === 0) {
+      setMessage('No data to export');
+      return;
+    }
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let yPosition = 20;
+
+    // Title
+    doc.setFontSize(16);
+    doc.text('Revenue Report', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 10;
+
+    // Date range info
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, yPosition);
+    yPosition += 10;
+
+    // Summary
+    if (summary) {
+      doc.setFontSize(11);
+      doc.text('Summary:', 20, yPosition);
+      yPosition += 7;
+      doc.setFontSize(10);
+      doc.text(`Total Revenue: ${formatCurrency(summary.total_revenue)}`, 25, yPosition);
+      yPosition += 6;
+      doc.text(`Paid: ${formatCurrency(summary.paid_revenue)} | Pending: ${formatCurrency(summary.pending_revenue)}`, 25, yPosition);
+      yPosition += 10;
+    }
+
+    // Table
+    doc.setFontSize(11);
+    doc.text('Revenue Records:', 20, yPosition);
+    yPosition += 8;
+
+    const headers = ['Date', 'Invoice', 'Client', 'Source', 'Amount', 'Status'];
+    const rows = revenues.map((r) => [
+      new Date(r.date).toLocaleDateString(),
+      r.invoice_id || '-',
+      r.client.substring(0, 15), // Truncate for PDF
+      r.source.substring(0, 12),
+      formatCurrency(r.amount),
+      r.status,
+    ]);
+
+    doc.setFontSize(9);
+    const tableStartY = yPosition;
+    const rowHeight = 7;
+    const colWidths = [18, 16, 20, 20, 25, 16]; // Approximate column widths
+
+    // Headers
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    let xPosition = 20;
+    headers.forEach((header, idx) => {
+      doc.text(header, xPosition, tableStartY);
+      xPosition += colWidths[idx];
+    });
+
+    // Rows
+    doc.setFont('helvetica', 'normal');
+    yPosition = tableStartY + rowHeight;
+    rows.forEach((row, rowIdx) => {
+      if (yPosition > pageHeight - 20) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      xPosition = 20;
+      row.forEach((cell, cellIdx) => {
+        doc.text(String(cell), xPosition, yPosition);
+        xPosition += colWidths[cellIdx];
+      });
+      yPosition += rowHeight;
+    });
+
+    doc.save(`revenue-export-${new Date().toISOString().split('T')[0]}.pdf`);
+    setMessage('PDF exported successfully');
+  };
+
   if (!allowedRole) {
     return (
       <div className="p-6">
@@ -165,10 +287,6 @@ export default function RevenueDashboard() {
       </div>
     );
   }
-
-  const formatCurrency = (cents: number, currency: string = 'SGD') => {
-    return `${currency} ${(cents / 100).toFixed(2)}`;
-  };
 
   return (
     <div className="p-6 space-y-6">
@@ -456,7 +574,7 @@ export default function RevenueDashboard() {
             placeholder="Filter by client"
           />
         </div>
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex gap-2 flex-wrap">
           <Button onClick={loadData} className="w-auto px-4 py-2">
             Apply Filters
           </Button>
@@ -468,6 +586,18 @@ export default function RevenueDashboard() {
             className="w-auto px-4 py-2 bg-gray-200 text-black hover:bg-gray-300"
           >
             Clear
+          </Button>
+          <Button
+            onClick={exportToCSV}
+            className="w-auto px-4 py-2 bg-green-600 hover:bg-green-700 text-white"
+          >
+            📥 Export to CSV
+          </Button>
+          <Button
+            onClick={exportToPDF}
+            className="w-auto px-4 py-2 bg-red-600 hover:bg-red-700 text-white"
+          >
+            📄 Export to PDF
           </Button>
         </div>
       </div>

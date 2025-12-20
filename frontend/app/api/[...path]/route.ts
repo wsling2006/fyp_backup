@@ -29,7 +29,10 @@ async function handler(request: NextRequest, { params }: { params: { path: strin
     const { path } = params;
     const apiPath = Array.isArray(path) ? path.join('/') : path;
     
-    // Build the backend URL
+    // Build the backend URL (strip /api prefix)
+    // Frontend calls: /api/revenue/123
+    // Proxy extracts: revenue/123
+    // Proxy forwards: http://localhost:3000/revenue/123 (backend doesn't use /api prefix)
     const backendUrl = `${BACKEND_URL}/${apiPath}`;
     
     // Preserve query parameters
@@ -39,7 +42,7 @@ async function handler(request: NextRequest, { params }: { params: { path: strin
     });
 
     // Log the proxy request for debugging
-    console.log(`[API Proxy] ${request.method} ${apiPath} → ${url.toString()}`);
+    console.log(`[API Proxy] ${request.method} /api/${apiPath} → ${url.toString()}`);
 
     // Forward the request to the backend
     const headers = new Headers();

@@ -400,7 +400,10 @@ export default function RevenueDashboard() {
         {/* Revenue by Source */}
         {bySource.length > 0 && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue by Source (Top 4)</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Revenue by Source (Top 4)</h3>
+              <span className="text-sm font-semibold text-gray-600">(SGD)</span>
+            </div>
             <div className="space-y-3">
               {bySource.slice(0, 4).map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between">
@@ -414,7 +417,7 @@ export default function RevenueDashboard() {
                         }}
                       />
                     </div>
-                    <span className="text-sm font-semibold text-gray-900 w-24 text-right">{formatCurrency(item.revenue)}</span>
+                    <span className="text-sm font-semibold text-gray-900 w-24 text-right">{(item.revenue / 100).toFixed(2)}</span>
                   </div>
                 </div>
               ))}
@@ -425,7 +428,10 @@ export default function RevenueDashboard() {
         {/* Revenue by Client */}
         {byClient.length > 0 && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Top 4 Clients by Revenue</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Top 4 Clients by Revenue</h3>
+              <span className="text-sm font-semibold text-gray-600">(SGD)</span>
+            </div>
             <div className="space-y-3">
               {byClient.slice(0, 4).map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between">
@@ -439,7 +445,7 @@ export default function RevenueDashboard() {
                         }}
                       />
                     </div>
-                    <span className="text-sm font-semibold text-gray-900 w-24 text-right">{formatCurrency(item.revenue)}</span>
+                    <span className="text-sm font-semibold text-gray-900 w-24 text-right">{(item.revenue / 100).toFixed(2)}</span>
                   </div>
                 </div>
               ))}

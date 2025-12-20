@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, Query, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, UseGuards, Request, Put, Delete } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../users/roles.enum';
 import { RevenueService } from './revenue.service';
 import { CreateRevenueDto } from './dto/create-revenue.dto';
+import { UpdateRevenueDto } from './dto/update-revenue.dto';
 import { QueryRevenueDto } from './dto/query-revenue.dto';
 
 /**
@@ -236,5 +237,50 @@ export class RevenueController {
   async getMonthlyComparison(@Request() req: any) {
     const userId = req.user?.userId;
     return this.revenueService.getMonthlyComparison(userId);
+  }
+
+  /**
+   * Update a revenue record
+   * 
+   * PUT /revenue/:id
+   * 
+   * Required role: ACCOUNTANT or SUPER_ADMIN
+   * 
+   * Security:
+   * - Only the user who created the record can edit it
+   * - SUPER_ADMIN can edit any record
+   * 
+   * @param id - Revenue record UUID
+   * @param dto - Updated revenue data
+   * @param req - Request object with authenticated user
+   * @returns Updated revenue record
+   * @throws ForbiddenException if user is not the creator
+   */
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() dto: UpdateRevenueDto, @Request() req: any) {
+    const userId = req.user?.userId;
+    return this.revenueService.update(id, dto, userId);
+  }
+
+  /**
+   * Delete a revenue record
+   * 
+   * DELETE /revenue/:id
+   * 
+   * Required role: ACCOUNTANT or SUPER_ADMIN
+   * 
+   * Security:
+   * - Only the user who created the record can delete it
+   * - SUPER_ADMIN can delete any record
+   * 
+   * @param id - Revenue record UUID
+   * @param req - Request object with authenticated user
+   * @returns Confirmation message
+   * @throws ForbiddenException if user is not the creator
+   */
+  @Delete(':id')
+  async remove(@Param('id') id: string, @Request() req: any) {
+    const userId = req.user?.userId;
+    return this.revenueService.remove(id, userId);
   }
 }

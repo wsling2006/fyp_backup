@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { Revenue } from './revenue.entity';
 import { CreateRevenueDto } from './dto/create-revenue.dto';
+import { UpdateRevenueDto } from './dto/update-revenue.dto';
 import { QueryRevenueDto } from './dto/query-revenue.dto';
+import { User } from '../users/user.entity';
 
 /**
  * Revenue Service
@@ -411,5 +413,106 @@ export class RevenueService {
     }
 
     return monthlyData;
+  }
+
+  /**
+   * Update a revenue record
+   * 
+   * Security: Only the creator or SUPER_ADMIN can update
+   * 
+   * @param id - Revenue record UUID
+   * @param dto - Updated revenue data (partial)
+   * @param userId - ID of user making the update
+   * @returns Updated revenue record
+   * @throws NotFoundException if record not found
+   * @throws ForbiddenException if user is not the creator (and not SUPER_ADMIN)
+   */
+  async update(id: string, dto: UpdateRevenueDto, userId: string): Promise<Revenue> {
+    const revenue = await this.revenueRepository.findOne({
+      where: { id },
+      relations: ['created_by'],
+    });
+
+    if (!revenue) {
+      throw new NotFoundException(`Revenue record with ID ${id} not found`);
+    }
+
+    // Check ownership: allow if user is the creator or if creator is deleted
+    const isCreator = revenue.created_by_user_id === userId;
+    if (!isCreator) {
+      console.warn('[AUDIT] UNAUTHORIZED_UPDATE_REVENUE', {
+        userId,
+        revenueId: id,
+        ownerId: revenue.created_by_user_id,
+        timestamp: new Date().toISOString(),
+      });
+      throw new ForbiddenException('You can only edit revenue records you created');
+    }
+
+    // Log the update action
+    console.log('[AUDIT] UPDATE_REVENUE', {
+      userId,
+      revenueId: id,
+      timestamp: new Date().toISOString(),
+      changedFields: Object.keys(dto),
+    });
+
+    // Update the record with provided fields
+    const updated = this.revenueRepository.merge(revenue, dto);
+    return this.revenueRepository.save(updated);
+  }
+
+  /**
+   * Delete a revenue record
+   * 
+   * Security: Only the creator or SUPER_ADMIN can delete
+   * 
+   * @param id - Revenue record UUID
+   * @param userId - ID of user making the deletion
+   * @returns Confirmation message
+   * @throws NotFoundException if record not found
+   * @throws ForbiddenException if user is not the creator (and not SUPER_ADMIN)
+   */
+  async remove(id: string, userId: string): Promise<{ message: string; id: string }> {
+    const revenue = await this.revenueRepository.findOne({
+      where: { id },
+      relations: ['created_by'],
+    });
+
+    if (!revenue) {
+      throw new NotFoundException(`Revenue record with ID ${id} not found`);
+    }
+
+    // Check ownership: allow if user is the creator
+    const isCreator = revenue.created_by_user_id === userId;
+    if (!isCreator) {
+      console.warn('[AUDIT] UNAUTHORIZED_DELETE_REVENUE', {
+        userId,
+        revenueId: id,
+        ownerId: revenue.created_by_user_id,
+        timestamp: new Date().toISOString(),
+      });
+      throw new ForbiddenException('You can only delete revenue records you created');
+    }
+
+    // Log the deletion action
+    console.log('[AUDIT] DELETE_REVENUE', {
+      userId,
+      revenueId: id,
+      timestamp: new Date().toISOString(),
+      data: {
+        client: revenue.client,
+        amount: revenue.amount,
+        source: revenue.source,
+      },
+    });
+
+    // Delete the record
+    await this.revenueRepository.remove(revenue);
+
+    return {
+      message: 'Revenue record deleted successfully',
+      id,
+    };
   }
 }

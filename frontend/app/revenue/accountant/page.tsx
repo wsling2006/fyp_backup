@@ -63,6 +63,11 @@ export default function RevenueDashboard() {
     notes: '',
   });
 
+  // Edit/Delete state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState<any>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
   // Filters
   const [filters, setFilters] = useState({
     start_date: '',
@@ -148,6 +153,72 @@ export default function RevenueDashboard() {
         logout();
       }
     }
+  };
+
+  const handleEdit = (revenue: RevenueRecord) => {
+    setEditingId(revenue.id);
+    setEditFormData({
+      invoice_id: revenue.invoice_id || '',
+      client: revenue.client,
+      source: revenue.source,
+      amount: (revenue.amount / 100).toString(),
+      currency: revenue.currency,
+      date: revenue.date,
+      status: revenue.status,
+      notes: revenue.notes || '',
+    });
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingId) return;
+    setMessage(null);
+
+    try {
+      // Convert amount to cents
+      const amountInCents = editFormData.amount ? Math.round(parseFloat(editFormData.amount) * 100) : undefined;
+
+      const updateData = {
+        ...editFormData,
+        ...(amountInCents && { amount: amountInCents }),
+      };
+
+      await api.put(`/revenue/${editingId}`, updateData);
+
+      setMessage('Revenue record updated successfully');
+      setEditingId(null);
+      setEditFormData(null);
+      loadData();
+    } catch (e: any) {
+      setMessage(e.response?.data?.message || 'Failed to update revenue record');
+      if (e.response?.status === 401 || e.response?.status === 403) {
+        logout();
+      }
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setMessage(null);
+
+    try {
+      await api.delete(`/revenue/${id}`);
+
+      setMessage('Revenue record deleted successfully');
+      setDeleteConfirm(null);
+      loadData();
+    } catch (e: any) {
+      setMessage(e.response?.data?.message || 'Failed to delete revenue record');
+      if (e.response?.status === 401 || e.response?.status === 403) {
+        logout();
+      }
+    }
+  };
+
+  const canEditDelete = (revenueId: string) => {
+    const record = revenues.find((r) => r.id === revenueId);
+    if (!record) return false;
+    // User can edit/delete if they created it
+    return record.created_by?.id === user?.userId;
   };
 
   const formatCurrency = (cents: number, currency: string = 'SGD') => {
@@ -620,6 +691,7 @@ export default function RevenueDashboard() {
               <th className="px-4 py-3 text-right text-sm font-semibold">Amount</th>
               <th className="px-4 py-3 text-left text-sm font-semibold">Status</th>
               <th className="px-4 py-3 text-left text-sm font-semibold">Created By</th>
+              <th className="px-4 py-3 text-center text-sm font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -638,11 +710,31 @@ export default function RevenueDashboard() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-600">{r.created_by?.email || 'Unknown'}</td>
+                <td className="px-4 py-3 text-center text-sm">
+                  {canEditDelete(r.id) ? (
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        onClick={() => handleEdit(r)}
+                        className="px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-xs font-medium"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm(r.id)}
+                        className="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs font-medium"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-500">No access</span>
+                  )}
+                </td>
               </tr>
             ))}
             {revenues.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                   No revenue records found
                 </td>
               </tr>
@@ -650,6 +742,124 @@ export default function RevenueDashboard() {
           </tbody>
         </table>
       </div>
+
+      {/* Edit Revenue Modal */}
+      {editingId && editFormData && (
+        <div className="fixed top-0 left-0 right-0 bg-black/50 z-40" onClick={() => { setEditingId(null); setEditFormData(null); }} />
+      )}
+      {editingId && editFormData && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-full max-w-2xl bg-white border border-gray-300 rounded-lg p-6 shadow-2xl z-50">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Edit Revenue</h2>
+            <button
+              onClick={() => { setEditingId(null); setEditFormData(null); }}
+              className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+            >
+              ×
+            </button>
+          </div>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Invoice ID (Optional)"
+                value={editFormData.invoice_id}
+                onChange={(e) => setEditFormData({ ...editFormData, invoice_id: e.target.value })}
+                placeholder="INV-001"
+              />
+              <Input
+                label="Client *"
+                value={editFormData.client}
+                onChange={(e) => setEditFormData({ ...editFormData, client: e.target.value })}
+                placeholder="Client name"
+                required
+              />
+              <Input
+                label="Source *"
+                value={editFormData.source}
+                onChange={(e) => setEditFormData({ ...editFormData, source: e.target.value })}
+                placeholder="Product Sales, Consulting, etc."
+                required
+              />
+              <Input
+                label="Amount (SGD) *"
+                type="number"
+                step="0.01"
+                value={editFormData.amount}
+                onChange={(e) => setEditFormData({ ...editFormData, amount: e.target.value })}
+                placeholder="1000.00"
+                required
+              />
+              <Input
+                label="Date *"
+                type="date"
+                value={editFormData.date}
+                onChange={(e) => setEditFormData({ ...editFormData, date: e.target.value })}
+                required
+              />
+              <div>
+                <label className="block text-sm font-medium mb-1">Status *</label>
+                <select
+                  value={editFormData.status}
+                  onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value as 'PAID' | 'PENDING' })}
+                  className="w-full border rounded px-3 py-2"
+                  required
+                >
+                  <option value="PENDING">Pending</option>
+                  <option value="PAID">Paid</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Notes</label>
+              <textarea
+                value={editFormData.notes}
+                onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                placeholder="Optional notes"
+                className="w-full border rounded px-3 py-2"
+                rows={3}
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => { setEditingId(null); setEditFormData(null); }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+              >
+                Cancel
+              </button>
+              <Button type="submit" className="w-auto px-6 py-2">
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setDeleteConfirm(null)}>
+          <div className="bg-white rounded-lg p-6 shadow-2xl max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-4">Delete Revenue Record?</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this revenue record? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirm)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

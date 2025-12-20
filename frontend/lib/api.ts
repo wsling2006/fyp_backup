@@ -12,9 +12,12 @@ import axios from 'axios';
  * - No hardcoded IPs - works after every EC2 restart
  * - Simplified CORS - backend only needs to allow localhost:3001
  * - Frontend code is IP-agnostic
+ * 
+ * IMPORTANT: Always use /api for the baseURL in production
+ * This ensures all requests go through the Next.js proxy, avoiding IP hardcoding
  */
 
-const baseURL = process.env.NEXT_PUBLIC_API_BASE || '/api';
+const baseURL = '/api'; // Always use relative path through proxy
 
 const api = axios.create({
   baseURL,

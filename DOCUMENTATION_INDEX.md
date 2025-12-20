@@ -63,21 +63,11 @@ This directory contains comprehensive documentation for:
 **Best For**: Understanding PM2 configuration  
 **Contains**: Starting services, monitoring, restarting
 
-#### 7. **EC2_ELASTIC_IP_GUIDE.md** 🔥 NEW!
-**Purpose**: Prevent IP changes on instance restart  
-**Best For**: Solving the IP change problem  
-**Contains**: 
-- Why IP changes happen
-- 3 solutions (Elastic IP, Domain, Manual)
-- Step-by-step Elastic IP setup
-- Cost analysis
-- When to use each approach
-
 ---
 
 ### DATABASE & SCRIPTS
 
-#### 8. **DATABASE_SETUP_TROUBLESHOOTING.md**
+#### 7. **DATABASE_SETUP_TROUBLESHOOTING.md**
 **Purpose**: Solve database issues  
 **Best For**: When database won't connect or tables are missing  
 **Contains**: Common problems, solutions, verification commands
@@ -91,25 +81,25 @@ This directory contains comprehensive documentation for:
 
 ### REVENUE EDIT/DELETE FEATURE
 
-#### 9. **REVENUE_EDIT_DELETE_IMPLEMENTATION.md**
+#### 8. **REVENUE_EDIT_DELETE_IMPLEMENTATION.md**
 **Purpose**: How the feature works  
 **Best For**: Understanding implementation details  
 **Contains**: Architecture, API endpoints, frontend UI, ownership validation
 
-#### 10. **REVENUE_EDIT_DELETE_TESTING.md**
+#### 9. **REVENUE_EDIT_DELETE_TESTING.md**
 **Purpose**: How to test the feature  
 **Best For**: Verifying edit/delete works correctly  
 **Contains**: Test scenarios, expected behavior, troubleshooting tests
 
-#### 11. **REVENUE_EDIT_DELETE_SUMMARY.md**
+#### 10. **REVENUE_EDIT_DELETE_SUMMARY.md**
 **Purpose**: Feature overview  
 **Best For**: Quick understanding of what was done  
 
-#### 12. **REVENUE_EDIT_DELETE_COMPLETE.md**
+#### 11. **REVENUE_EDIT_DELETE_COMPLETE.md**
 **Purpose**: Feature completion status  
 **Best For**: Verification that feature is complete
 
-#### 13. **REVENUE_EDIT_DELETE_QUICK_REF.md**
+#### 12. **REVENUE_EDIT_DELETE_QUICK_REF.md**
 **Purpose**: Quick reference for the feature  
 **Best For**: Quick lookup of key information
 
@@ -117,7 +107,7 @@ This directory contains comprehensive documentation for:
 
 ### ACCOUNTANT DASHBOARD UI
 
-#### 14. **DASHBOARD_UI_COMPLETE.md** ⭐
+#### 13. **DASHBOARD_UI_COMPLETE.md** ⭐
 **Purpose**: Dashboard improvements summary  
 **Best For**: Quick overview of UI changes  
 **Contains**: What was changed, verification, deployment

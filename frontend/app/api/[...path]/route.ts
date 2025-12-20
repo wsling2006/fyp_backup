@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
-
 /**
  * Same-origin API proxy for Next.js frontend
  * 
@@ -10,14 +8,20 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
  * 
  * Architecture:
  * - Browser → http://<public-ip>:3001/api/... (Next.js)
- * - Next.js → http://localhost:3000/... (NestJS backend)
+ * - Next.js → http://localhost:3000/api/... (NestJS backend)
  * 
  * Benefits:
  * - No hardcoded IPs in frontend code
  * - Works after every EC2 restart without changes
  * - Simplifies CORS (backend only needs to allow localhost:3001)
  * - Frontend uses relative paths like /api/auth/login
+ * 
+ * IMPORTANT: Backend must run on port 3000 (configured in ecosystem.config.js)
  */
+
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
+
+console.log('[API Proxy] Using backend URL:', BACKEND_URL);
 
 async function handler(request: NextRequest, { params }: { params: { path: string[] } }) {
   try {
@@ -33,6 +37,9 @@ async function handler(request: NextRequest, { params }: { params: { path: strin
     request.nextUrl.searchParams.forEach((value, key) => {
       url.searchParams.append(key, value);
     });
+
+    // Log the proxy request for debugging
+    console.log(`[API Proxy] ${request.method} ${apiPath} → ${url.toString()}`);
 
     // Forward the request to the backend
     const headers = new Headers();

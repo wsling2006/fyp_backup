@@ -181,13 +181,7 @@ export default function RevenueDashboard() {
           )}
           <h1 className="text-2xl font-bold">Revenue Dashboard</h1>
         </div>
-        <Button onClick={() => {
-          setShowAddForm(!showAddForm);
-          if (!showAddForm) {
-            // Scroll to top when opening form
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }
-        }} className="w-auto px-4 py-2">
+        <Button onClick={() => setShowAddForm(!showAddForm)} className="w-auto px-4 py-2">
           {showAddForm ? 'Cancel' : 'Add Revenue'}
         </Button>
       </div>
@@ -336,10 +330,21 @@ export default function RevenueDashboard() {
         )}
       </div>
 
-      {/* Add Revenue Form */}
+      {/* Add Revenue Form - Modal at Top */}
       {showAddForm && (
-        <div className="bg-white border rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4">Add New Revenue</h2>
+        <div className="fixed top-0 left-0 right-0 bg-black/50 z-40" onClick={() => setShowAddForm(false)} />
+      )}
+      {showAddForm && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-full max-w-2xl bg-white border border-gray-300 rounded-lg p-6 shadow-2xl z-50">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Add New Revenue</h2>
+            <button
+              onClick={() => setShowAddForm(false)}
+              className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+            >
+              ×
+            </button>
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
@@ -401,9 +406,18 @@ export default function RevenueDashboard() {
                 rows={3}
               />
             </div>
-            <Button type="submit" className="w-auto px-6 py-2">
-              Save Revenue
-            </Button>
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowAddForm(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+              >
+                Cancel
+              </button>
+              <Button type="submit" className="w-auto px-6 py-2">
+                Save Revenue
+              </Button>
+            </div>
           </form>
         </div>
       )}

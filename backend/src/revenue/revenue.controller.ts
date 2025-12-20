@@ -80,6 +80,7 @@ export class RevenueController {
       date: r.date,
       status: r.status,
       notes: r.notes,
+      created_by_user_id: r.created_by_user_id,
       created_by: r.created_by ? {
         id: r.created_by.id,
         email: r.created_by.email,
@@ -139,6 +140,7 @@ export class RevenueController {
       date: revenue.date,
       status: revenue.status,
       notes: revenue.notes,
+      created_by_user_id: revenue.created_by_user_id,
       created_by: revenue.created_by ? {
         id: revenue.created_by.id,
         email: revenue.created_by.email,

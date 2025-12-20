@@ -22,6 +22,7 @@ interface RevenueRecord {
   date: string;
   status: 'PAID' | 'PENDING';
   notes: string | null;
+  created_by_user_id: string;
   created_by: { id: string; email: string } | null;
   created_at: string;
 }
@@ -218,7 +219,11 @@ export default function RevenueDashboard() {
     const record = revenues.find((r) => r.id === revenueId);
     if (!record) return false;
     // User can edit/delete if they created it
-    return record.created_by?.id === user?.userId;
+    // Check both created_by_user_id (direct UUID) and created_by.id (relationship)
+    return (
+      record.created_by_user_id === user?.userId ||
+      record.created_by?.id === user?.userId
+    );
   };
 
   const formatCurrency = (cents: number, currency: string = 'SGD') => {

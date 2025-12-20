@@ -1,8 +1,20 @@
 import axios from 'axios';
 
-// PRODUCTION-READY: Use environment variable or fallback safely
-// For EC2 deployment, set NEXT_PUBLIC_API_URL in .env.production
-const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+/**
+ * PRODUCTION-READY API Client with Same-Origin Proxy
+ * 
+ * Architecture:
+ * - Browser → /api/* (relative paths, same-origin)
+ * - Next.js proxy at /app/api/[...path]/route.ts forwards to backend
+ * - Backend runs on localhost:3000 (on same EC2 instance)
+ * 
+ * Benefits:
+ * - No hardcoded IPs - works after every EC2 restart
+ * - Simplified CORS - backend only needs to allow localhost:3001
+ * - Frontend code is IP-agnostic
+ */
+
+const baseURL = process.env.NEXT_PUBLIC_API_BASE || '/api';
 
 const api = axios.create({
   baseURL,

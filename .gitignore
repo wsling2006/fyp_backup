@@ -3,5 +3,7 @@ node_modules
 dist
 coverage
 .DS_Store
-
-.env
+.next
+*.log
+*.tsbuildinfo
+package-lock.json

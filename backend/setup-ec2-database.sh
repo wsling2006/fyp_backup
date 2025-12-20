@@ -79,7 +79,7 @@ cat > .env << EOF
 NODE_ENV=production
 PORT=3000
 
-FRONTEND_URL=http://47.128.68.111
+FRONTEND_URL=http://localhost:3001
 
 DB_HOST=localhost
 DB_PORT=5432
@@ -138,7 +138,7 @@ echo ""
 echo "2. Check logs:"
 echo "   pm2 logs backend --lines 50"
 echo ""
-echo "3. Test login at: http://47.128.68.111:3001/login"
+echo "3. Test login at: http://<your-ec2-public-ip>:3001/login"
 echo "   Email: admin@fyp.com"
 echo "   Password: $ADMIN_PASSWORD"
 echo ""

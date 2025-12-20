@@ -109,7 +109,7 @@ cat > .env << EOF
 NODE_ENV=production
 PORT=3000
 
-FRONTEND_URL=http://47.128.68.111
+FRONTEND_URL=http://localhost:3001
 
 DB_HOST=localhost
 DB_PORT=5432
@@ -167,7 +167,11 @@ fi
 
 # Create .env.production file
 cat > .env.production << EOF
-NEXT_PUBLIC_API_URL=http://47.128.68.111:3000
+# API base path for frontend (relative path via Next.js proxy)
+NEXT_PUBLIC_API_BASE=/api
+
+# Backend URL for server-side proxy (NOT exposed to browser)
+BACKEND_URL=http://localhost:3000
 EOF
 
 echo -e "${GREEN}✓ Frontend .env.production file created${NC}"
@@ -233,8 +237,8 @@ echo ""
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo -e "${BLUE}🌐 Access Your Application:${NC}"
-echo "  Frontend: http://47.128.68.111:3001"
-echo "  Backend API: http://47.128.68.111:3000"
+echo "  Frontend: http://<your-ec2-public-ip>:3001"
+echo "  Backend API: Proxied via frontend at /api/*"
 echo ""
 echo -e "${BLUE}📊 Check Application Status:${NC}"
 echo "  pm2 status"

@@ -21,20 +21,46 @@ NC='\033[0m' # No Color
 cd /home/ubuntu/fyp_system
 
 echo -e "${BLUE}Step 1: Checking PostgreSQL${NC}"
-sudo systemctl status postgresql | grep "active (running)" > /dev/null
+
+# Check if PostgreSQL cluster is actually running (not just the service wrapper)
+sudo -u postgres pg_isready > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ PostgreSQL is running${NC}"
 else
-    echo -e "${YELLOW}⚠️  Starting PostgreSQL...${NC}"
-    sudo systemctl start postgresql
+    echo -e "${YELLOW}⚠️  PostgreSQL not ready. Starting PostgreSQL cluster...${NC}"
+    
+    # Start the actual PostgreSQL cluster (version 14 is common on Ubuntu 22.04)
+    # Find the installed version
+    PG_VERSION=$(ls /etc/postgresql/ | head -1)
+    
+    if [ -z "$PG_VERSION" ]; then
+        echo -e "${RED}❌ PostgreSQL not installed${NC}"
+        exit 1
+    fi
+    
+    echo -e "${YELLOW}   Detected PostgreSQL version: $PG_VERSION${NC}"
+    
+    # Start the PostgreSQL cluster
+    sudo pg_ctlcluster $PG_VERSION main start
     sleep 3
-    sudo systemctl status postgresql | grep "active (running)" > /dev/null
+    
+    # Verify it's running
+    sudo -u postgres pg_isready > /dev/null 2>&1
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ PostgreSQL started${NC}"
+        echo -e "${GREEN}✅ PostgreSQL started successfully${NC}"
     else
         echo -e "${RED}❌ PostgreSQL failed to start${NC}"
-        sudo systemctl status postgresql
-        exit 1
+        echo -e "${YELLOW}   Trying alternative method...${NC}"
+        sudo systemctl restart postgresql@$PG_VERSION-main
+        sleep 3
+        sudo -u postgres pg_isready > /dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✅ PostgreSQL started successfully${NC}"
+        else
+            echo -e "${RED}❌ PostgreSQL still not running. Check logs:${NC}"
+            echo "   sudo tail -50 /var/log/postgresql/postgresql-$PG_VERSION-main.log"
+            exit 1
+        fi
     fi
 fi
 echo ""
@@ -44,7 +70,9 @@ sudo -u postgres psql -d fyp_db -c "SELECT 1;" > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ Database connection OK${NC}"
 else
-    echo -e "${RED}❌ Cannot connect to database${NC}"
+    echo -e "${RED}❌ Cannot connect to database fyp_db${NC}"
+    echo -e "${YELLOW}   Available databases:${NC}"
+    sudo -u postgres psql -l
     exit 1
 fi
 echo ""

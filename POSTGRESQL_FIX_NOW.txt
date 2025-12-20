@@ -1,0 +1,172 @@
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃         🔧 POSTGRESQL NOT STARTING - IMMEDIATE FIX                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+📋 PROBLEM: PostgreSQL service shows "active (exited)" but not actually running
+
+🔍 CAUSE: The systemd service wrapper started but the actual PostgreSQL
+          cluster didn't start. This is common on Ubuntu after reboot.
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  QUICK FIX - RUN THESE COMMANDS ON EC2                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# Method 1: Use the automated fix script
+cd /home/ubuntu/fyp_system
+git pull origin main
+chmod +x fix-postgresql.sh
+./fix-postgresql.sh
+
+# Method 2: Manual commands
+# Find your PostgreSQL version
+ls /etc/postgresql/
+
+# Start the cluster (replace 14 with your version)
+sudo pg_ctlcluster 14 main start
+
+# Verify it's running
+sudo -u postgres pg_isready
+
+# Test database connection
+sudo -u postgres psql -d fyp_db -c "SELECT 1;"
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  STEP-BY-STEP MANUAL FIX                                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+1. CHECK POSTGRESQL VERSION
+   ls /etc/postgresql/
+   
+   Output example: 14  (your version number)
+
+2. CHECK CLUSTER STATUS
+   pg_lsclusters
+   
+   Look for "down" status - this means it's not running
+
+3. START THE CLUSTER
+   sudo pg_ctlcluster 14 main start
+   
+   (Replace 14 with your version from step 1)
+
+4. VERIFY IT'S RUNNING
+   sudo -u postgres pg_isready
+   
+   Should output: /var/run/postgresql:5432 - accepting connections
+
+5. TEST DATABASE CONNECTION
+   sudo -u postgres psql -d fyp_db -c "SELECT 1;"
+   
+   Should output a table with "1"
+
+6. NOW START YOUR APPS
+   cd /home/ubuntu/fyp_system
+   
+   # Clear old PM2 processes
+   pm2 delete all
+   
+   # Start backend
+   cd backend
+   pm2 start dist/src/main.js --name backend
+   
+   # Start frontend
+   cd /home/ubuntu/fyp_system/frontend
+   pm2 start npm --name frontend -- start
+   
+   # Check status
+   pm2 status
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  TROUBLESHOOTING IF STILL FAILS                                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+VIEW LOGS:
+  sudo tail -50 /var/log/postgresql/postgresql-14-main.log
+
+CHECK DISK SPACE:
+  df -h
+  
+CHECK IF POSTGRES USER EXISTS:
+  id postgres
+
+CHECK PORT 5432:
+  sudo netstat -tlnp | grep 5432
+  
+RESTART POSTGRESQL SERVICE:
+  sudo systemctl restart postgresql@14-main
+  
+RELOAD CLUSTER:
+  sudo pg_ctlcluster 14 main reload
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  ALL-IN-ONE COMMAND                                                 ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+Copy and paste this entire block (adjusts for your PostgreSQL version):
+
+PG_VERSION=$(ls /etc/postgresql/ | head -1) && \
+echo "PostgreSQL version: $PG_VERSION" && \
+sudo pg_ctlcluster $PG_VERSION main start && \
+sleep 3 && \
+sudo -u postgres pg_isready && \
+sudo -u postgres psql -d fyp_db -c "SELECT 'Database OK' as status;" && \
+echo "✅ PostgreSQL is ready!" && \
+cd /home/ubuntu/fyp_system && \
+pm2 delete all && \
+cd backend && pm2 start dist/src/main.js --name backend && \
+cd /home/ubuntu/fyp_system/frontend && pm2 start npm --name frontend -- start && \
+pm2 status
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  PREVENT THIS IN FUTURE                                             ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+Enable auto-start on boot:
+
+# Enable PostgreSQL service
+sudo systemctl enable postgresql
+
+# Check it's enabled
+systemctl is-enabled postgresql
+
+# Enable PM2 auto-start
+pm2 startup
+# (copy and run the command it outputs)
+pm2 save
+
+After this, when EC2 restarts:
+1. PostgreSQL will start automatically
+2. PM2 will start your apps automatically
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  UPDATED STARTUP SCRIPT AVAILABLE                                   ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+The ec2-startup.sh script has been updated to handle this issue:
+
+cd /home/ubuntu/fyp_system
+git pull origin main
+chmod +x ec2-startup.sh
+./ec2-startup.sh
+
+It now:
+- Detects your PostgreSQL version automatically
+- Uses pg_ctlcluster instead of systemctl
+- Tries alternative methods if first attempt fails
+- Provides detailed error messages
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  TL;DR - JUST RUN THIS                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+ssh -i "your-key.pem" ubuntu@13.213.52.37
+
+PG_VERSION=$(ls /etc/postgresql/ | head -1) && \
+sudo pg_ctlcluster $PG_VERSION main start && \
+cd /home/ubuntu/fyp_system && \
+pm2 delete all && \
+cd backend && pm2 start dist/src/main.js --name backend && \
+cd /home/ubuntu/fyp_system/frontend && pm2 start npm --name frontend -- start && \
+pm2 status
+
+✅ Done!

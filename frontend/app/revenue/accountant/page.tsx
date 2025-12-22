@@ -89,7 +89,7 @@ export default function RevenueDashboard() {
   //   loadData();
   // }, [allowedRole]);
 
-  const loadData = async () => {
+  const loadData = async (silent: boolean = false) => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
@@ -97,6 +97,9 @@ export default function RevenueDashboard() {
       if (filters.end_date) params.append('end_date', filters.end_date);
       if (filters.status) params.append('status', filters.status);
       if (filters.client) params.append('client', filters.client);
+      
+      // Add silent parameter to skip audit logging on auto-refresh
+      if (silent) params.append('silent', 'true');
 
       // Fetch main revenue data and analytics in parallel
       const [revenueRes, summaryRes, trendsRes, bySourceRes, byClientRes, growthRes, monthlyRes] = await Promise.all([
@@ -168,7 +171,8 @@ export default function RevenueDashboard() {
         status: 'PENDING',
         notes: '',
       });
-      loadData();
+      // Silent refresh - don't log view action after create
+      loadData(true);
     } catch (e: any) {
       setMessage(e.response?.data?.message || 'Failed to add revenue record');
       if (e.response?.status === 401 || e.response?.status === 403) {
@@ -210,7 +214,8 @@ export default function RevenueDashboard() {
       setMessage('Revenue record updated successfully');
       setEditingId(null);
       setEditFormData(null);
-      loadData();
+      // Silent refresh - don't log view action after update
+      loadData(true);
     } catch (e: any) {
       setMessage(e.response?.data?.message || 'Failed to update revenue record');
       if (e.response?.status === 401 || e.response?.status === 403) {
@@ -227,7 +232,8 @@ export default function RevenueDashboard() {
 
       setMessage('Revenue record deleted successfully');
       setDeleteConfirm(null);
-      loadData();
+      // Silent refresh - don't log view action after delete
+      loadData(true);
     } catch (e: any) {
       setMessage(e.response?.data?.message || 'Failed to delete revenue record');
       if (e.response?.status === 401 || e.response?.status === 403) {
@@ -714,13 +720,13 @@ export default function RevenueDashboard() {
           />
         </div>
         <div className="mt-4 flex gap-2 flex-wrap">
-          <Button onClick={loadData} className="w-auto px-4 py-2">
+          <Button onClick={() => loadData(false)} className="w-auto px-4 py-2">
             Apply Filters
           </Button>
           <Button
             onClick={() => {
               setFilters({ start_date: '', end_date: '', status: '', client: '' });
-              loadData();
+              loadData(false);
             }}
             className="w-auto px-4 py-2 bg-gray-200 text-black hover:bg-gray-300"
           >

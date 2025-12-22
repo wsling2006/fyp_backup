@@ -75,6 +75,7 @@ export class RevenueController {
    * - client: Filter by client name
    * - status: Filter by status (PAID/PENDING)
    * - source: Filter by revenue source
+   * - silent: If 'true', skips audit logging (for auto-refresh)
    * 
    * @param query - Filter parameters
    * @param req - Request object with authenticated user
@@ -84,15 +85,18 @@ export class RevenueController {
   async findAll(@Query() query: QueryRevenueDto, @Request() req: any) {
     const userId = req.user?.userId;
     
-    // Log view action for audit trail
-    await this.auditService.logFromRequest(
-      req,
-      userId,
-      'VIEW_REVENUE',
-      'revenue',
-      undefined,
-      { filters: query }
-    );
+    // Log view action for audit trail (unless silent=true for auto-refresh)
+    const silent = req.query?.silent === 'true';
+    if (!silent) {
+      await this.auditService.logFromRequest(
+        req,
+        userId,
+        'VIEW_REVENUE',
+        'revenue',
+        undefined,
+        { filters: query }
+      );
+    }
     
     const revenues = await this.revenueService.findAll(query, userId);
     

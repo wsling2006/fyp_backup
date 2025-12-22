@@ -47,7 +47,8 @@ export class AuditService {
     resourceId?: string,
     metadata?: any,
   ): Promise<AuditLog> {
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || req.connection.remoteAddress;
+    // Extract real client IP (handles proxies, Nginx, etc.)
+    const ipAddress = this.getClientIp(req);
     const userAgent = req.headers['user-agent'];
 
     return this.log({
@@ -59,6 +60,42 @@ export class AuditService {
       userAgent,
       metadata,
     });
+  }
+
+  /**
+   * Get real client IP address from request
+   * Handles X-Forwarded-For, X-Real-IP headers set by proxies (Nginx, load balancers)
+   */
+  private getClientIp(req: Request): string {
+    // Priority order for IP detection:
+    // 1. X-Real-IP (set by Nginx)
+    // 2. X-Forwarded-For (first IP in the chain)
+    // 3. req.ip (Express)
+    // 4. req.connection.remoteAddress
+    // 5. Fallback to 'unknown'
+
+    const xRealIp = req.headers['x-real-ip'] as string;
+    if (xRealIp) {
+      return xRealIp;
+    }
+
+    const xForwardedFor = req.headers['x-forwarded-for'] as string;
+    if (xForwardedFor) {
+      // X-Forwarded-For can contain multiple IPs: "client, proxy1, proxy2"
+      // The first one is the real client IP
+      return xForwardedFor.split(',')[0].trim();
+    }
+
+    if (req.ip) {
+      // Remove IPv6 prefix if present (::ffff:192.168.1.1 → 192.168.1.1)
+      return req.ip.replace(/^::ffff:/, '');
+    }
+
+    if (req.connection?.remoteAddress) {
+      return req.connection.remoteAddress.replace(/^::ffff:/, '');
+    }
+
+    return 'unknown';
   }
 
   /**

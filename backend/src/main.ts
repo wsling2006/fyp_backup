@@ -1,9 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { UsersService } from './users/users.service';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Enable trust proxy to get real client IP behind Nginx/reverse proxy
+  app.set('trust proxy', 1);
 
   /**
    * PRODUCTION-READY CORS with Same-Origin Architecture

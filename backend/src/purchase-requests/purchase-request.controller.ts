@@ -12,10 +12,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
+import { memoryStorage } from 'multer';
+import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -33,14 +33,21 @@ import { AuditService } from '../audit/audit.service';
 @Controller('purchase-requests')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PurchaseRequestController {
+  private uploadDir = join(process.cwd(), 'uploads', 'receipts');
+
   constructor(
     private purchaseRequestService: PurchaseRequestService,
     private auditService: AuditService,
   ) {
-    // Ensure upload directory exists
-    const uploadDir = join(process.cwd(), 'uploads', 'receipts');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    // Ensure upload directory exists (async operation, but it's okay if it's not awaited in constructor)
+    this.ensureUploadDir();
+  }
+
+  private async ensureUploadDir() {
+    try {
+      await fs.mkdir(this.uploadDir, { recursive: true });
+    } catch (err) {
+      console.error('Failed to create upload directory:', err);
     }
   }
 
@@ -180,28 +187,14 @@ export class PurchaseRequestController {
   }
 
   /**
-   * Upload receipt and create claim (with OTP verification)
+   * Upload receipt and create claim (with OTP verification + ClamAV scan)
    * Sales, Marketing, SuperAdmin can upload
    */
   @Post('claims/upload')
   @Roles(Role.SALES, Role.MARKETING, Role.SUPER_ADMIN)
   @UseInterceptors(
     FileInterceptor('receipt', {
-      storage: diskStorage({
-        destination: join(process.cwd(), 'uploads', 'receipts'),
-        filename: (req, file, cb) => {
-          const uniqueName = `${uuidv4()}${extname(file.originalname)}`;
-          cb(null, uniqueName);
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-        if (allowedMimeTypes.includes(file.mimetype)) {
-          cb(null, true);
-        } else {
-          cb(new BadRequestException('Only PDF, JPG, and PNG files are allowed'), false);
-        }
-      },
+      storage: memoryStorage(), // Store in memory for ClamAV scanning
       limits: {
         fileSize: 10 * 1024 * 1024, // 10 MB max
       },
@@ -223,6 +216,17 @@ export class PurchaseRequestController {
     const userId = req.user.userId;
     const userRole = req.user.role;
 
+    // Step 1: Validate and scan file with ClamAV (CRITICAL SECURITY STEP)
+    await this.purchaseRequestService.validateAndScanFile(file);
+
+    // Step 2: Save file to disk with UUID filename (after ClamAV scan passes)
+    const fileExt = file.originalname.split('.').pop();
+    const uniqueFilename = `${uuidv4()}.${fileExt}`;
+    const filePath = join(this.uploadDir, uniqueFilename);
+    
+    await fs.writeFile(filePath, file.buffer);
+
+    // Step 3: Create claim in database
     return this.purchaseRequestService.createClaim(
       userId,
       userRole,
@@ -233,7 +237,7 @@ export class PurchaseRequestController {
         amount_claimed: parseFloat(dto.amount_claimed.toString()),
         purchase_date: dto.purchase_date,
         claim_description: dto.claim_description,
-        receipt_file_path: file.path,
+        receipt_file_path: filePath,
         receipt_file_original_name: file.originalname,
       },
       req,

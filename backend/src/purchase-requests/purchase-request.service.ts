@@ -11,10 +11,19 @@ import { PurchaseRequest, PurchaseRequestStatus } from './purchase-request.entit
 import { Claim, ClaimStatus } from './claim.entity';
 import { UsersService } from '../users/users.service';
 import { AuditService } from '../audit/audit.service';
+import { ClamavService } from '../clamav/clamav.service';
 import * as argon2 from 'argon2';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
 import { Role } from '../users/roles.enum';
+
+// Multer file interface
+interface UploadedFile {
+  originalname: string;
+  mimetype: string;
+  size: number;
+  buffer: Buffer;
+}
 
 @Injectable()
 export class PurchaseRequestService {
@@ -28,6 +37,7 @@ export class PurchaseRequestService {
     private usersService: UsersService,
     private auditService: AuditService,
     private configService: ConfigService,
+    private clamavService: ClamavService,
   ) {}
 
   /**
@@ -82,6 +92,46 @@ export class PurchaseRequestService {
     };
 
     await transporter.sendMail(mailOptions);
+  }
+
+  /**
+   * Validate and scan uploaded file
+   * Ensures file meets security requirements before storage
+   */
+  async validateAndScanFile(file: UploadedFile): Promise<void> {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    // Validate file type - only PDF and images allowed for receipts
+    const allowedMimeTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+    ];
+
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Invalid file type. Only PDF, JPG, and PNG files are allowed for receipts.',
+      );
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      throw new BadRequestException(
+        `File size exceeds limit. Maximum allowed size is ${maxSize / 1024 / 1024}MB.`,
+      );
+    }
+
+    // ClamAV scan for malware
+    const isClean = await this.clamavService.scanFile(file.buffer, file.originalname);
+    if (!isClean) {
+      throw new BadRequestException(
+        'File failed security scan. The uploaded file may contain malware or viruses.',
+      );
+    }
   }
 
   /**

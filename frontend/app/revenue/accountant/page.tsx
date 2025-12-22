@@ -41,7 +41,7 @@ export default function RevenueDashboard() {
   const router = useRouter();
   const [revenues, setRevenues] = useState<RevenueRecord[]>([]);
   const [summary, setSummary] = useState<RevenueSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Changed to false - no auto-load
   const [message, setMessage] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   

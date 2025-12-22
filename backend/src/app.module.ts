@@ -10,6 +10,7 @@ import { AccountingModule } from './accounting/accounting.module';
 import { AccountantFilesModule } from './accountant-files/accountant-files.module';
 import { RevenueModule } from './revenue/revenue.module';
 import { AuditModule } from './audit/audit.module';
+import { PurchaseRequestModule } from './purchase-requests/purchase-request.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { AuditModule } from './audit/audit.module';
     AccountantFilesModule,
     RevenueModule,
     AuditModule,
+    PurchaseRequestModule,
   ],
   controllers: [],
   providers: [],

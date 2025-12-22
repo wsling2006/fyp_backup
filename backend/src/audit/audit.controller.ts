@@ -80,16 +80,15 @@ export class AuditController {
   async deleteAuditLog(@Param('id') id: string, @Req() req: any) {
     const adminId = req.user.userId;
     
-    // Log the deletion action itself
-    await this.auditService.log({
-      userId: adminId,
-      action: 'DELETE_AUDIT_LOG',
-      resource: 'audit',
-      resourceId: id,
-      ipAddress: req.headers['x-real-ip'] || req.ip,
-      userAgent: req.headers['user-agent'],
-      metadata: { deleted_log_id: id },
-    });
+    // Log the deletion action itself (using logFromRequest for clean IP)
+    await this.auditService.logFromRequest(
+      req,
+      adminId,
+      'DELETE_AUDIT_LOG',
+      'audit',
+      id,
+      { deleted_log_id: id },
+    );
 
     await this.auditService.deleteLog(id);
     return { message: 'Audit log deleted successfully', id };
@@ -134,17 +133,17 @@ export class AuditController {
     const result = await this.auditService.clearAllLogs(userId, otp);
     
     // Log this critical action (this will be the first entry after clearing)
-    await this.auditService.log({
+    await this.auditService.logFromRequest(
+      req,
       userId,
-      action: 'CLEAR_ALL_AUDIT_LOGS',
-      resource: 'audit',
-      ipAddress: req.headers['x-real-ip'] || req.ip,
-      userAgent: req.headers['user-agent'],
-      metadata: { 
+      'CLEAR_ALL_AUDIT_LOGS',
+      'audit',
+      undefined,
+      { 
         logs_deleted: result.deletedCount,
         warning: 'All audit logs were cleared - this action cannot be undone',
       },
-    });
+    );
 
     return result;
   }

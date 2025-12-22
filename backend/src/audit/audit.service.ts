@@ -1,14 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuditLog } from './audit-log.entity';
 import { Request } from 'express';
+import { UsersService } from '../users/users.service';
+import * as argon2 from 'argon2';
+import * as nodemailer from 'nodemailer';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuditService {
+  private otpStore: Map<string, { otp: string; expiresAt: Date }> = new Map();
+
   constructor(
     @InjectRepository(AuditLog)
     private auditRepo: Repository<AuditLog>,
+    private usersService: UsersService,
+    private configService: ConfigService,
   ) {}
 
   /**
@@ -196,5 +204,171 @@ export class AuditService {
       order: { created_at: 'DESC' },
       take: limit,
     });
+  }
+
+  /**
+   * Delete a specific audit log by ID
+   * Use with extreme caution - audit logs should rarely be deleted
+   */
+  async deleteLog(id: string): Promise<void> {
+    const log = await this.auditRepo.findOne({ where: { id } });
+    
+    if (!log) {
+      throw new NotFoundException(`Audit log with ID ${id} not found`);
+    }
+
+    await this.auditRepo.remove(log);
+  }
+
+  /**
+   * Request OTP to clear all audit logs
+   * Step 1: Verify password and send OTP
+   */
+  async requestClearAllOtp(userId: string, password: string): Promise<{ message: string }> {
+    // Verify user and password
+    const user = await this.usersService.findById(userId);
+    
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Verify password
+    const isPasswordValid = await argon2.verify(user.password_hash, password);
+    
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid password');
+    }
+
+    // Generate OTP
+    const otp = this.generateOtp();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Store OTP in memory (for this critical operation, we use in-memory store)
+    this.otpStore.set(userId, { otp, expiresAt });
+
+    // Send OTP email
+    await this.sendClearAllOtpEmail(user.email, otp);
+
+    return {
+      message: 'OTP sent to your email. Valid for 10 minutes.',
+    };
+  }
+
+  /**
+   * Clear all audit logs after OTP verification
+   * DANGEROUS OPERATION - Cannot be undone!
+   */
+  async clearAllLogs(userId: string, otp: string): Promise<{ message: string; deletedCount: number }> {
+    // Verify OTP
+    const storedOtp = this.otpStore.get(userId);
+
+    if (!storedOtp) {
+      throw new BadRequestException('No OTP request found. Please request OTP first.');
+    }
+
+    if (storedOtp.expiresAt < new Date()) {
+      this.otpStore.delete(userId);
+      throw new BadRequestException('OTP has expired. Please request a new one.');
+    }
+
+    if (storedOtp.otp !== otp) {
+      throw new BadRequestException('Invalid OTP');
+    }
+
+    // OTP is valid, clear it from store
+    this.otpStore.delete(userId);
+
+    // Count logs before deletion
+    const count = await this.auditRepo.count();
+
+    // Delete all audit logs
+    await this.auditRepo.clear();
+
+    return {
+      message: `All audit logs cleared successfully. ${count} logs were deleted.`,
+      deletedCount: count,
+    };
+  }
+
+  /**
+   * Generate 6-digit OTP
+   */
+  private generateOtp(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  /**
+   * Send OTP email for clearing all logs
+   */
+  private async sendClearAllOtpEmail(email: string, otp: string): Promise<void> {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: this.configService.get<string>('EMAIL_USER'),
+        pass: this.configService.get<string>('EMAIL_PASS'),
+      },
+    });
+
+    const mailOptions = {
+      from: this.configService.get<string>('EMAIL_USER'),
+      to: email,
+      subject: '⚠️ CRITICAL: Clear All Audit Logs - OTP Verification',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 3px solid #dc2626; border-radius: 8px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #dc2626; margin: 0;">⚠️ CRITICAL ACTION</h1>
+            <h2 style="color: #333; margin: 10px 0 0 0;">Clear All Audit Logs</h2>
+          </div>
+
+          <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 20px;">
+            <p style="margin: 0; color: #991b1b; font-weight: bold;">
+              ⚠️ WARNING: This action cannot be undone!
+            </p>
+            <p style="margin: 10px 0 0 0; color: #dc2626;">
+              All audit logs will be permanently deleted from the system.
+            </p>
+          </div>
+
+          <div style="background-color: #f9fafb; padding: 20px; border-radius: 6px; margin-bottom: 20px;">
+            <p style="margin: 0 0 10px 0; color: #374151; font-size: 14px;">
+              A request has been made to clear all audit logs. If this was not you, change your password immediately.
+            </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <div style="background-color: #dc2626; color: white; font-size: 32px; font-weight: bold; padding: 20px; border-radius: 8px; letter-spacing: 8px; display: inline-block;">
+                ${otp}
+              </div>
+            </div>
+
+            <p style="margin: 20px 0 0 0; color: #6b7280; font-size: 13px; text-align: center;">
+              This OTP is valid for <strong>10 minutes</strong>
+            </p>
+          </div>
+
+          <div style="background-color: #fffbeb; border: 1px solid #fbbf24; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+            <p style="margin: 0; color: #92400e; font-size: 13px;">
+              <strong>Before proceeding, make sure:</strong><br>
+              ✓ You have exported/backed up any necessary audit logs<br>
+              ✓ You understand this action is irreversible<br>
+              ✓ You have proper authorization to perform this action
+            </p>
+          </div>
+
+          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+              FYP System - Audit Log Management<br>
+              This is an automated security notification
+            </p>
+          </div>
+        </div>
+      `,
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+    } catch (error) {
+      console.error('Failed to send OTP email:', error);
+      throw new Error('Failed to send OTP email');
+    }
   }
 }

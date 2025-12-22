@@ -39,6 +39,17 @@ export default function AuditLogDashboard() {
     end_date: '',
   });
 
+  // Delete states
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Clear all states
+  const [showClearAllModal, setShowClearAllModal] = useState(false);
+  const [clearAllPassword, setClearAllPassword] = useState('');
+  const [clearAllOtp, setClearAllOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
+
   const allowedRole = user?.role === 'super_admin';
 
   useEffect(() => {
@@ -83,6 +94,88 @@ export default function AuditLogDashboard() {
       end_date: '',
     });
     setTimeout(() => loadLogs(), 100);
+  };
+
+  // Delete individual log
+  const handleDeleteLog = async (id: string) => {
+    if (!deleteConfirm || deleteConfirm !== id) {
+      setDeleteConfirm(id);
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      await api.delete(`/audit/${id}`);
+      setMessage('Audit log deleted successfully');
+      setDeleteConfirm(null);
+      loadLogs();
+      setTimeout(() => setMessage(null), 3000);
+    } catch (e: any) {
+      setMessage(e.response?.data?.message || 'Failed to delete audit log');
+      if (e.response?.status === 401 || e.response?.status === 403) {
+        logout();
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Request OTP to clear all logs
+  const handleRequestClearAllOtp = async () => {
+    if (!clearAllPassword) {
+      setMessage('Please enter your password');
+      return;
+    }
+
+    try {
+      setClearingAll(true);
+      await api.post('/audit/clear-all/request-otp', { password: clearAllPassword });
+      setOtpSent(true);
+      setMessage('OTP sent to your email. Check your inbox.');
+      setTimeout(() => setMessage(null), 5000);
+    } catch (e: any) {
+      setMessage(e.response?.data?.message || 'Failed to send OTP');
+      if (e.response?.status === 401 || e.response?.status === 403) {
+        logout();
+      }
+    } finally {
+      setClearingAll(false);
+    }
+  };
+
+  // Clear all logs after OTP verification
+  const handleClearAllLogs = async () => {
+    if (!clearAllOtp) {
+      setMessage('Please enter the OTP from your email');
+      return;
+    }
+
+    try {
+      setClearingAll(true);
+      const res = await api.post('/audit/clear-all/verify', { otp: clearAllOtp });
+      setMessage(res.data.message || 'All audit logs cleared successfully');
+      setShowClearAllModal(false);
+      setClearAllPassword('');
+      setClearAllOtp('');
+      setOtpSent(false);
+      loadLogs();
+      setTimeout(() => setMessage(null), 5000);
+    } catch (e: any) {
+      setMessage(e.response?.data?.message || 'Failed to clear logs');
+      if (e.response?.status === 401 || e.response?.status === 403) {
+        logout();
+      }
+    } finally {
+      setClearingAll(false);
+    }
+  };
+
+  const closeClearAllModal = () => {
+    setShowClearAllModal(false);
+    setClearAllPassword('');
+    setClearAllOtp('');
+    setOtpSent(false);
+    setMessage(null);
   };
 
   const formatDate = (dateStr: string) => {
@@ -130,6 +223,12 @@ export default function AuditLogDashboard() {
           </Button>
           <h1 className="text-2xl font-bold">🔒 Audit Log Dashboard</h1>
         </div>
+        <Button 
+          onClick={() => setShowClearAllModal(true)}
+          className="bg-red-600 hover:bg-red-700 text-white w-auto px-4 py-2"
+        >
+          ⚠️ Clear All Logs
+        </Button>
       </div>
 
       {message && (
@@ -253,6 +352,7 @@ export default function AuditLogDashboard() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resource</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -270,11 +370,38 @@ export default function AuditLogDashboard() {
                   <td className="px-4 py-3 text-sm text-gray-600">{log.resource}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{formatDate(log.created_at)}</td>
                   <td className="px-4 py-3 text-sm text-gray-600 font-mono text-xs">{log.ip_address || '-'}</td>
+                  <td className="px-4 py-3 text-sm">
+                    {deleteConfirm === log.id ? (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleDeleteLog(log.id)}
+                          disabled={deleting}
+                          className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50"
+                        >
+                          {deleting ? 'Deleting...' : 'Confirm'}
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(null)}
+                          disabled={deleting}
+                          className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-xs hover:bg-gray-400 disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleDeleteLog(log.id)}
+                        className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200 font-medium"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                     No audit logs found
                   </td>
                 </tr>
@@ -283,6 +410,146 @@ export default function AuditLogDashboard() {
           </table>
         </div>
       </div>
+
+      {/* Clear All Logs Modal */}
+      {showClearAllModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full relative">
+            {/* Close button */}
+            <button
+              onClick={closeClearAllModal}
+              disabled={clearingAll}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Header */}
+            <div className="bg-red-600 text-white p-6 rounded-t-lg">
+              <div className="flex items-center gap-3">
+                <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <h2 className="text-2xl font-bold">⚠️ CRITICAL ACTION</h2>
+              </div>
+              <p className="mt-2 text-red-100 text-sm">Clear All Audit Logs</p>
+            </div>
+
+            {/* Warning */}
+            <div className="p-6 space-y-4">
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-bold text-red-800">⚠️ THIS ACTION CANNOT BE UNDONE!</p>
+                    <p className="mt-2 text-sm text-red-700">
+                      You are about to permanently delete <strong>ALL audit logs</strong> from the system. 
+                      This will remove all historical records of user actions.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded">
+                <p className="text-sm font-semibold text-yellow-900 mb-2">Before proceeding, ensure:</p>
+                <ul className="text-sm text-yellow-800 space-y-1 ml-4">
+                  <li>✓ You have exported/backed up necessary logs</li>
+                  <li>✓ You have proper authorization</li>
+                  <li>✓ You understand this is irreversible</li>
+                  <li>✓ All stakeholders have been notified</li>
+                </ul>
+              </div>
+
+              {!otpSent ? (
+                <>
+                  {/* Password Input */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Enter Your Password to Continue
+                    </label>
+                    <input
+                      type="password"
+                      value={clearAllPassword}
+                      onChange={(e) => setClearAllPassword(e.target.value)}
+                      placeholder="Your password"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      disabled={clearingAll}
+                      onKeyPress={(e) => e.key === 'Enter' && handleRequestClearAllOtp()}
+                    />
+                  </div>
+
+                  {/* Send OTP Button */}
+                  <Button
+                    onClick={handleRequestClearAllOtp}
+                    disabled={clearingAll || !clearAllPassword}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white py-3 text-sm font-semibold"
+                  >
+                    {clearingAll ? 'Sending OTP...' : 'Send OTP to My Email'}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {/* OTP Input */}
+                  <div className="bg-blue-50 border border-blue-200 p-4 rounded">
+                    <p className="text-sm text-blue-800 mb-3">
+                      📧 An OTP has been sent to your email. Check your inbox and enter it below.
+                    </p>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Enter 6-Digit OTP
+                    </label>
+                    <input
+                      type="text"
+                      value={clearAllOtp}
+                      onChange={(e) => setClearAllOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="000000"
+                      maxLength={6}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-2xl font-bold tracking-widest focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      disabled={clearingAll}
+                      onKeyPress={(e) => e.key === 'Enter' && clearAllOtp.length === 6 && handleClearAllLogs()}
+                    />
+                    <p className="text-xs text-gray-500 mt-2 text-center">
+                      OTP is valid for 10 minutes
+                    </p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={handleRequestClearAllOtp}
+                      disabled={clearingAll}
+                      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 text-sm"
+                    >
+                      Resend OTP
+                    </Button>
+                    <Button
+                      onClick={handleClearAllLogs}
+                      disabled={clearingAll || clearAllOtp.length !== 6}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 text-sm font-bold"
+                    >
+                      {clearingAll ? 'Clearing...' : '🗑️ CLEAR ALL LOGS'}
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {/* Cancel Button */}
+              <Button
+                onClick={closeClearAllModal}
+                disabled={clearingAll}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 text-sm"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

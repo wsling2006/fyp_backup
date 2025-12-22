@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Req, Delete, Param, Post, Body, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -68,5 +68,84 @@ export class AuditController {
     const limitNum = limit ? parseInt(limit, 10) : 100;
     const logs = await this.auditService.getResourceAudit(resource, resourceId, limitNum);
     return { logs, total: logs.length };
+  }
+
+  /**
+   * Delete a specific audit log by ID
+   * Only accessible by SUPER_ADMIN
+   * Use with caution - audit logs should rarely be deleted
+   */
+  @Delete(':id')
+  @Roles(Role.SUPER_ADMIN)
+  async deleteAuditLog(@Param('id') id: string, @Req() req: any) {
+    const adminId = req.user.userId;
+    
+    // Log the deletion action itself
+    await this.auditService.log({
+      userId: adminId,
+      action: 'DELETE_AUDIT_LOG',
+      resource: 'audit',
+      resourceId: id,
+      ipAddress: req.headers['x-real-ip'] || req.ip,
+      userAgent: req.headers['user-agent'],
+      metadata: { deleted_log_id: id },
+    });
+
+    await this.auditService.deleteLog(id);
+    return { message: 'Audit log deleted successfully', id };
+  }
+
+  /**
+   * Request OTP to clear all audit logs
+   * Step 1: Verify password and send OTP to email
+   */
+  @Post('clear-all/request-otp')
+  @Roles(Role.SUPER_ADMIN)
+  async requestClearAllOtp(@Body() body: { password: string }, @Req() req: any) {
+    const { password } = body;
+    
+    if (!password) {
+      throw new BadRequestException('Password is required');
+    }
+
+    const userId = req.user.userId;
+    const result = await this.auditService.requestClearAllOtp(userId, password);
+    
+    return result;
+  }
+
+  /**
+   * Clear all audit logs
+   * Step 2: Verify OTP and clear all logs
+   * DANGEROUS OPERATION - Cannot be undone!
+   */
+  @Post('clear-all/verify')
+  @Roles(Role.SUPER_ADMIN)
+  async clearAllAuditLogs(@Body() body: { otp: string }, @Req() req: any) {
+    const { otp } = body;
+    
+    if (!otp) {
+      throw new BadRequestException('OTP is required');
+    }
+
+    const userId = req.user.userId;
+    
+    // Verify OTP and get count before deletion
+    const result = await this.auditService.clearAllLogs(userId, otp);
+    
+    // Log this critical action (this will be the first entry after clearing)
+    await this.auditService.log({
+      userId,
+      action: 'CLEAR_ALL_AUDIT_LOGS',
+      resource: 'audit',
+      ipAddress: req.headers['x-real-ip'] || req.ip,
+      userAgent: req.headers['user-agent'],
+      metadata: { 
+        logs_deleted: result.deletedCount,
+        warning: 'All audit logs were cleared - this action cannot be undone',
+      },
+    });
+
+    return result;
   }
 }

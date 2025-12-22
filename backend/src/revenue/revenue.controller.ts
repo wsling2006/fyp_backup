@@ -47,7 +47,19 @@ export class RevenueController {
   @Post()
   async create(@Body() dto: CreateRevenueDto, @Request() req: any) {
     const userId = req.user?.userId;
-    return this.revenueService.create(dto, userId);
+    const revenue = await this.revenueService.create(dto, userId);
+    
+    // Log create action for audit trail
+    await this.auditService.logFromRequest(
+      req,
+      userId,
+      'CREATE_REVENUE',
+      'revenue',
+      revenue.id,
+      { invoice_id: dto.invoice_id, client: dto.client, amount: dto.amount }
+    );
+    
+    return revenue;
   }
 
   /**
@@ -276,7 +288,19 @@ export class RevenueController {
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateRevenueDto, @Request() req: any) {
     const userId = req.user?.userId;
-    return this.revenueService.update(id, dto, userId);
+    const revenue = await this.revenueService.update(id, dto, userId);
+    
+    // Log update action for audit trail
+    await this.auditService.logFromRequest(
+      req,
+      userId,
+      'UPDATE_REVENUE',
+      'revenue',
+      id,
+      { changes: dto }
+    );
+    
+    return revenue;
   }
 
   /**
@@ -299,6 +323,27 @@ export class RevenueController {
   async remove(@Param('id') id: string, @Request() req: any) {
     const userId = req.user?.userId;
     console.log('[CONTROLLER] DELETE request received:', { id, userId });
-    return this.revenueService.remove(id, userId);
+    
+    // Get revenue details before deletion for audit log
+    const revenue = await this.revenueService.findOne(id, userId);
+    
+    // Delete the revenue
+    const result = await this.revenueService.remove(id, userId);
+    
+    // Log delete action for audit trail
+    await this.auditService.logFromRequest(
+      req,
+      userId,
+      'DELETE_REVENUE',
+      'revenue',
+      id,
+      { 
+        invoice_id: revenue?.invoice_id,
+        client: revenue?.client,
+        amount: revenue?.amount
+      }
+    );
+    
+    return result;
   }
 }

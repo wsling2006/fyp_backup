@@ -73,23 +73,14 @@ export class AuditController {
   /**
    * Delete a specific audit log by ID
    * Only accessible by SUPER_ADMIN
-   * Use with caution - audit logs should rarely be deleted
+   * Note: Individual deletions are NOT logged to avoid database bloat
+   * Only bulk "clear all" operations are logged
    */
   @Delete(':id')
   @Roles(Role.SUPER_ADMIN)
   async deleteAuditLog(@Param('id') id: string, @Req() req: any) {
-    const adminId = req.user.userId;
-    
-    // Log the deletion action itself (using logFromRequest for clean IP)
-    await this.auditService.logFromRequest(
-      req,
-      adminId,
-      'DELETE_AUDIT_LOG',
-      'audit',
-      id,
-      { deleted_log_id: id },
-    );
-
+    // Don't log individual deletions to prevent database bloat
+    // Only "clear all" operation is logged as it's a critical action
     await this.auditService.deleteLog(id);
     return { message: 'Audit log deleted successfully', id };
   }

@@ -74,28 +74,48 @@ export class AuditService {
     // 4. req.connection.remoteAddress
     // 5. Fallback to 'unknown'
 
+    let ip: string | undefined;
+
     const xRealIp = req.headers['x-real-ip'] as string;
     if (xRealIp) {
-      return xRealIp;
+      ip = xRealIp;
+    } else {
+      const xForwardedFor = req.headers['x-forwarded-for'] as string;
+      if (xForwardedFor) {
+        // X-Forwarded-For can contain multiple IPs: "client, proxy1, proxy2"
+        // The first one is the real client IP
+        ip = xForwardedFor.split(',')[0].trim();
+      } else if (req.ip) {
+        ip = req.ip;
+      } else if (req.connection?.remoteAddress) {
+        ip = req.connection.remoteAddress;
+      }
     }
 
-    const xForwardedFor = req.headers['x-forwarded-for'] as string;
-    if (xForwardedFor) {
-      // X-Forwarded-For can contain multiple IPs: "client, proxy1, proxy2"
-      // The first one is the real client IP
-      return xForwardedFor.split(',')[0].trim();
+    if (!ip) {
+      return 'unknown';
     }
 
-    if (req.ip) {
-      // Remove IPv6 prefix if present (::ffff:192.168.1.1 → 192.168.1.1)
-      return req.ip.replace(/^::ffff:/, '');
-    }
+    // Clean up IPv4-mapped IPv6 addresses
+    // ::ffff:192.168.1.1 → 192.168.1.1
+    return this.cleanIpAddress(ip);
+  }
 
-    if (req.connection?.remoteAddress) {
-      return req.connection.remoteAddress.replace(/^::ffff:/, '');
-    }
-
-    return 'unknown';
+  /**
+   * Clean IP address format
+   * Removes IPv6 prefix and normalizes the IP
+   */
+  private cleanIpAddress(ip: string): string {
+    // Remove IPv4-mapped IPv6 prefix (::ffff:192.168.1.1 → 192.168.1.1)
+    let cleaned = ip.replace(/^::ffff:/i, '');
+    
+    // Remove surrounding brackets if present [2001:db8::1] → 2001:db8::1
+    cleaned = cleaned.replace(/^\[|\]$/g, '');
+    
+    // Trim whitespace
+    cleaned = cleaned.trim();
+    
+    return cleaned || 'unknown';
   }
 
   /**

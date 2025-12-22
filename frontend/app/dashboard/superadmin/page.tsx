@@ -373,6 +373,28 @@ export default function SuperAdminDashboard() {
 
             <Card variant="gradient">
               <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  <span className="text-2xl">🔒</span>
+                  <span>Security & Audit</span>
+                </h2>
+                <div className="flex gap-2">
+                  <Button onClick={() => router.push('/audit/superadmin')} variant="primary">
+                    📊 View Audit Logs
+                  </Button>
+                  <Button onClick={() => router.push('/revenue/accountant')} variant="secondary">
+                    💰 View Revenue
+                  </Button>
+                </div>
+              </div>
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                <p className="text-sm text-blue-700">
+                  Monitor user activity and access to sensitive financial data. The audit log tracks all VIEW, CREATE, UPDATE, and DELETE actions on revenue records.
+                </p>
+              </div>
+            </Card>
+
+            <Card variant="gradient">
+              <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                   <span className="text-2xl">📁</span>
                   <span>Accountant Files</span>

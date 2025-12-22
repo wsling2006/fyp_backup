@@ -4,6 +4,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../users/roles.enum';
 import { RevenueService } from './revenue.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateRevenueDto } from './dto/create-revenue.dto';
 import { UpdateRevenueDto } from './dto/update-revenue.dto';
 import { QueryRevenueDto } from './dto/query-revenue.dto';
@@ -27,7 +28,10 @@ import { QueryRevenueDto } from './dto/query-revenue.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ACCOUNTANT, Role.SUPER_ADMIN)
 export class RevenueController {
-  constructor(private readonly revenueService: RevenueService) {}
+  constructor(
+    private readonly revenueService: RevenueService,
+    private readonly auditService: AuditService,
+  ) {}
 
   /**
    * Create a new revenue record
@@ -67,6 +71,17 @@ export class RevenueController {
   @Get()
   async findAll(@Query() query: QueryRevenueDto, @Request() req: any) {
     const userId = req.user?.userId;
+    
+    // Log view action for audit trail
+    await this.auditService.logFromRequest(
+      req,
+      userId,
+      'VIEW_REVENUE',
+      'revenue',
+      undefined,
+      { filters: query }
+    );
+    
     const revenues = await this.revenueService.findAll(query, userId);
     
     // Map to safe response (exclude sensitive user data)

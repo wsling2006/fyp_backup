@@ -44,6 +44,10 @@ export default function RevenueDashboard() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  
+  // NEW: Control visibility of sensitive revenue data
+  const [dataVisible, setDataVisible] = useState(false);
+  const [viewLoading, setViewLoading] = useState(false);
 
   // Analytics state
   const [trends, setTrends] = useState<any[]>([]);
@@ -79,10 +83,11 @@ export default function RevenueDashboard() {
 
   const allowedRole = user?.role === 'accountant' || user?.role === 'super_admin';
 
-  useEffect(() => {
-    if (!allowedRole) return;
-    loadData();
-  }, [allowedRole]);
+  // Remove auto-load on mount - user must click "View Revenue Data" button
+  // useEffect(() => {
+  //   if (!allowedRole) return;
+  //   loadData();
+  // }, [allowedRole]);
 
   const loadData = async () => {
     try {
@@ -119,6 +124,22 @@ export default function RevenueDashboard() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // NEW: Handle viewing revenue data (logs audit trail)
+  const handleViewData = async () => {
+    setViewLoading(true);
+    setMessage(null);
+    try {
+      await loadData();
+      setDataVisible(true);
+      setMessage('Revenue data loaded successfully');
+      setTimeout(() => setMessage(null), 3000);
+    } catch (e: any) {
+      setMessage(e.response?.data?.message || 'Failed to load revenue data');
+    } finally {
+      setViewLoading(false);
     }
   };
 
@@ -375,9 +396,22 @@ export default function RevenueDashboard() {
           )}
           <h1 className="text-2xl font-bold">Revenue Dashboard</h1>
         </div>
-        <Button onClick={() => setShowAddForm(!showAddForm)} className="w-auto px-4 py-2">
-          {showAddForm ? 'Cancel' : 'Add Revenue'}
-        </Button>
+        <div className="flex gap-3">
+          {!dataVisible && (
+            <Button 
+              onClick={handleViewData} 
+              disabled={viewLoading}
+              className="w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700"
+            >
+              {viewLoading ? 'Loading...' : '🔍 View Revenue Data'}
+            </Button>
+          )}
+          {dataVisible && (
+            <Button onClick={() => setShowAddForm(!showAddForm)} className="w-auto px-4 py-2">
+              {showAddForm ? 'Cancel' : 'Add Revenue'}
+            </Button>
+          )}
+        </div>
       </div>
 
       {message && (
@@ -386,6 +420,29 @@ export default function RevenueDashboard() {
         </div>
       )}
 
+      {/* Show notice if data not visible yet */}
+      {!dataVisible && !viewLoading && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-lg font-medium text-yellow-800">Sensitive Data Protection</h3>
+              <div className="mt-2 text-sm text-yellow-700">
+                <p>Revenue data contains sensitive financial information. Click <strong>"View Revenue Data"</strong> to access it.</p>
+                <p className="mt-2 text-xs">⚠️ Note: Your access will be logged for security and audit purposes.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* All data sections - only show if dataVisible is true */}
+      {dataVisible && (
+        <>
       {/* Summary Cards - KPI Section */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -864,6 +921,8 @@ export default function RevenueDashboard() {
             </div>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

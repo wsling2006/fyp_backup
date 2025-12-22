@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Revenue } from './revenue.entity';
 import { RevenueService } from './revenue.service';
 import { RevenueController } from './revenue.controller';
+import { AuditModule } from '../audit/audit.module';
 
 /**
  * Revenue Module
@@ -16,7 +17,10 @@ import { RevenueController } from './revenue.controller';
  * separation of concerns in NestJS applications.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Revenue])],
+  imports: [
+    TypeOrmModule.forFeature([Revenue]),
+    AuditModule,
+  ],
   controllers: [RevenueController],
   providers: [RevenueService],
   exports: [RevenueService], // Export if other modules need revenue data

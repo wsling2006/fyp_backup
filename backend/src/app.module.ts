@@ -9,6 +9,7 @@ import { HRModule } from './employees/hr.module';
 import { AccountingModule } from './accounting/accounting.module';
 import { AccountantFilesModule } from './accountant-files/accountant-files.module';
 import { RevenueModule } from './revenue/revenue.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { RevenueModule } from './revenue/revenue.module';
     AccountingModule,
     AccountantFilesModule,
     RevenueModule,
+    AuditModule,
   ],
   controllers: [],
   providers: [],

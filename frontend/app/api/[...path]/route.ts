@@ -55,6 +55,7 @@ async function handler(request: NextRequest, { params }: { params: { path: strin
       'accept-language',
       'cache-control',
       'pragma',
+      'user-agent',
     ];
     
     headersToForward.forEach((headerName) => {
@@ -63,6 +64,19 @@ async function handler(request: NextRequest, { params }: { params: { path: strin
         headers.set(headerName, value);
       }
     });
+
+    // Forward client IP headers for audit logging
+    // Get real client IP from the incoming request
+    const clientIp = 
+      request.headers.get('x-real-ip') ||
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('cf-connecting-ip') || // Cloudflare
+      request.ip ||
+      'unknown';
+
+    // Forward IP information to backend
+    headers.set('x-forwarded-for', clientIp);
+    headers.set('x-real-ip', clientIp);
 
     // Get request body if present
     let body: string | undefined;

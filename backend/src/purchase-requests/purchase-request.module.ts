@@ -7,6 +7,7 @@ import { PurchaseRequestController } from './purchase-request.controller';
 import { UsersModule } from '../users/users.module';
 import { AuthModule } from '../auth/auth.module';
 import { ClamavModule } from '../clamav/clamav.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ClamavModule } from '../clamav/clamav.module';
     UsersModule,
     AuthModule,
     ClamavModule,
+    AuditModule,
   ],
   controllers: [PurchaseRequestController],
   providers: [PurchaseRequestService],

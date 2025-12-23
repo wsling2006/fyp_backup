@@ -97,7 +97,7 @@ export class AuthService {
     // Notify superadmins if login is outside office hours
     await this.notifyAdminsIfNonOfficeHours(user);
 
-    const payload = { sub: user.id, role: user.role };
+    const payload = { sub: user.id, email: user.email, role: user.role };
     return {
       requiresOtp: false,
       access_token: this.jwtService.sign(payload),
@@ -172,7 +172,7 @@ export class AuthService {
       // Notify superadmins if login is outside office hours
       await this.notifyAdminsIfNonOfficeHours(user);
 
-      const payload = { sub: user.id, role: user.role };
+      const payload = { sub: user.id, email: user.email, role: user.role };
       return {
         access_token: this.jwtService.sign(payload),
         user: { id: user.id, email: user.email, role: user.role },

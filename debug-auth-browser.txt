@@ -1,0 +1,127 @@
+#!/bin/bash
+
+# REAL AUTHENTICATION DEBUG - Check everything
+# Run this in browser console to see what's actually happening
+
+echo "==================================="
+echo "PASTE THIS IN BROWSER CONSOLE (F12)"
+echo "==================================="
+echo ""
+
+cat << 'EOF'
+console.clear();
+console.log("=== AUTHENTICATION DEBUG ===");
+console.log("");
+
+// 1. Check localStorage
+const token = localStorage.getItem('token');
+const user = localStorage.getItem('user');
+
+console.log("1. LOCALSTORAGE CHECK:");
+console.log("   Token exists:", !!token);
+console.log("   User exists:", !!user);
+
+if (!token) {
+  console.error("❌ NO TOKEN IN LOCALSTORAGE!");
+  console.log("   You need to login again");
+} else {
+  console.log("   Token (first 50 chars):", token.substring(0, 50) + "...");
+}
+
+if (user) {
+  const userObj = JSON.parse(user);
+  console.log("   User object:", userObj);
+} else {
+  console.error("❌ NO USER IN LOCALSTORAGE!");
+}
+
+console.log("");
+
+// 2. Check JWT token structure
+if (token) {
+  console.log("2. JWT TOKEN STRUCTURE:");
+  try {
+    const parts = token.split('.');
+    console.log("   Token parts:", parts.length, "(should be 3)");
+    
+    if (parts.length === 3) {
+      const header = JSON.parse(atob(parts[0]));
+      const payload = JSON.parse(atob(parts[1]));
+      
+      console.log("   Header:", header);
+      console.log("   Payload:", payload);
+      console.log("   - User ID (sub):", payload.sub);
+      console.log("   - Role:", payload.role);
+      console.log("   - Issued At:", new Date(payload.iat * 1000));
+      console.log("   - Expires At:", new Date(payload.exp * 1000));
+      
+      const now = new Date();
+      const exp = new Date(payload.exp * 1000);
+      const isExpired = now > exp;
+      
+      if (isExpired) {
+        console.error("   ❌ TOKEN EXPIRED!");
+        console.log("      Expired:", exp);
+        console.log("      Current:", now);
+      } else {
+        console.log("   ✅ Token is valid until:", exp);
+      }
+    } else {
+      console.error("   ❌ INVALID TOKEN FORMAT!");
+    }
+  } catch (e) {
+    console.error("   ❌ FAILED TO DECODE TOKEN:", e);
+  }
+}
+
+console.log("");
+
+// 3. Test API request manually
+console.log("3. TESTING API REQUEST:");
+console.log("   Making request to /api/purchase-requests...");
+
+fetch('/api/purchase-requests', {
+  method: 'GET',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  }
+})
+.then(response => {
+  console.log("   Response status:", response.status);
+  console.log("   Response statusText:", response.statusText);
+  
+  if (response.status === 403) {
+    console.error("   ❌ 403 FORBIDDEN!");
+    console.log("   This means the backend rejected the token");
+  } else if (response.status === 401) {
+    console.error("   ❌ 401 UNAUTHORIZED!");
+    console.log("   This means no token or invalid token");
+  } else if (response.status === 200) {
+    console.log("   ✅ 200 OK - Token is valid!");
+  }
+  
+  return response.text();
+})
+.then(text => {
+  console.log("   Response body:", text.substring(0, 200));
+  try {
+    const json = JSON.parse(text);
+    console.log("   Parsed response:", json);
+  } catch (e) {
+    console.log("   (Not JSON response)");
+  }
+})
+.catch(err => {
+  console.error("   ❌ REQUEST FAILED:", err);
+});
+
+console.log("");
+console.log("4. NEXT STEPS:");
+console.log("   If token is expired: Logout and login again");
+console.log("   If token is missing: Clear localStorage and login");
+console.log("   If 403 error: Check backend logs on EC2");
+console.log("");
+console.log("=== END DEBUG ===");
+
+EOF

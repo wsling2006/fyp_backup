@@ -1,0 +1,215 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                   🚨 REAL 403 ERROR SOLUTION 🚨                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+You're getting 403 AFTER successful login. This means:
+✅ Login works (you get past OTP)
+✅ Token is created
+❌ Token is REJECTED when accessing /api/purchase-requests
+
+ROOT CAUSE (One of these):
+1. JWT_SECRET changed after you logged in
+2. User role in database doesn't match expectations
+3. Token not being sent in Authorization header
+4. Backend not reading Authorization header from proxy
+
+═══════════════════════════════════════════════════════════════════════════
+
+🎯 SOLUTION 1: FORCE FRESH LOGIN (Try this FIRST)
+
+This forces a new token with correct JWT_SECRET:
+
+IN BROWSER:
+  1. Press F12 (open console)
+  2. Paste this:
+     localStorage.clear();
+     location.reload();
+
+  3. Login again with your sales_department credentials
+  4. Complete OTP if prompted
+  5. Try accessing purchase requests
+
+WHY: Old token might be using wrong JWT_SECRET
+
+═══════════════════════════════════════════════════════════════════════════
+
+🎯 SOLUTION 2: CHECK WHAT'S REALLY HAPPENING
+
+ON EC2, run this command:
+  cd /home/ubuntu/fyp_system
+  ./debug-backend-auth.sh
+
+This will show:
+  - JWT_SECRET configuration
+  - Database user roles
+  - Backend authentication logs
+  - Direct API test
+
+═══════════════════════════════════════════════════════════════════════════
+
+🎯 SOLUTION 3: VERIFY AUTHORIZATION HEADER
+
+IN BROWSER (F12 Console), paste this:
+
+```javascript
+// Test if token is being sent
+fetch('/api/purchase-requests', {
+  method: 'GET',
+  headers: {
+    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    'Content-Type': 'application/json'
+  }
+})
+.then(r => r.text())
+.then(text => {
+  console.log('Response:', text);
+  if (text.includes('403') || text.includes('Forbidden')) {
+    console.error('❌ Backend is REJECTING the token');
+    console.log('Token being sent:', localStorage.getItem('token').substring(0, 50) + '...');
+  }
+});
+```
+
+═══════════════════════════════════════════════════════════════════════════
+
+🎯 SOLUTION 4: CHECK DATABASE ROLE
+
+ON EC2:
+  sudo -u postgres psql -d fyp_db -c \
+    "SELECT email, role, is_active, suspended FROM users WHERE email='YOUR_EMAIL';"
+
+EXPECTED:
+  role = 'sales_department' (EXACT match, lowercase)
+  is_active = true
+  suspended = false
+
+IF WRONG:
+  sudo -u postgres psql -d fyp_db -c \
+    "UPDATE users SET role='sales_department', is_active=true, suspended=false WHERE email='YOUR_EMAIL';"
+
+  Then logout and re-login!
+
+═══════════════════════════════════════════════════════════════════════════
+
+🎯 SOLUTION 5: RESTART BACKEND WITH CORRECT JWT_SECRET
+
+ON EC2:
+  cd /home/ubuntu/fyp_system/backend
+  
+  # Check JWT_SECRET
+  cat .env | grep JWT_SECRET
+  
+  # If missing or wrong, set it
+  nano .env
+  # Add or fix: JWT_SECRET=your_secure_secret_key_here
+  
+  # Restart backend
+  pm2 restart backend
+  
+  # IMPORTANT: All users must logout and re-login after this!
+
+═══════════════════════════════════════════════════════════════════════════
+
+🎯 SOLUTION 6: NUCLEAR OPTION (If nothing else works)
+
+This completely resets authentication:
+
+ON EC2:
+  cd /home/ubuntu/fyp_system
+  
+  # Stop services
+  pm2 stop all
+  pm2 delete all
+  
+  # Ensure .env has JWT_SECRET
+  echo "JWT_SECRET=$(openssl rand -base64 32)" >> backend/.env
+  
+  # Rebuild everything
+  cd backend && npm run build
+  cd ../frontend && npm run build
+  
+  # Start fresh
+  cd ..
+  pm2 start ecosystem.config.js
+  pm2 save
+
+IN BROWSER:
+  # Clear everything
+  localStorage.clear();
+  sessionStorage.clear();
+  
+  # Ctrl+Shift+Delete → Clear all cache
+  
+  # Login fresh
+
+═══════════════════════════════════════════════════════════════════════════
+
+📋 DIAGNOSTIC CHECKLIST
+
+Run these and report results:
+
+□ 1. Browser Console Check
+     localStorage.getItem('token')  // Should show long string
+     localStorage.getItem('user')   // Should show user object
+
+□ 2. Backend Logs
+     pm2 logs backend --lines 50 | grep -i "403\|forbidden\|jwt"
+
+□ 3. Database Role
+     SELECT email, role FROM users WHERE email='YOUR_EMAIL';
+
+□ 4. JWT Secret
+     cat /home/ubuntu/fyp_system/backend/.env | grep JWT_SECRET
+
+□ 5. Direct API Test
+     ./debug-backend-auth.sh
+
+═══════════════════════════════════════════════════════════════════════════
+
+🚨 MOST COMMON CAUSES (In order of likelihood)
+
+1. ❌ Token created with old JWT_SECRET
+   FIX: logout → clear cache → login
+
+2. ❌ User role in DB is wrong ('sales' instead of 'sales_department')
+   FIX: Update database → logout → login
+
+3. ❌ Token expired
+   FIX: logout → login
+
+4. ❌ Authorization header not being sent
+   FIX: Check api.ts interceptor → rebuild frontend
+
+5. ❌ Backend JWT_SECRET missing or wrong in .env
+   FIX: Set JWT_SECRET → restart backend → re-login
+
+═══════════════════════════════════════════════════════════════════════════
+
+💡 IMPORTANT NOTES
+
+1. AFTER any backend .env changes: pm2 restart backend
+2. AFTER any backend changes: ALL users must logout and re-login
+3. JWT tokens are tied to the JWT_SECRET at creation time
+4. Changing JWT_SECRET invalidates ALL existing tokens
+5. User role in token MUST match Role enum exactly
+
+═══════════════════════════════════════════════════════════════════════════
+
+📞 WHAT TO SHARE IF STILL FAILING
+
+1. Output of: ./debug-backend-auth.sh
+2. Browser console output after running Solution 3 test
+3. Output of: pm2 logs backend --lines 100 | grep -i "403\|jwt"
+4. Database user: SELECT * FROM users WHERE email='YOUR_EMAIL';
+5. Screenshot of Network tab showing the failed request headers
+
+═══════════════════════════════════════════════════════════════════════════
+
+⚡ QUICK START (Do this NOW)
+
+1. In browser: localStorage.clear(); location.reload();
+2. Login again
+3. Try purchase requests
+4. If still 403: Run ./debug-backend-auth.sh on EC2 and share output
+
+═══════════════════════════════════════════════════════════════════════════

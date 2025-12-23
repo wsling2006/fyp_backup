@@ -52,7 +52,7 @@ fi
 echo ""
 
 echo "6. Check PM2 environment variables:"
-pm2 show fyp-frontend | grep -A 20 "env:"
+pm2 show frontend | grep -A 20 "env:" || echo "PM2 process 'frontend' not found"
 echo ""
 
 echo "=========================================="
@@ -63,5 +63,5 @@ echo "2. If .env.local is missing, create it with:"
 echo "   NEXT_PUBLIC_API_BASE=/api"
 echo "   BACKEND_URL=http://localhost:3000"
 echo "3. Rebuild frontend: npm run build"
-echo "4. Restart: pm2 restart fyp-frontend"
+echo "4. Restart: pm2 restart frontend"
 echo ""

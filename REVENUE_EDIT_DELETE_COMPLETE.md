@@ -320,8 +320,8 @@ Key field for access control: `created_by_user_id`
 
 4. **Restart Services**
    ```bash
-   pm2 restart fyp-backend
-   pm2 restart fyp-frontend
+   pm2 restart backend
+   pm2 restart frontend
    ```
 
 5. **Verify Deployment**
@@ -340,12 +340,12 @@ Key field for access control: `created_by_user_id`
 ### Logs to Check
 ```bash
 # Backend logs
-pm2 logs fyp-backend
+pm2 logs backend
 # Look for: [AUDIT] UPDATE_REVENUE, [AUDIT] DELETE_REVENUE
 # Look for: [AUDIT] UNAUTHORIZED_UPDATE_REVENUE
 
 # Frontend logs
-pm2 logs fyp-frontend
+pm2 logs frontend
 # Look for: API errors, 403 responses
 ```
 

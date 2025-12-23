@@ -23,7 +23,7 @@ npm install
 
 echo ""
 echo "3. Restarting backend with PM2..."
-pm2 restart fyp-backend
+pm2 restart backend || pm2 start ecosystem.config.js --only backend
 
 echo ""
 echo "4. Waiting for backend to start..."
@@ -31,7 +31,7 @@ sleep 5
 
 echo ""
 echo "5. Checking backend status..."
-pm2 status fyp-backend
+pm2 status backend
 
 echo ""
 echo "=========================================="

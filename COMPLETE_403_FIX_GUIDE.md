@@ -69,7 +69,7 @@ git pull origin main
 # 2. Backend
 cd backend
 npm install
-pm2 restart fyp-backend
+pm2 restart backend
 
 # 3. Frontend - Check .env.local
 cd /home/ubuntu/fyp_system/frontend
@@ -95,11 +95,11 @@ npm install
 npm run build
 
 # 7. Restart
-pm2 restart fyp-frontend
+pm2 restart frontend
 
 # 8. Check status
 pm2 status
-pm2 logs fyp-frontend --lines 20
+pm2 logs frontend --lines 20
 ```
 
 ## 🧪 TESTING AFTER DEPLOYMENT
@@ -196,7 +196,7 @@ Look for the actual fetch call - it should be a relative path `/api/purchase-req
 ### Debug Step 1: Check Backend Logs
 
 ```bash
-pm2 logs fyp-backend --lines 50 | grep -E "(403|JWT|auth|purchase)"
+pm2 logs backend --lines 50 | grep -E "(403|JWT|auth|purchase)"
 ```
 
 Look for:
@@ -207,7 +207,7 @@ Look for:
 ### Debug Step 2: Check Frontend Logs
 
 ```bash
-pm2 logs fyp-frontend --lines 50
+pm2 logs frontend --lines 50
 ```
 
 Look for API proxy logs showing where requests are going.

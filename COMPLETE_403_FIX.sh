@@ -20,7 +20,7 @@ echo ""
 echo "2. BACKEND - Installing dependencies and restarting..."
 cd backend
 npm install
-pm2 restart fyp-backend
+pm2 restart backend || pm2 start ecosystem.config.js --only backend
 sleep 3
 
 echo ""
@@ -67,7 +67,7 @@ npm run build
 
 echo ""
 echo "7. FRONTEND - Restarting with PM2..."
-pm2 restart fyp-frontend
+pm2 restart frontend || pm2 start /home/ubuntu/fyp_system/ecosystem.config.js --only frontend
 
 echo ""
 echo "8. Waiting for services to start..."
@@ -79,7 +79,7 @@ pm2 status
 
 echo ""
 echo "10. Checking backend logs (last 20 lines)..."
-pm2 logs fyp-backend --lines 20 --nostream
+pm2 logs backend --lines 20 --nostream
 
 echo ""
 echo "=========================================="

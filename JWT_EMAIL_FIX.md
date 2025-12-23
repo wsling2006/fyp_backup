@@ -88,13 +88,13 @@ cd /home/ubuntu/fyp_system
 git pull origin main
 cd backend
 npm install
-pm2 restart fyp-backend
+pm2 restart backend
 pm2 status
 ```
 
 #### Step 2: Verify Backend Restarted
 ```bash
-pm2 logs fyp-backend --lines 20
+pm2 logs backend --lines 20
 ```
 
 Look for:
@@ -158,8 +158,8 @@ In DevTools Network tab, check any API request to `/api/purchase-requests`:
 
 After deployment, verify:
 
-- [ ] Backend restarted successfully (`pm2 status fyp-backend` shows "online")
-- [ ] Backend logs show no errors (`pm2 logs fyp-backend --lines 50`)
+- [ ] Backend restarted successfully (`pm2 status backend` shows "online")
+- [ ] Backend logs show no errors (`pm2 logs backend --lines 50`)
 - [ ] Can log in successfully
 - [ ] New JWT token contains email field (check in browser console)
 - [ ] Can access purchase requests page (no 403)
@@ -195,7 +195,7 @@ if (!token) {
 ```bash
 # On EC2, clear all user sessions (nuclear option)
 cd /home/ubuntu/fyp_system/backend
-pm2 restart fyp-backend
+pm2 restart backend
 ```
 
 Then in browser:
@@ -207,7 +207,7 @@ sessionStorage.clear();
 
 ### 3. Check Backend Logs
 ```bash
-pm2 logs fyp-backend --lines 100 | grep -E "(401|403|JWT|auth)"
+pm2 logs backend --lines 100 | grep -E "(401|403|JWT|auth)"
 ```
 
 ### 4. Verify JWT_SECRET Hasn't Changed

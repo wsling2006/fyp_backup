@@ -300,8 +300,8 @@ cd backend && npm run build
 cd ../frontend && npm run build
 
 # 6. Restart services via PM2
-pm2 restart fyp-backend
-pm2 restart fyp-frontend
+pm2 restart backend
+pm2 restart frontend
 
 # 7. Verify via curl
 curl http://localhost/api/revenue -H "Authorization: Bearer <token>"

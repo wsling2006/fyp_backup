@@ -63,8 +63,8 @@ export class PurchaseRequestService {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: this.configService.get<string>('OTP_EMAIL'),
-        pass: this.configService.get<string>('OTP_APP_PASSWORD'),
+        user: this.configService.get<string>('EMAIL_USER'),
+        pass: this.configService.get<string>('EMAIL_PASS'),
       },
     });
 
@@ -76,7 +76,7 @@ export class PurchaseRequestService {
     };
 
     const mailOptions = {
-      from: this.configService.get<string>('OTP_EMAIL'),
+      from: this.configService.get<string>('EMAIL_USER'),
       to: user.email,
       subject: `OTP Verification - ${action}`,
       html: `

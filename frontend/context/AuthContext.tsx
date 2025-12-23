@@ -14,6 +14,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
+  isInitialized: boolean; // NEW: Track if initial load from localStorage is complete
   login: (email: string, password: string) => Promise<LoginResult>;
   forgotPassword: (email: string) => Promise<boolean>;
   verifyOtp: (email: string, otp: string) => Promise<{ otp_reset?: string } | false>;
@@ -40,6 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false); // NEW: Track initialization
   const router = useRouter();
 
   // Load token and user from localStorage on mount
@@ -47,7 +49,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const storedToken = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
     if (storedToken) setToken(storedToken);
-    if (storedUser) setUser(JSON.parse(storedUser));
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      // Normalize user object: ensure userId exists
+      if (parsedUser && !parsedUser.userId && parsedUser.id) {
+        parsedUser.userId = parsedUser.id;
+      }
+      setUser(parsedUser);
+    }
+    // Mark as initialized after attempting to load from localStorage
+    setIsInitialized(true);
   }, []);
 
   // Login function
@@ -66,11 +77,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (res.data.requiresOtp) {
         return { requiresOtp: true };
       } else if (res.data.access_token && res.data.user) {
+        // Normalize user object: backend returns {id, email, role}, frontend expects {userId, id, email, role}
+        const normalizedUser = {
+          ...res.data.user,
+          userId: res.data.user.id, // Add userId for backward compatibility
+        };
         setToken(res.data.access_token);
-        setUser(res.data.user);
+        setUser(normalizedUser);
         localStorage.setItem("token", res.data.access_token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-        return { access_token: res.data.access_token, user: res.data.user };
+        localStorage.setItem("user", JSON.stringify(normalizedUser));
+        return { access_token: res.data.access_token, user: normalizedUser };
       } else {
         setError("Invalid response from server.");
         return {};
@@ -129,11 +145,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log("[Auth] OTP verified, got otp_reset:", res.data.otp_reset);
         return { otp_reset: res.data.otp_reset, type: "reset" };
       } else if (res.data.access_token && res.data.user) {
+        // Normalize user object: backend returns {id, email, role}, frontend expects {userId, id, email, role}
+        const normalizedUser = {
+          ...res.data.user,
+          userId: res.data.user.id, // Add userId for backward compatibility
+        };
         setToken(res.data.access_token);
-        setUser(res.data.user);
+        setUser(normalizedUser);
         localStorage.setItem("token", res.data.access_token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-        return { access_token: res.data.access_token, user: res.data.user, type: "mfa" };
+        localStorage.setItem("user", JSON.stringify(normalizedUser));
+        return { access_token: res.data.access_token, user: normalizedUser, type: "mfa" };
       } else {
         setError("Invalid OTP or response.");
         return false;
@@ -184,7 +205,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, loading, error, login, forgotPassword, verifyOtp, logout, resetPassword }}>
+    <AuthContext.Provider value={{ token, user, loading, error, isInitialized, login, forgotPassword, verifyOtp, logout, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

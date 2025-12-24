@@ -362,6 +362,16 @@ ls -la context/
 git pull origin main --force
 ```
 
+# EC2 Deployment - Quick Reference Guide
+
+## Latest Fix (Current Deployment)
+**Date:** After fixing annual_expense.controller.ts corruption
+**Issue:** Accidental shell commands were inserted into `backend/src/accounting/annual_expense.controller.ts`, causing TypeScript syntax errors
+**Resolution:** Removed shell commands, restored valid TypeScript code
+**Action Required:** Rebuild and restart backend on EC2
+
+---
+
 ## 📊 Architecture Summary
 
 ```

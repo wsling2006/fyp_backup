@@ -18,10 +18,15 @@ echo -e "${YELLOW}Analyzing recent logs...${NC}"
 echo ""
 
 # Get PM2 log file location
-LOG_FILE=$(pm2 info fyp-backend 2>/dev/null | grep "out log path" | awk '{print $NF}')
+LOG_FILE=$(pm2 info backend 2>/dev/null | grep "out log path" | awk '{print $NF}')
 
 if [ -z "$LOG_FILE" ]; then
-    echo -e "${RED}Could not find PM2 log file. Is fyp-backend running?${NC}"
+    LOG_FILE=$(pm2 info fyp-backend 2>/dev/null | grep "out log path" | awk '{print $NF}')
+fi
+
+if [ -z "$LOG_FILE" ]; then
+    echo -e "${RED}Could not find PM2 log file. Is backend running?${NC}"
+    echo "Try: pm2 list"
     exit 1
 fi
 

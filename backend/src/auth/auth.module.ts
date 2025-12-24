@@ -10,7 +10,8 @@ import { JwtStrategy } from './jwt.strategy';
 @Module({
   imports: [
     UsersModule,
-    PassportModule,
+    // Register Passport with default JWT strategy
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -23,6 +24,7 @@ import { JwtStrategy } from './jwt.strategy';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  // Export Passport and Jwt modules so guards/strategies are available app-wide
+  exports: [AuthService, PassportModule, JwtModule],
 })
 export class AuthModule {}

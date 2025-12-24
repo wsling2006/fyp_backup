@@ -1,11 +1,12 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { CashFlowService } from './cash_flow.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../users/roles.enum';
 
-@Controller('cash-flow')
-@UseGuards(RolesGuard)
+@Controller('cash-flows')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class CashFlowController {
   constructor(private readonly service: CashFlowService) {}
 

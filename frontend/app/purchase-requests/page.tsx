@@ -226,7 +226,7 @@ export default function PurchaseRequestsPage() {
                         </div>
                         <div>
                           <span className="text-gray-500">Estimated Amount:</span>
-                          <p className="font-medium text-gray-900">${request.estimated_amount.toFixed(2)}</p>
+                          <p className="font-medium text-gray-900">${formatCurrency(request.estimated_amount)}</p>
                         </div>
                         {request.approved_amount && (
                           <div>
@@ -613,7 +613,7 @@ function ReviewRequestModal({
             </div>
             <div>
               <span className="text-gray-500">Estimated Amount:</span>
-              <p className="font-medium">${request.estimated_amount.toFixed(2)}</p>
+              <p className="font-medium">${formatCurrency(request.estimated_amount)}</p>
             </div>
           </div>
         </div>
@@ -651,7 +651,7 @@ function ReviewRequestModal({
                   placeholder="0.00"
                   max={request.estimated_amount}
                 />
-                <p className="text-xs text-gray-500 mt-1">Must not exceed estimated amount: ${request.estimated_amount.toFixed(2)}</p>
+                <p className="text-xs text-gray-500 mt-1">Must not exceed estimated amount: ${formatCurrency(request.estimated_amount)}</p>
               </div>
             )}
 
@@ -829,7 +829,7 @@ function UploadClaimModal({
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <span className="text-gray-500">Approved Amount:</span>
-              <p className="font-medium text-green-600">${request.approved_amount?.toFixed(2)}</p>
+              <p className="font-medium text-green-600">${formatCurrency(request.approved_amount)}</p>
             </div>
             <div>
               <span className="text-gray-500">Status:</span>
@@ -881,7 +881,7 @@ function UploadClaimModal({
                 placeholder="0.00"
                 max={request.approved_amount || undefined}
               />
-              <p className="text-xs text-gray-500 mt-1">Must not exceed approved amount: ${request.approved_amount?.toFixed(2)}</p>
+              <p className="text-xs text-gray-500 mt-1">Must not exceed approved amount: ${formatCurrency(request.approved_amount)}</p>
             </div>
 
             <div>

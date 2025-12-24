@@ -5,7 +5,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../users/roles.enum';
 
-@Controller('announcements')
+@Controller('employees/announcements')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AnnouncementController {
   constructor(private readonly announcementService: AnnouncementService) {}

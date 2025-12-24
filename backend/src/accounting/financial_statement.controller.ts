@@ -5,7 +5,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../users/roles.enum';
 
-@Controller('financial-statements')
+@Controller('accounting/financial-statements')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class FinancialStatementController {
   constructor(private readonly service: FinancialStatementService) {}

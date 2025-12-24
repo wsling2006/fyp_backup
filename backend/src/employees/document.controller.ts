@@ -5,7 +5,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../users/roles.enum';
 
-@Controller('documents')
+@Controller('employees/documents')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class DocumentController {
   constructor(private readonly documentService: DocumentService) {}

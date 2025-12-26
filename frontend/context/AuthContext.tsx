@@ -54,7 +54,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Normalize user object: ensure userId exists
       if (parsedUser && !parsedUser.userId && parsedUser.id) {
         parsedUser.userId = parsedUser.id;
+        // Update localStorage with normalized user
+        console.log('[Auth] Normalizing user object on load, adding userId:', parsedUser.id);
+        localStorage.setItem("user", JSON.stringify(parsedUser));
       }
+      console.log('[Auth] Loaded user from localStorage:', parsedUser);
       setUser(parsedUser);
     }
     // Mark as initialized after attempting to load from localStorage

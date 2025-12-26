@@ -231,7 +231,7 @@ export default function PurchaseRequestsPage() {
                         {request.approved_amount && (
                           <div>
                             <span className="text-gray-500">Approved Amount:</span>
-                            <p className="font-medium text-green-600">${request.approved_amount.toFixed(2)}</p>
+                            <p className="font-medium text-green-600">${formatCurrency(request.approved_amount)}</p>
                           </div>
                         )}
                         <div>

@@ -226,7 +226,7 @@ export class PurchaseRequestController {
     
     await fs.writeFile(filePath, file.buffer);
 
-    // Step 3: Create claim in database
+    // Step 3: Create claim in database (with duplicate file check and one-claim-per-PR check)
     return this.purchaseRequestService.createClaim(
       userId,
       userRole,
@@ -239,6 +239,7 @@ export class PurchaseRequestController {
         claim_description: dto.claim_description,
         receipt_file_path: filePath,
         receipt_file_original_name: file.originalname,
+        file_buffer: file.buffer, // Pass buffer for hash generation
       },
       req,
     );

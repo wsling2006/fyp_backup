@@ -34,6 +34,9 @@ export class Claim {
   @Column({ type: 'varchar', length: 500 })
   receipt_file_original_name: string;
 
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  file_hash: string; // SHA-256 hash to prevent duplicate file uploads
+
   @Column({ type: 'varchar', length: 255 })
   vendor_name: string;
 

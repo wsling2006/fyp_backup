@@ -14,6 +14,7 @@ import { AuditService } from '../audit/audit.service';
 import { ClamavService } from '../clamav/clamav.service';
 import * as argon2 from 'argon2';
 import * as nodemailer from 'nodemailer';
+import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { Role } from '../users/roles.enum';
 
@@ -132,6 +133,23 @@ export class PurchaseRequestService {
         'File failed security scan. The uploaded file may contain malware or viruses.',
       );
     }
+  }
+
+  /**
+   * Generate SHA256 hash from file buffer for duplicate detection
+   */
+  private generateFileHash(buffer: Buffer): string {
+    return crypto.createHash('sha256').update(buffer).digest('hex');
+  }
+
+  /**
+   * Check if a file with the same hash already exists in claims
+   */
+  private async findClaimByFileHash(hash: string): Promise<Claim | null> {
+    return this.claimRepo.findOne({
+      where: { file_hash: hash },
+      relations: ['uploadedBy', 'purchaseRequest'],
+    });
   }
 
   /**
@@ -353,6 +371,7 @@ export class PurchaseRequestService {
       claim_description: string;
       receipt_file_path: string;
       receipt_file_original_name: string;
+      file_buffer: Buffer; // Add buffer for hash generation
     },
     req: any,
   ): Promise<Claim> {
@@ -380,9 +399,32 @@ export class PurchaseRequestService {
       throw new BadRequestException('You can only submit claims for APPROVED purchase requests');
     }
 
+    // ONE CLAIM PER PURCHASE REQUEST CHECK
+    const existingClaim = await this.claimRepo.findOne({
+      where: { purchase_request_id: data.purchase_request_id },
+    });
+
+    if (existingClaim) {
+      throw new BadRequestException(
+        'A claim has already been submitted for this purchase request. Only one claim per purchase request is allowed.',
+      );
+    }
+
     // Amount validation
     if (data.amount_claimed > pr.approved_amount) {
       throw new BadRequestException('Claimed amount cannot exceed approved amount');
+    }
+
+    // DUPLICATE FILE CHECK (by hash)
+    const fileHash = this.generateFileHash(data.file_buffer);
+    const duplicateClaim = await this.findClaimByFileHash(fileHash);
+
+    if (duplicateClaim) {
+      throw new BadRequestException(
+        `This receipt file has already been uploaded for claim ID: ${duplicateClaim.id} ` +
+        `(Purchase Request: ${duplicateClaim.purchaseRequest?.title || 'N/A'}). ` +
+        `Duplicate receipts are not allowed.`,
+      );
     }
 
     // Create claim
@@ -394,6 +436,7 @@ export class PurchaseRequestService {
       claim_description: data.claim_description,
       receipt_file_path: data.receipt_file_path,
       receipt_file_original_name: data.receipt_file_original_name,
+      file_hash: fileHash, // Store hash for future duplicate checks
       uploaded_by_user_id: userId,
       status: ClaimStatus.PENDING,
     });
@@ -405,6 +448,7 @@ export class PurchaseRequestService {
       purchase_request_id: data.purchase_request_id,
       vendor_name: data.vendor_name,
       amount_claimed: data.amount_claimed,
+      file_hash: fileHash.substring(0, 16) + '...', // Log first 16 chars only
     });
 
     return saved;

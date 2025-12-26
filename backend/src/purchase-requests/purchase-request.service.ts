@@ -540,4 +540,159 @@ export class PurchaseRequestService {
 
     return claim;
   }
+
+  /**
+   * Edit purchase request (Owner only, must be DRAFT or SUBMITTED status)
+   */
+  async editPurchaseRequest(
+    id: string,
+    userId: string,
+    userRole: string,
+    otp: string,
+    data: {
+      title?: string;
+      description?: string;
+      department?: string;
+      priority?: number;
+      estimated_amount?: number;
+    },
+    req: any,
+  ): Promise<PurchaseRequest> {
+    // Verify OTP
+    this.verifyOtp(userId, otp, 'EDIT_PURCHASE_REQUEST');
+
+    const pr = await this.purchaseRequestRepo.findOne({ where: { id } });
+    if (!pr) {
+      throw new NotFoundException('Purchase request not found');
+    }
+
+    // Ownership check (except super_admin)
+    if (userRole !== Role.SUPER_ADMIN) {
+      if (pr.created_by_user_id !== userId) {
+        throw new ForbiddenException('You can only edit your own purchase requests');
+      }
+    }
+
+    // Can only edit if DRAFT or SUBMITTED (not APPROVED/REJECTED/PAID)
+    if (![PurchaseRequestStatus.DRAFT, PurchaseRequestStatus.SUBMITTED].includes(pr.status)) {
+      throw new BadRequestException(
+        'You can only edit purchase requests that are in DRAFT or SUBMITTED status. ' +
+        'Once approved or rejected, requests cannot be edited.',
+      );
+    }
+
+    // Store old values for audit log
+    const oldValues = {
+      title: pr.title,
+      description: pr.description,
+      department: pr.department,
+      priority: pr.priority,
+      estimated_amount: pr.estimated_amount,
+    };
+
+    // Update fields
+    if (data.title !== undefined) pr.title = data.title;
+    if (data.description !== undefined) pr.description = data.description;
+    if (data.department !== undefined) pr.department = data.department;
+    if (data.priority !== undefined) pr.priority = data.priority;
+    if (data.estimated_amount !== undefined) pr.estimated_amount = data.estimated_amount;
+
+    const saved = await this.purchaseRequestRepo.save(pr);
+
+    // Audit log with before/after values
+    await this.auditService.logFromRequest(req, userId, 'EDIT_PURCHASE_REQUEST', 'purchase_request', id, {
+      old_values: oldValues,
+      new_values: {
+        title: saved.title,
+        description: saved.description,
+        department: saved.department,
+        priority: saved.priority,
+        estimated_amount: saved.estimated_amount,
+      },
+      changed_fields: Object.keys(data),
+    });
+
+    return saved;
+  }
+
+  /**
+   * Edit claim (Owner only, must be PENDING status, cannot change receipt file)
+   */
+  async editClaim(
+    id: string,
+    userId: string,
+    userRole: string,
+    otp: string,
+    data: {
+      vendor_name?: string;
+      amount_claimed?: number;
+      purchase_date?: string;
+      claim_description?: string;
+    },
+    req: any,
+  ): Promise<Claim> {
+    // Verify OTP
+    this.verifyOtp(userId, otp, 'EDIT_CLAIM');
+
+    const claim = await this.claimRepo.findOne({
+      where: { id },
+      relations: ['purchaseRequest'],
+    });
+
+    if (!claim) {
+      throw new NotFoundException('Claim not found');
+    }
+
+    // Ownership check (except super_admin)
+    if (userRole !== Role.SUPER_ADMIN) {
+      if (claim.uploaded_by_user_id !== userId) {
+        throw new ForbiddenException('You can only edit your own claims');
+      }
+    }
+
+    // Can only edit if PENDING (not VERIFIED/PROCESSED/REJECTED)
+    if (claim.status !== ClaimStatus.PENDING) {
+      throw new BadRequestException(
+        'You can only edit claims that are in PENDING status. ' +
+        'Once verified, processed, or rejected, claims cannot be edited.',
+      );
+    }
+
+    // Validate amount against approved amount
+    if (data.amount_claimed !== undefined && claim.purchaseRequest) {
+      if (data.amount_claimed > claim.purchaseRequest.approved_amount) {
+        throw new BadRequestException('Claimed amount cannot exceed approved amount');
+      }
+    }
+
+    // Store old values for audit log
+    const oldValues = {
+      vendor_name: claim.vendor_name,
+      amount_claimed: claim.amount_claimed,
+      purchase_date: claim.purchase_date,
+      claim_description: claim.claim_description,
+    };
+
+    // Update fields
+    if (data.vendor_name !== undefined) claim.vendor_name = data.vendor_name;
+    if (data.amount_claimed !== undefined) claim.amount_claimed = data.amount_claimed;
+    if (data.purchase_date !== undefined) claim.purchase_date = new Date(data.purchase_date);
+    if (data.claim_description !== undefined) claim.claim_description = data.claim_description;
+
+    const saved = await this.claimRepo.save(claim);
+
+    // Audit log with before/after values
+    await this.auditService.logFromRequest(req, userId, 'EDIT_CLAIM', 'claim', id, {
+      old_values: oldValues,
+      new_values: {
+        vendor_name: saved.vendor_name,
+        amount_claimed: saved.amount_claimed,
+        purchase_date: saved.purchase_date,
+        claim_description: saved.claim_description,
+      },
+      changed_fields: Object.keys(data),
+    });
+
+    return saved;
+  }
 }

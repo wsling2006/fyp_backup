@@ -121,3 +121,56 @@ export class RequestOtpDto {
   @IsNotEmpty()
   password: string;
 }
+
+export class EditPurchaseRequestDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  department?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(5)
+  priority?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  estimated_amount?: number;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+}
+
+export class EditClaimDto {
+  @IsOptional()
+  @IsString()
+  vendor_name?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  amount_claimed?: number;
+
+  @IsOptional()
+  @IsString()
+  purchase_date?: string;
+
+  @IsOptional()
+  @IsString()
+  claim_description?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+}

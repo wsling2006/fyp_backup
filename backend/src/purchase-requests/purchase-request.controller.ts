@@ -27,6 +27,8 @@ import {
   CreateClaimDto,
   VerifyClaimDto,
   RequestOtpDto,
+  EditPurchaseRequestDto,
+  EditClaimDto,
 } from './purchase-request.dto';
 import { AuditService } from '../audit/audit.service';
 
@@ -187,6 +189,28 @@ export class PurchaseRequestController {
   }
 
   /**
+   * Request OTP for editing purchase request
+   * Owner or SuperAdmin can edit
+   */
+  @Post('request-otp/edit-purchase-request')
+  @Roles(Role.SALES, Role.MARKETING, Role.SUPER_ADMIN)
+  async requestEditPurchaseRequestOtp(@Body() body: RequestOtpDto, @Req() req: any) {
+    const userId = req.user.userId;
+    return this.purchaseRequestService.requestOtp(userId, body.password, 'EDIT_PURCHASE_REQUEST');
+  }
+
+  /**
+   * Request OTP for editing claim
+   * Owner or SuperAdmin can edit
+   */
+  @Post('request-otp/edit-claim')
+  @Roles(Role.SALES, Role.MARKETING, Role.SUPER_ADMIN)
+  async requestEditClaimOtp(@Body() body: RequestOtpDto, @Req() req: any) {
+    const userId = req.user.userId;
+    return this.purchaseRequestService.requestOtp(userId, body.password, 'EDIT_CLAIM');
+  }
+
+  /**
    * Upload receipt and create claim (with OTP verification + ClamAV scan)
    * Sales, Marketing, SuperAdmin can upload
    */
@@ -303,21 +327,67 @@ export class PurchaseRequestController {
   }
 
   /**
-   * Verify/process claim (with OTP verification)
-   * Only Accountant and SuperAdmin can verify
+   * Edit purchase request (with OTP verification)
+   * Owner or SuperAdmin can edit (only DRAFT or SUBMITTED status)
    */
-  @Put('claims/:id/verify')
-  @Roles(Role.ACCOUNTANT, Role.SUPER_ADMIN)
-  async verifyClaim(@Param('id') id: string, @Body() dto: VerifyClaimDto, @Req() req: any) {
+  @Put(':id/edit')
+  @Roles(Role.SALES, Role.MARKETING, Role.SUPER_ADMIN)
+  async editPurchaseRequest(
+    @Param('id') id: string,
+    @Body() dto: EditPurchaseRequestDto,
+    @Req() req: any,
+  ) {
     const userId = req.user.userId;
+    const userRole = req.user.role;
 
-    return this.purchaseRequestService.verifyClaim(
+    if (!dto.otp) {
+      throw new BadRequestException('OTP is required. Please request OTP first.');
+    }
+
+    return this.purchaseRequestService.editPurchaseRequest(
       id,
       userId,
+      userRole,
       dto.otp,
       {
-        status: dto.status,
-        verification_notes: dto.verification_notes,
+        title: dto.title,
+        description: dto.description,
+        department: dto.department,
+        priority: dto.priority,
+        estimated_amount: dto.estimated_amount,
+      },
+      req,
+    );
+  }
+
+  /**
+   * Edit claim (with OTP verification)
+   * Owner or SuperAdmin can edit (only PENDING status, cannot change receipt file)
+   */
+  @Put('claims/:id/edit')
+  @Roles(Role.SALES, Role.MARKETING, Role.SUPER_ADMIN)
+  async editClaim(
+    @Param('id') id: string,
+    @Body() dto: EditClaimDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    if (!dto.otp) {
+      throw new BadRequestException('OTP is required. Please request OTP first.');
+    }
+
+    return this.purchaseRequestService.editClaim(
+      id,
+      userId,
+      userRole,
+      dto.otp,
+      {
+        vendor_name: dto.vendor_name,
+        amount_claimed: dto.amount_claimed ? parseFloat(dto.amount_claimed.toString()) : undefined,
+        purchase_date: dto.purchase_date,
+        claim_description: dto.claim_description,
       },
       req,
     );

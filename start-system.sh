@@ -16,10 +16,14 @@ echo ""
 echo "📦 Pulling latest code..."
 git pull origin main
 
-# Start Backend
+# Build and Start Backend
 echo ""
-echo "🔧 Starting Backend (NestJS)..."
+echo "🔧 Building Backend (NestJS)..."
 cd backend
+npm run build
+
+echo ""
+echo "🚀 Starting Backend..."
 pm2 start npm --name "backend" -- run start:prod
 cd ..
 

@@ -107,6 +107,25 @@ export default function PurchaseRequestsPage() {
     return (user?.role === 'sales_department' || user?.role === 'marketing' || user?.role === 'super_admin') && (isOwner || user?.role === 'super_admin');
   };
 
+  const canEditRequest = (request: PurchaseRequest) => {
+    // Only owner or super_admin can edit
+    const isOwner = request.created_by_user_id === user?.userId || request.created_by_user_id === user?.id;
+    if (!isOwner && user?.role !== 'super_admin') return false;
+    
+    // Can only edit DRAFT or SUBMITTED status
+    return ['DRAFT', 'SUBMITTED'].includes(request.status);
+  };
+
+  const canEditClaim = (claim: any) => {
+    // Only owner or super_admin can edit
+    const isOwner = claim.uploaded_by_user_id === user?.userId || claim.uploaded_by_user_id === user?.id;
+    if (!isOwner && user?.role !== 'super_admin') return false;
+    
+    // Can only edit PENDING status
+    return claim.status === 'PENDING';
+  };
+
+
   const filteredRequests = requests.filter((req) => {
     if (filterStatus !== 'ALL' && req.status !== filterStatus) return false;
     if (filterDepartment !== 'ALL' && req.department !== filterDepartment) return false;

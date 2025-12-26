@@ -55,11 +55,18 @@ export default function PurchaseRequestsPage() {
   const [filterDepartment, setFilterDepartment] = useState('ALL');
 
   useEffect(() => {
+    // Wait for AuthContext to initialize (load from localStorage)
+    if (!isInitialized) {
+      return;
+    }
+
+    // After initialization, check if user is logged in
     if (!user) {
       router.push('/login');
       return;
     }
 
+    // Check if user has access to purchase requests
     const allowedRoles = ['sales_department', 'marketing', 'accountant', 'super_admin'];
     if (!allowedRoles.includes(user.role)) {
       router.push('/dashboard');
@@ -67,7 +74,7 @@ export default function PurchaseRequestsPage() {
     }
 
     loadRequests();
-  }, [user, router]);
+  }, [isInitialized, user, router]);
 
   const loadRequests = async () => {
     try {

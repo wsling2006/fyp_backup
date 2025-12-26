@@ -41,7 +41,7 @@ interface PurchaseRequest {
 }
 
 export default function PurchaseRequestsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, isInitialized } = useAuth();
   const router = useRouter();
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [loading, setLoading] = useState(true);

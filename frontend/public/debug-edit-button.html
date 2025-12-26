@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Edit Button Issue</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            color: #666;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        pre {
+            background: #f8f8f8;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            border-left: 4px solid #4CAF50;
+        }
+        .btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #1976D2;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .comparison-item {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .comparison-item h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        .match {
+            background: #d4edda !important;
+            border-color: #28a745 !important;
+        }
+        .no-match {
+            background: #f8d7da !important;
+            border-color: #dc3545 !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug: Edit Request Button Not Showing</h1>
+    
+    <div class="card">
+        <h2>Current User Data</h2>
+        <button class="btn" onclick="checkLocalStorage()">Check localStorage</button>
+        <button class="btn" onclick="clearLocalStorage()">Clear localStorage</button>
+        <div id="localStorage-result"></div>
+    </div>
+
+    <div class="card">
+        <h2>Fetch Purchase Requests from API</h2>
+        <div class="warning">
+            <strong>⚠️ Note:</strong> Make sure you're logged in on the same browser before clicking this button.
+        </div>
+        <button class="btn" onclick="fetchRequests()">Fetch Purchase Requests</button>
+        <div id="api-result"></div>
+    </div>
+
+    <div class="card">
+        <h2>Test canEditRequest Logic</h2>
+        <div id="test-result"></div>
+    </div>
+
+    <div class="card">
+        <h2>Fix Instructions</h2>
+        <div class="success">
+            <h3>✅ If you see the issue:</h3>
+            <ol>
+                <li>Click "Clear localStorage" button above</li>
+                <li>Go back to your app and login again</li>
+                <li>The Edit button should now appear on your own DRAFT/SUBMITTED requests</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function checkLocalStorage() {
+            const token = localStorage.getItem('token');
+            const userStr = localStorage.getItem('user');
+            const result = document.getElementById('localStorage-result');
+            
+            if (!token || !userStr) {
+                result.innerHTML = `
+                    <div class="error" style="margin-top: 15px;">
+                        <strong>❌ Not logged in</strong><br>
+                        No token or user found in localStorage. Please login first.
+                    </div>
+                `;
+                return;
+            }
+
+            const user = JSON.parse(userStr);
+            
+            result.innerHTML = `
+                <div style="margin-top: 15px;">
+                    <h3>Token:</h3>
+                    <pre>${token.substring(0, 50)}...</pre>
+                    
+                    <h3>User Object:</h3>
+                    <pre>${JSON.stringify(user, null, 2)}</pre>
+                    
+                    <div class="comparison">
+                        <div class="comparison-item ${user.id ? 'match' : 'no-match'}">
+                            <h3>user.id</h3>
+                            <strong>${user.id || '❌ MISSING'}</strong>
+                        </div>
+                        <div class="comparison-item ${user.userId ? 'match' : 'no-match'}">
+                            <h3>user.userId</h3>
+                            <strong>${user.userId || '❌ MISSING'}</strong>
+                        </div>
+                        <div class="comparison-item ${user.role ? 'match' : 'no-match'}">
+                            <h3>user.role</h3>
+                            <strong>${user.role || '❌ MISSING'}</strong>
+                        </div>
+                    </div>
+                    
+                    ${!user.userId ? `
+                        <div class="error">
+                            <strong>🐛 PROBLEM FOUND!</strong><br>
+                            Your user object is missing the <code>userId</code> property!<br>
+                            This is why the Edit button isn't showing.<br>
+                            <strong>Solution:</strong> Clear localStorage and login again.
+                        </div>
+                    ` : `
+                        <div class="success">
+                            <strong>✅ User object looks good!</strong><br>
+                            Both <code>id</code> and <code>userId</code> are present.
+                        </div>
+                    `}
+                </div>
+            `;
+        }
+
+        function clearLocalStorage() {
+            if (confirm('Are you sure you want to clear localStorage? You will need to login again.')) {
+                localStorage.clear();
+                document.getElementById('localStorage-result').innerHTML = `
+                    <div class="success" style="margin-top: 15px;">
+                        <strong>✅ localStorage cleared!</strong><br>
+                        Now go back to your app and login again.
+                    </div>
+                `;
+            }
+        }
+
+        async function fetchRequests() {
+            const result = document.getElementById('api-result');
+            const testResult = document.getElementById('test-result');
+            
+            result.innerHTML = '<p>Loading...</p>';
+            testResult.innerHTML = '';
+            
+            const token = localStorage.getItem('token');
+            if (!token) {
+                result.innerHTML = `
+                    <div class="error" style="margin-top: 15px;">
+                        <strong>❌ No token found</strong><br>
+                        Please login first.
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/purchase-requests', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const requests = await response.json();
+                const userStr = localStorage.getItem('user');
+                const user = JSON.parse(userStr);
+
+                result.innerHTML = `
+                    <div style="margin-top: 15px;">
+                        <h3>Found ${requests.length} purchase request(s)</h3>
+                        <pre>${JSON.stringify(requests, null, 2)}</pre>
+                    </div>
+                `;
+
+                // Test canEditRequest logic
+                let testHTML = '<h3>Testing canEditRequest Logic for Each Request:</h3>';
+                
+                requests.forEach((request, index) => {
+                    const requestCreatedBy = String(request.created_by_user_id);
+                    const currentUserId = String(user?.userId || user?.id || '');
+                    const isOwner = requestCreatedBy === currentUserId;
+                    const isSuperAdmin = user?.role === 'super_admin';
+                    const canEdit = (isOwner || isSuperAdmin) && ['DRAFT', 'SUBMITTED'].includes(request.status);
+
+                    testHTML += `
+                        <div class="comparison-item ${canEdit ? 'match' : 'no-match'}" style="margin: 10px 0;">
+                            <h4>Request #${index + 1}: ${request.title}</h4>
+                            <strong>Status:</strong> ${request.status}<br>
+                            <strong>Created by:</strong> ${requestCreatedBy}<br>
+                            <strong>Current user:</strong> ${currentUserId}<br>
+                            <strong>Is owner?</strong> ${isOwner ? '✅ YES' : '❌ NO'}<br>
+                            <strong>Is super_admin?</strong> ${isSuperAdmin ? '✅ YES' : '❌ NO'}<br>
+                            <strong>Can edit status?</strong> ${['DRAFT', 'SUBMITTED'].includes(request.status) ? '✅ YES' : '❌ NO'}<br>
+                            <hr>
+                            <strong>🎯 CAN EDIT REQUEST?</strong> ${canEdit ? '✅ YES' : '❌ NO'}<br>
+                            ${canEdit ? 
+                                '<div class="success">Edit button SHOULD appear</div>' : 
+                                '<div class="error">Edit button will NOT appear</div>'}
+                        </div>
+                    `;
+                });
+
+                testResult.innerHTML = testHTML;
+
+            } catch (error) {
+                result.innerHTML = `
+                    <div class="error" style="margin-top: 15px;">
+                        <strong>❌ Error:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-check localStorage on load
+        window.addEventListener('load', () => {
+            checkLocalStorage();
+        });
+    </script>
+</body>
+</html>

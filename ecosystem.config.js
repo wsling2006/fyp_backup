@@ -61,7 +61,7 @@ module.exports = {
       // ==========================================
       name: 'frontend',
       script: 'node_modules/next/dist/bin/next',
-      args: 'start -p ' + (process.env.FRONTEND_PORT || 3001),
+      args: 'start -p 3001',
       cwd: './frontend',
       instances: 1,
       exec_mode: 'fork', // Use fork mode for Next.js (recommended for single instance)

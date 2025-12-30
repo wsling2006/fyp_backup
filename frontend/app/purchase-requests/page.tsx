@@ -1011,3 +1011,179 @@ function UploadClaimModal({
     </div>
   );
 }
+
+// View Claims Modal Component
+function ViewClaimsModal({
+  request,
+  onClose,
+}: {
+  request: PurchaseRequest;
+  onClose: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [claims, setClaims] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadClaims();
+  }, [request.id]);
+
+  const loadClaims = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      // Fetch detailed claim data
+      const claimPromises = request.claims.map(claim => 
+        api.get(`/purchase-requests/claims/${claim.id || claim}`)
+      );
+      const responses = await Promise.all(claimPromises);
+      setClaims(responses.map(r => r.data));
+    } catch (err: any) {
+      console.error('Failed to load claims:', err);
+      setError(err.response?.data?.message || 'Failed to load claim details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownload = async (claimId: string, filename: string) => {
+    try {
+      const response = await api.get(`/purchase-requests/claims/${claimId}/download`, {
+        responseType: 'blob',
+      });
+      
+      // Create a blob URL and trigger download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error('Failed to download receipt:', err);
+      alert(err.response?.data?.message || 'Failed to download receipt file');
+    }
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    const colors: { [key: string]: string } = {
+      PENDING: 'bg-yellow-100 text-yellow-800',
+      VERIFIED: 'bg-blue-100 text-blue-800',
+      PROCESSED: 'bg-green-100 text-green-800',
+      REJECTED: 'bg-red-100 text-red-800',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          Claims for Purchase Request: {request.title}
+        </h2>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <p className="text-red-800 text-sm">{error}</p>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {claims.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No claims found for this purchase request.
+              </div>
+            ) : (
+              claims.map((claim) => (
+                <div key={claim.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-lg font-semibold text-gray-900">Claim #{claim.id.slice(0, 8)}</h3>
+                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusBadgeColor(claim.status)}`}>
+                        {claim.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
+                    <div>
+                      <span className="text-gray-500">Vendor:</span>
+                      <p className="font-medium text-gray-900">{claim.vendor_name}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Amount Claimed:</span>
+                      <p className="font-medium text-green-600 text-lg">${formatCurrency(claim.amount_claimed)}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Purchase Date:</span>
+                      <p className="font-medium text-gray-900">{new Date(claim.purchase_date).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Uploaded:</span>
+                      <p className="font-medium text-gray-900">{new Date(claim.uploaded_at).toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Uploaded By:</span>
+                      <p className="font-medium text-gray-900">{claim.uploadedBy?.email || 'N/A'}</p>
+                    </div>
+                    {claim.verifiedBy && (
+                      <div>
+                        <span className="text-gray-500">Verified By:</span>
+                        <p className="font-medium text-gray-900">{claim.verifiedBy.email}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mb-4">
+                    <span className="text-gray-500">Description:</span>
+                    <p className="font-medium text-gray-900 mt-1">{claim.claim_description}</p>
+                  </div>
+
+                  {claim.verification_notes && (
+                    <div className="p-3 bg-blue-50 rounded-lg mb-4">
+                      <span className="text-sm font-medium text-blue-900">Verification Notes:</span>
+                      <p className="text-sm text-blue-800 mt-1">{claim.verification_notes}</p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
+                    <div className="flex-1">
+                      <span className="text-gray-500 text-sm">Receipt File:</span>
+                      <p className="font-medium text-gray-900">{claim.receipt_file_original_name}</p>
+                    </div>
+                    <button
+                      onClick={() => handleDownload(claim.id, claim.receipt_file_original_name)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                      Download Receipt
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

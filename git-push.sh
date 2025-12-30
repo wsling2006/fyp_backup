@@ -65,10 +65,15 @@ fi
 # Step 4: Add files
 echo -e "${YELLOW}Adding files to git...${NC}"
 git add backend/src/purchase-requests/purchase-request.controller.ts
+git add ecosystem.config.js
 git add CLAIMS_DOWNLOAD_FEATURE.md
 git add IMPLEMENTATION_SUMMARY_CLAIMS_DOWNLOAD.md
 git add AWS_DEPLOYMENT_GUIDE.md
+git add EC2_TROUBLESHOOTING.md
+git add QUICK_DEPLOYMENT_REFERENCE.md
+git add READY_TO_DEPLOY.md
 git add deploy-ec2.sh
+git add ec2-fix.sh
 git add test-claims-download.sh
 git add git-push.sh
 

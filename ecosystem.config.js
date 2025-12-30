@@ -27,7 +27,7 @@ module.exports = {
       // Environment variables (production)
       env_production: {
         NODE_ENV: 'production',
-        PORT: process.env.BACKEND_PORT || 3000,
+        PORT: 3000,
       },
       
       // Auto-restart configuration
@@ -61,7 +61,7 @@ module.exports = {
       // ==========================================
       name: 'frontend',
       script: 'node_modules/next/dist/bin/next',
-      args: 'start -p 3001',
+      args: 'start',
       cwd: './frontend',
       instances: 1,
       exec_mode: 'fork', // Use fork mode for Next.js (recommended for single instance)
@@ -69,7 +69,8 @@ module.exports = {
       // Environment variables (production)
       env_production: {
         NODE_ENV: 'production',
-        PORT: process.env.FRONTEND_PORT || 3001,
+        PORT: 3001,
+        NEXT_PUBLIC_API_URL: 'http://localhost:3000',
       },
       
       // Auto-restart configuration

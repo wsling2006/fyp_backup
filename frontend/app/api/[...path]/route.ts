@@ -97,8 +97,22 @@ async function handler(request: NextRequest, { params }: { params: { path: strin
       credentials: 'include', // Forward cookies
     });
 
-    // Get response body
-    const responseData = await response.text();
+    // Get response body - handle both text and binary data
+    const contentType = response.headers.get('content-type') || '';
+    let responseData: any;
+    
+    // For binary/blob responses (files, images, etc.), use arrayBuffer
+    if (
+      contentType.includes('application/octet-stream') ||
+      contentType.includes('application/pdf') ||
+      contentType.includes('image/') ||
+      response.headers.get('content-disposition')?.includes('attachment')
+    ) {
+      responseData = await response.arrayBuffer();
+    } else {
+      // For JSON/text responses, use text
+      responseData = await response.text();
+    }
 
     // Create response with same status and headers
     const proxyResponse = new NextResponse(responseData, {

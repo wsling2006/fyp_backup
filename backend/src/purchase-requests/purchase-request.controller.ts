@@ -10,12 +10,15 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Res,
+  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs/promises';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -313,6 +316,51 @@ export class PurchaseRequestController {
     });
 
     return claim;
+  }
+
+  /**
+   * Download claim receipt file
+   * Accountants and SuperAdmins can download any receipt
+   * Sales/Marketing can download their own receipts
+   */
+  @Get('claims/:id/download')
+  @Roles(Role.SALES, Role.MARKETING, Role.ACCOUNTANT, Role.SUPER_ADMIN)
+  async downloadClaimReceipt(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Res() res: Response,
+  ) {
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    // Get claim with ownership check
+    const claim = await this.purchaseRequestService.getClaimById(id, userId, userRole);
+
+    // Check if file exists
+    try {
+      await fs.access(claim.receipt_file_path);
+    } catch (error) {
+      throw new NotFoundException('Receipt file not found on server');
+    }
+
+    // Read the file
+    const fileBuffer = await fs.readFile(claim.receipt_file_path);
+
+    // Log download
+    await this.auditService.logFromRequest(req, userId, 'DOWNLOAD_RECEIPT', 'claim', id, {
+      filename: claim.receipt_file_original_name,
+      amount_claimed: claim.amount_claimed,
+    });
+
+    // Set response headers
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${encodeURIComponent(claim.receipt_file_original_name)}"`,
+    );
+
+    // Send file
+    return res.send(fileBuffer);
   }
 
   /**

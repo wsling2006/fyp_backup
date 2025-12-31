@@ -7,7 +7,7 @@ set -e  # Exit on error
 
 EC2_IP="13.214.167.194"
 EC2_USER="ec2-user"
-SSH_KEY="~/.ssh/fyp-system-key.pem"
+SSH_KEY="~/Desktop/fyp-key.pem"
 
 echo "================================================"
 echo "DEPLOYING CLAIMS FIX TO EC2"
@@ -44,7 +44,7 @@ echo -e "${GREEN}✓ Pushed to git${NC}"
 echo ""
 echo -e "${YELLOW}Deploying to EC2...${NC}"
 
-ssh -i ~/.ssh/fyp-system-key.pem ${EC2_USER}@${EC2_IP} << 'ENDSSH'
+ssh -i ~/Desktop/fyp-key.pem ${EC2_USER}@${EC2_IP} << 'ENDSSH'
     set -e
     cd /home/ec2-user/fyp_system
     

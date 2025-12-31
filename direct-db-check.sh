@@ -17,9 +17,8 @@ SELECT
     id,
     filename as original_filename,
     CASE 
-        WHEN file_data IS NOT NULL THEN 'HAS file_data (' || length(file_data) || ' bytes)'
-        WHEN data IS NOT NULL THEN 'HAS data (' || length(data) || ' bytes)'
-        ELSE 'NO DATA COLUMNS FOUND'
+        WHEN data IS NOT NULL THEN 'HAS DATA (' || length(data) || ' bytes)'
+        ELSE 'NULL (EMPTY)'
     END as file_status,
     size,
     mimetype,
@@ -28,6 +27,20 @@ FROM accountant_files
 ORDER BY created_at DESC 
 LIMIT 3;
 " 2>&1
+
+echo ""
+echo "3. Check claims table structure:"
+PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -h localhost -U fyp_user -d fyp_db -c "\d claims" | grep -E "Column|receipt_file" | head -10
+
+echo ""
+echo "4. Double-check: What columns does claims table actually have?"
+PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -h localhost -U fyp_user -d fyp_db -c "
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'claims' 
+AND (column_name LIKE '%file%' OR column_name LIKE '%receipt%')
+ORDER BY column_name;
+"
 
 echo ""
 echo "=========================================="

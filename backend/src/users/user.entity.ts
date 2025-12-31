@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Role } from './roles.enum';
 import { Exclude } from 'class-transformer';
 
@@ -71,6 +71,7 @@ export class User {
   created_by_id: string;
 
   @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by_id' })
   created_by: User;
 
   @CreateDateColumn()

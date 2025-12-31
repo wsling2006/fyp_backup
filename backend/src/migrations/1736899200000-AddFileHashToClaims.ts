@@ -15,7 +15,7 @@ import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
  * The column is nullable to support existing claims without hashes.
  * After deployment, existing claims can be backfilled with hashes if needed.
  */
-export class AddFileHashToClaims20250115 implements MigrationInterface {
+export class AddFileHashToClaims1736899200000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Check if column already exists
     const table = await queryRunner.getTable('claims');

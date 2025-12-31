@@ -447,6 +447,18 @@ export class PurchaseRequestService {
       );
     }
 
+    // DEBUG: Log what data we received
+    console.log('[SERVICE] createClaim received data:', {
+      purchase_request_id: data.purchase_request_id,
+      vendor_name: data.vendor_name,
+      amount_claimed: data.amount_claimed,
+      hasFileData: !!data.receipt_file_data,
+      fileDataLength: data.receipt_file_data?.length || 0,
+      fileSize: data.receipt_file_size,
+      mimetype: data.receipt_file_mimetype,
+      originalName: data.receipt_file_original_name,
+    });
+
     // Create claim
     const claim = this.claimRepo.create({
       purchase_request_id: data.purchase_request_id,
@@ -465,7 +477,23 @@ export class PurchaseRequestService {
       malware_scan_status: MalwareScanStatus.CLEAN, // File already passed ClamAV scan before upload
     });
 
+    console.log('[SERVICE] Created claim object:', {
+      id: claim.id,
+      hasFileData: !!claim.receipt_file_data,
+      fileDataLength: claim.receipt_file_data?.length || 0,
+      fileSize: claim.receipt_file_size,
+      mimetype: claim.receipt_file_mimetype,
+    });
+
     const saved = await this.claimRepo.save(claim);
+
+    console.log('[SERVICE] Saved claim to database:', {
+      id: saved.id,
+      hasFileData: !!saved.receipt_file_data,
+      fileDataLength: saved.receipt_file_data?.length || 0,
+      fileSize: saved.receipt_file_size,
+      mimetype: saved.receipt_file_mimetype,
+    });
 
     // Audit log
     await this.auditService.logFromRequest(req, userId, 'UPLOAD_RECEIPT', 'claim', saved.id, {

@@ -277,24 +277,33 @@ export class PurchaseRequestController {
       bufferSize: file.buffer.length,
     });
 
+    // CRITICAL: Log exactly what we're sending to the service
+    const claimData = {
+      purchase_request_id: dto.purchase_request_id,
+      vendor_name: dto.vendor_name,
+      amount_claimed: parseFloat(dto.amount_claimed.toString()),
+      purchase_date: dto.purchase_date,
+      claim_description: dto.claim_description,
+      receipt_file_path: uniqueFilename,
+      receipt_file_original_name: file.originalname,
+      receipt_file_data: file.buffer, // BYTEA data
+      receipt_file_size: file.size, // File size
+      receipt_file_mimetype: file.mimetype, // MIME type
+      file_buffer: file.buffer, // For hash generation
+    };
+
+    console.log('[UPLOAD] Data being sent to service:', {
+      ...claimData,
+      receipt_file_data: `Buffer(${claimData.receipt_file_data?.length || 0} bytes)`,
+      file_buffer: `Buffer(${claimData.file_buffer?.length || 0} bytes)`,
+    });
+
     // Step 3: Create claim in database with file data
     return this.purchaseRequestService.createClaim(
       userId,
       userRole,
       dto.otp,
-      {
-        purchase_request_id: dto.purchase_request_id,
-        vendor_name: dto.vendor_name,
-        amount_claimed: parseFloat(dto.amount_claimed.toString()),
-        purchase_date: dto.purchase_date,
-        claim_description: dto.claim_description,
-        receipt_file_path: uniqueFilename, // Store filename for backwards compatibility
-        receipt_file_original_name: file.originalname,
-        receipt_file_data: file.buffer, // NEW: Store file in database
-        receipt_file_size: file.size, // NEW: Store file size
-        receipt_file_mimetype: file.mimetype, // NEW: Store MIME type
-        file_buffer: file.buffer, // Pass buffer for hash generation
-      },
+      claimData,
       req,
     );
   }

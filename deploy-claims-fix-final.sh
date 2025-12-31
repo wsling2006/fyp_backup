@@ -6,7 +6,7 @@
 set -e  # Exit on error
 
 EC2_IP="13.214.167.194"
-EC2_USER="ec2-user"
+EC2_USER="ubuntu"
 SSH_KEY="$HOME/Desktop/fyp-key.pem"
 
 echo "================================================"
@@ -46,7 +46,7 @@ echo -e "${YELLOW}Deploying to EC2...${NC}"
 
 ssh -i "$SSH_KEY" ${EC2_USER}@${EC2_IP} << 'ENDSSH'
     set -e
-    cd /home/ec2-user/fyp_system
+    cd /home/ubuntu/fyp_system
     
     echo "=== Pulling latest code ==="
     git fetch origin

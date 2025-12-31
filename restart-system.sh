@@ -27,12 +27,12 @@ echo "3. Building backend..."
 cd ~/fyp_system/backend
 npm run build
 
-if [ ! -f "dist/main.js" ]; then
-    echo "✗ Build failed! dist/main.js not found"
+if [ ! -f "dist/src/main.js" ]; then
+    echo "✗ Build failed! dist/src/main.js not found"
     exit 1
 fi
 
-echo "✓ Backend built successfully"
+echo "✓ Backend built successfully (dist/src/main.js)"
 echo ""
 
 # 5. Run migrations

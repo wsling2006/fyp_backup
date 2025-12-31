@@ -243,15 +243,47 @@ export class PurchaseRequestController {
     const userId = req.user.userId;
     const userRole = req.user.role;
 
+    // DEBUG: Log file details before scan
+    console.log('[UPLOAD] File received:', {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      bufferLength: file.buffer?.length,
+      firstBytes: file.buffer?.slice(0, 20).toString('hex'),
+    });
+
     // Step 1: Validate and scan file with ClamAV (CRITICAL SECURITY STEP)
     await this.purchaseRequestService.validateAndScanFile(file);
+
+    // DEBUG: Log file details after scan
+    console.log('[UPLOAD] File after ClamAV scan:', {
+      bufferLength: file.buffer?.length,
+      firstBytes: file.buffer?.slice(0, 20).toString('hex'),
+      bufferIsBuffer: Buffer.isBuffer(file.buffer),
+    });
 
     // Step 2: Save file to disk with UUID filename (after ClamAV scan passes)
     const fileExt = file.originalname.split('.').pop();
     const uniqueFilename = `${uuidv4()}.${fileExt}`;
     const filePath = join(this.uploadDir, uniqueFilename);
     
+    // DEBUG: Log before write
+    console.log('[UPLOAD] Writing to disk:', {
+      filePath,
+      bufferSize: file.buffer.length,
+    });
+    
     await fs.writeFile(filePath, file.buffer);
+
+    // DEBUG: Verify file was written correctly
+    const writtenBuffer = await fs.readFile(filePath);
+    console.log('[UPLOAD] File written verification:', {
+      originalSize: file.buffer.length,
+      writtenSize: writtenBuffer.length,
+      sizesMatch: file.buffer.length === writtenBuffer.length,
+      firstBytesMatch: file.buffer.slice(0, 20).equals(writtenBuffer.slice(0, 20)),
+      writtenFirstBytes: writtenBuffer.slice(0, 20).toString('hex'),
+    });
 
     // Step 3: Create claim in database (with duplicate file check and one-claim-per-PR check)
     return this.purchaseRequestService.createClaim(
@@ -336,15 +368,39 @@ export class PurchaseRequestController {
     // Get claim with ownership check
     const claim = await this.purchaseRequestService.getClaimById(id, userId, userRole);
 
+    // DEBUG: Log claim details
+    console.log('[DOWNLOAD] Claim details:', {
+      id: claim.id,
+      originalName: claim.receipt_file_original_name,
+      filePath: claim.receipt_file_path,
+      amountClaimed: claim.amount_claimed,
+    });
+
     // Check if file exists
     try {
       await fs.access(claim.receipt_file_path);
+      const stats = await fs.stat(claim.receipt_file_path);
+      console.log('[DOWNLOAD] File exists:', {
+        size: stats.size,
+        modified: stats.mtime,
+      });
     } catch (error) {
+      console.error('[DOWNLOAD] File not found:', {
+        path: claim.receipt_file_path,
+        error: error.message,
+      });
       throw new NotFoundException('Receipt file not found on server');
     }
 
     // Read the file
     const fileBuffer = await fs.readFile(claim.receipt_file_path);
+
+    // DEBUG: Log file buffer details
+    console.log('[DOWNLOAD] File buffer read:', {
+      bufferLength: fileBuffer.length,
+      firstBytes: fileBuffer.slice(0, 20).toString('hex'),
+      isBuffer: Buffer.isBuffer(fileBuffer),
+    });
 
     // Log download
     await this.auditService.logFromRequest(req, userId, 'DOWNLOAD_RECEIPT', 'claim', id, {
@@ -366,6 +422,13 @@ export class PurchaseRequestController {
       'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     };
     const contentType = mimeTypes[fileExt] || 'application/octet-stream';
+
+    // DEBUG: Log response headers
+    console.log('[DOWNLOAD] Sending response:', {
+      contentType,
+      contentLength: fileBuffer.length,
+      filename: claim.receipt_file_original_name,
+    });
 
     // Set response headers with correct MIME type
     res.setHeader('Content-Type', contentType);

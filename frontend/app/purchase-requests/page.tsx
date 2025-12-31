@@ -309,12 +309,24 @@ export default function PurchaseRequestsPage() {
                             console.log('[CLAIMS BUTTON CLICKED]', request.claims);
                             try {
                               const claim = request.claims[0];
-                              console.log('[DOWNLOADING CLAIM]', claim.id);
+                              console.log('[DOWNLOADING CLAIM]', claim.id, 'Filename:', claim.receipt_file_original_name);
                               
                               // Use api client to download with authentication
                               const response = await api.get(`/purchase-requests/claims/${claim.id}/download`, {
                                 responseType: 'blob',
                               });
+                              
+                              console.log('[DOWNLOAD RESPONSE]', {
+                                status: response.status,
+                                contentType: response.headers['content-type'],
+                                blobSize: response.data.size,
+                                blobType: response.data.type
+                              });
+                              
+                              // Verify blob is not empty
+                              if (!response.data || response.data.size === 0) {
+                                throw new Error('Downloaded file is empty');
+                              }
                               
                               // Create blob with correct MIME type and trigger download
                               const blob = response.data; // Use response blob directly
@@ -327,10 +339,11 @@ export default function PurchaseRequestsPage() {
                               document.body.removeChild(link);
                               window.URL.revokeObjectURL(url);
                               
-                              console.log('[DOWNLOAD SUCCESS]');
-                            } catch (error) {
+                              console.log('[DOWNLOAD SUCCESS]', `File: ${claim.receipt_file_original_name}, Size: ${blob.size} bytes`);
+                              alert(`Successfully downloaded: ${claim.receipt_file_original_name}`);
+                            } catch (error: any) {
                               console.error('[DOWNLOAD ERROR]', error);
-                              alert('Failed to download receipt. Please try again.');
+                              alert(`Failed to download receipt: ${error.message}`);
                             }
                           }}
                           className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap font-bold"

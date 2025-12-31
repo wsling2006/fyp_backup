@@ -1,0 +1,17 @@
+VSCode is showing an OLD cached version (1599 lines) while the actual file has 1221 lines.
+
+TO FIX THIS RIGHT NOW:
+
+1. In VSCode, close the page.tsx tab (Cmd+W)
+2. Press Cmd+Shift+P
+3. Type: "Reload Window" 
+4. Press Enter
+5. Reopen frontend/app/purchase-requests/page.tsx
+
+OR SIMPLY:
+
+1. Close VSCode completely (Cmd+Q)
+2. Reopen VSCode
+3. Open the file again
+
+This will force VSCode to read from disk and both will be in sync!

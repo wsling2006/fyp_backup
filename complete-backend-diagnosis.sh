@@ -49,32 +49,32 @@ echo ""
 echo "4. Checking Database Tables..."
 echo "-----------------------------------"
 cd ~/fyp_system/backend
-PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -U fyp_user -d fyp_db -c "\dt" 2>&1
+PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -h localhost -U fyp_user -d fyp_db -c "\dt" 2>&1
 
 echo ""
 echo "5. Checking purchase_requests table structure..."
 echo "-----------------------------------"
-PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -U fyp_user -d fyp_db -c "\d purchase_requests" 2>&1
+PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -h localhost -U fyp_user -d fyp_db -c "\d purchase_requests" 2>&1
 
 echo ""
 echo "6. Checking claims table structure..."
 echo "-----------------------------------"
-PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -U fyp_user -d fyp_db -c "\d claims" 2>&1
+PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -h localhost -U fyp_user -d fyp_db -c "\d claims" 2>&1
 
 echo ""
 echo "7. Checking users table..."
 echo "-----------------------------------"
-PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -U fyp_user -d fyp_db -c "SELECT id, email, role, is_active FROM users;" 2>&1
+PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -h localhost -U fyp_user -d fyp_db -c "SELECT id, email, role, is_active FROM users;" 2>&1
 
 echo ""
 echo "8. Checking for purchase requests..."
 echo "-----------------------------------"
-PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -U fyp_user -d fyp_db -c "SELECT COUNT(*) as total_purchase_requests FROM purchase_requests;" 2>&1
+PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -h localhost -U fyp_user -d fyp_db -c "SELECT COUNT(*) as total_purchase_requests FROM purchase_requests;" 2>&1
 
 echo ""
 echo "9. Checking migrations..."
 echo "-----------------------------------"
-PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -U fyp_user -d fyp_db -c "SELECT * FROM migrations ORDER BY timestamp DESC LIMIT 10;" 2>&1
+PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -h localhost -U fyp_user -d fyp_db -c "SELECT * FROM migrations ORDER BY timestamp DESC LIMIT 10;" 2>&1
 
 echo ""
 echo "=========================================="

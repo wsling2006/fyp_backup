@@ -10,7 +10,7 @@ echo ""
 cd ~/fyp_system/backend
 
 echo "Checking current admin account..."
-PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -U fyp_user -d fyp_db -c "
+PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -h localhost -U fyp_user -d fyp_db -c "
 SELECT id, email, role, is_active, created_at 
 FROM users 
 WHERE role = 'super_admin' OR email LIKE '%admin%';
@@ -30,7 +30,7 @@ echo "2. Update the password in .env file"
 echo "3. Restart backend so it re-seeds the admin account"
 echo ""
 echo "Current users in database:"
-PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -U fyp_user -d fyp_db -c "
+PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -h localhost -U fyp_user -d fyp_db -c "
 SELECT email, role, is_active FROM users;
 "
 

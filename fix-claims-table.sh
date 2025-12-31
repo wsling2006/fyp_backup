@@ -10,11 +10,11 @@ echo ""
 cd ~/fyp_system/backend
 
 echo "1. Checking current claims table structure..."
-PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -U fyp_user -d fyp_db -c "\d claims"
+PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -h localhost -U fyp_user -d fyp_db -c "\d claims"
 
 echo ""
 echo "2. Adding missing BYTEA columns to claims table..."
-PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -U fyp_user -d fyp_db << 'EOSQL'
+PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -h localhost -U fyp_user -d fyp_db << 'EOSQL'
 -- Add file data storage columns if they don't exist
 ALTER TABLE claims ADD COLUMN IF NOT EXISTS receipt_file_data bytea;
 ALTER TABLE claims ADD COLUMN IF NOT EXISTS receipt_file_size bigint;
@@ -29,7 +29,7 @@ EOSQL
 
 echo ""
 echo "3. Verifying the changes..."
-PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -U fyp_user -d fyp_db -c "
+PGPASSWORD=GL5jYNDqsOVkx6tIfIS2eUonM psql -h localhost -U fyp_user -d fyp_db -c "
 SELECT 
     column_name, 
     data_type, 

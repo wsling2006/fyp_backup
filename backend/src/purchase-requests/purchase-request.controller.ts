@@ -12,16 +12,12 @@ import {
   BadRequestException,
   Res,
   NotFoundException,
-  ForbiddenException,
-  Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs/promises';
-import * as fsSync from 'fs';
-import * as path from 'path';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -42,7 +38,6 @@ import { AuditService } from '../audit/audit.service';
 @Controller('purchase-requests')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PurchaseRequestController {
-  private readonly logger = new Logger(PurchaseRequestController.name);
   private uploadDir = join(process.cwd(), 'uploads', 'receipts');
 
   constructor(
@@ -357,8 +352,23 @@ export class PurchaseRequestController {
       amount_claimed: claim.amount_claimed,
     });
 
-    // Set response headers
-    res.setHeader('Content-Type', 'application/octet-stream');
+    // Determine correct MIME type based on file extension
+    const fileExt = claim.receipt_file_original_name.toLowerCase().split('.').pop() || '';
+    const mimeTypes: { [key: string]: string } = {
+      'pdf': 'application/pdf',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    };
+    const contentType = mimeTypes[fileExt] || 'application/octet-stream';
+
+    // Set response headers with correct MIME type
+    res.setHeader('Content-Type', contentType);
     res.setHeader(
       'Content-Disposition',
       `attachment; filename="${encodeURIComponent(claim.receipt_file_original_name)}"`,
@@ -445,5 +455,4 @@ export class PurchaseRequestController {
       req,
     );
   }
-
 }

@@ -22,12 +22,18 @@ if [ ! -f .env.local ]; then
     echo "Creating .env.local..."
     cat > .env.local << 'EOF'
 # Next.js Frontend Configuration
+PORT=3001
 NEXT_PUBLIC_API_URL=http://localhost:3000
 EOF
     echo "✓ .env.local created"
 else
     echo "✓ .env.local already exists"
     cat .env.local
+    # Ensure PORT is set
+    if ! grep -q "PORT=3001" .env.local; then
+        echo "Adding PORT=3001 to .env.local..."
+        sed -i '1s/^/PORT=3001\n/' .env.local
+    fi
 fi
 
 echo ""
@@ -41,7 +47,8 @@ npm run build
 echo ""
 echo "5. Starting frontend with PM2..."
 cd ~/fyp_system
-pm2 start ecosystem.config.js --only frontend
+# Start with explicit port environment variable
+PORT=3001 pm2 start ecosystem.config.js --only frontend --env production
 sleep 3
 
 echo ""

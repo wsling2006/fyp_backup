@@ -8,7 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PurchaseRequest, PurchaseRequestStatus } from './purchase-request.entity';
-import { Claim, ClaimStatus } from './claim.entity';
+import { Claim, ClaimStatus, MalwareScanStatus } from './claim.entity';
 import { UsersService } from '../users/users.service';
 import { AuditService } from '../audit/audit.service';
 import { ClamavService } from '../clamav/clamav.service';
@@ -439,6 +439,7 @@ export class PurchaseRequestService {
       file_hash: fileHash, // Store hash for future duplicate checks
       uploaded_by_user_id: userId,
       status: ClaimStatus.PENDING,
+      malware_scan_status: MalwareScanStatus.CLEAN, // File already passed ClamAV scan before upload
     });
 
     const saved = await this.claimRepo.save(claim);
@@ -536,6 +537,34 @@ export class PurchaseRequestService {
       if (claim.uploaded_by_user_id !== userId) {
         throw new ForbiddenException('You can only view your own claims');
       }
+    }
+
+    return claim;
+  }
+
+  /**
+   * Get claim by ID for Accountant (Secure endpoint - no ownership check)
+   * 
+   * This method is specifically for the secure accountant download endpoint.
+   * It does NOT perform ownership checks as accountants can access any claim.
+   * 
+   * Security is enforced at the controller level:
+   * - Role must be ACCOUNTANT or SUPER_ADMIN
+   * - MFA session must be verified
+   * - Claim state must be valid
+   * - Malware scan must be CLEAN
+   * 
+   * @param claimId - UUID of the claim
+   * @returns Claim with all relations
+   */
+  async getClaimByIdForAccountant(claimId: string): Promise<Claim> {
+    const claim = await this.claimRepo.findOne({
+      where: { id: claimId },
+      relations: ['purchaseRequest', 'uploadedBy', 'verifiedBy'],
+    });
+
+    if (!claim) {
+      throw new NotFoundException('Claim not found');
     }
 
     return claim;

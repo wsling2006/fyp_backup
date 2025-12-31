@@ -16,6 +16,13 @@ export enum ClaimStatus {
   REJECTED = 'REJECTED',
 }
 
+export enum MalwareScanStatus {
+  CLEAN = 'CLEAN',
+  INFECTED = 'INFECTED',
+  PENDING = 'PENDING',
+  ERROR = 'ERROR',
+}
+
 @Entity('claims')
 export class Claim {
   @PrimaryGeneratedColumn('uuid')
@@ -36,6 +43,13 @@ export class Claim {
 
   @Column({ type: 'varchar', length: 64, nullable: true })
   file_hash: string; // SHA-256 hash to prevent duplicate file uploads
+
+  @Column({
+    type: 'varchar',
+    length: 20,
+    default: MalwareScanStatus.CLEAN,
+  })
+  malware_scan_status: MalwareScanStatus;
 
   @Column({ type: 'varchar', length: 255 })
   vendor_name: string;

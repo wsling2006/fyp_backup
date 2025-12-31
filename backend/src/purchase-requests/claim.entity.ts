@@ -31,7 +31,7 @@ export class Claim {
   @Column({ type: 'uuid' })
   purchase_request_id: string;
 
-  @ManyToOne(() => PurchaseRequest, (pr) => pr.claims, { eager: true })
+  @ManyToOne(() => PurchaseRequest, (pr) => pr.claims)
   @JoinColumn({ name: 'purchase_request_id' })
   purchaseRequest: PurchaseRequest;
 

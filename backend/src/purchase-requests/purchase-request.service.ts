@@ -271,7 +271,10 @@ export class PurchaseRequestService {
       .leftJoinAndSelect('pr.createdBy', 'creator')
       .leftJoinAndSelect('pr.reviewedBy', 'reviewer')
       .leftJoinAndSelect('pr.claims', 'claims')
-      .orderBy('pr.created_at', 'DESC');
+      .leftJoinAndSelect('claims.uploadedBy', 'claimUploader')
+      .leftJoinAndSelect('claims.verifiedBy', 'claimVerifier')
+      .orderBy('pr.created_at', 'DESC')
+      .addOrderBy('claims.uploaded_at', 'DESC');
 
     // RBAC: Sales/Marketing see only their own
     if (userRole === Role.SALES || userRole === Role.MARKETING) {
@@ -279,7 +282,21 @@ export class PurchaseRequestService {
     }
     // Accountant and SuperAdmin see all (no additional filter)
 
-    return query.getMany();
+    const results = await query.getMany();
+    
+    // DEBUG LOG - Check if claims are loaded
+    console.log('[getAllPurchaseRequests] Total requests:', results.length);
+    results.forEach((pr, index) => {
+      console.log(`[getAllPurchaseRequests] Request ${index + 1}:`, {
+        id: pr.id,
+        title: pr.title,
+        status: pr.status,
+        claimsCount: pr.claims?.length || 0,
+        claimsData: pr.claims
+      });
+    });
+    
+    return results;
   }
 
   /**

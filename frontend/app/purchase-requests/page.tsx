@@ -304,9 +304,23 @@ export default function PurchaseRequestsPage() {
                         </button>
                       )}
                       {request.claims.length > 0 && (
-                        <span className="px-4 py-2 bg-blue-50 text-blue-700 text-sm rounded-lg text-center">
-                          {request.claims.length} Claim(s)
-                        </span>
+                        <button
+                          onClick={() => {
+                            console.log('[CLAIMS BUTTON CLICKED]', request.claims);
+                            if (request.claims.length === 1) {
+                              const claim = request.claims[0];
+                              const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/purchase-requests/claims/${claim.id}/download`;
+                              window.open(downloadUrl, '_blank');
+                            } else {
+                              setSelectedRequest(request);
+                              setShowViewClaimsModal(true);
+                            }
+                          }}
+                          className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap font-bold"
+                          title={request.claims.length === 1 ? "Click to download receipt" : "Click to view all claims"}
+                        >
+                          DOWNLOAD {request.claims.length} CLAIM(S)
+                        </button>
                       )}
                     </div>
                   </div>

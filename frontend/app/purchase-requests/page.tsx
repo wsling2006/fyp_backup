@@ -307,14 +307,11 @@ export default function PurchaseRequestsPage() {
                         <button
                           onClick={() => {
                             console.log('[CLAIMS BUTTON CLICKED]', request.claims);
-                            if (request.claims.length === 1) {
-                              const claim = request.claims[0];
-                              const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/purchase-requests/claims/${claim.id}/download`;
-                              window.open(downloadUrl, '_blank');
-                            } else {
-                              setSelectedRequest(request);
-                              setShowViewClaimsModal(true);
-                            }
+                            // Download the first claim (or show all if multiple in future)
+                            const claim = request.claims[0];
+                            const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/purchase-requests/claims/${claim.id}/download`;
+                            console.log('[DOWNLOAD URL]', downloadUrl);
+                            window.open(downloadUrl, '_blank');
                           }}
                           className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap font-bold"
                           title={request.claims.length === 1 ? "Click to download receipt" : "Click to view all claims"}

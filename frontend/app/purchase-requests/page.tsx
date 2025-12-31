@@ -305,13 +305,33 @@ export default function PurchaseRequestsPage() {
                       )}
                       {request.claims.length > 0 && (
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             console.log('[CLAIMS BUTTON CLICKED]', request.claims);
-                            // Download the first claim (or show all if multiple in future)
-                            const claim = request.claims[0];
-                            const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/purchase-requests/claims/${claim.id}/download`;
-                            console.log('[DOWNLOAD URL]', downloadUrl);
-                            window.open(downloadUrl, '_blank');
+                            try {
+                              const claim = request.claims[0];
+                              console.log('[DOWNLOADING CLAIM]', claim.id);
+                              
+                              // Use api client to download with authentication
+                              const response = await api.get(`/purchase-requests/claims/${claim.id}/download`, {
+                                responseType: 'blob',
+                              });
+                              
+                              // Create blob and trigger download
+                              const blob = new Blob([response.data]);
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = claim.receipt_file_original_name || 'receipt.pdf';
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              window.URL.revokeObjectURL(url);
+                              
+                              console.log('[DOWNLOAD SUCCESS]');
+                            } catch (error) {
+                              console.error('[DOWNLOAD ERROR]', error);
+                              alert('Failed to download receipt. Please try again.');
+                            }
                           }}
                           className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap font-bold"
                           title={request.claims.length === 1 ? "Click to download receipt" : "Click to view all claims"}

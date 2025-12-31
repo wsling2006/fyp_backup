@@ -316,8 +316,8 @@ export default function PurchaseRequestsPage() {
                                 responseType: 'blob',
                               });
                               
-                              // Create blob and trigger download
-                              const blob = new Blob([response.data]);
+                              // Create blob with correct MIME type and trigger download
+                              const blob = response.data; // Use response blob directly
                               const url = window.URL.createObjectURL(blob);
                               const link = document.createElement('a');
                               link.href = url;

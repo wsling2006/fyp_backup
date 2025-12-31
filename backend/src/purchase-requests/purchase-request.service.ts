@@ -388,6 +388,9 @@ export class PurchaseRequestService {
       claim_description: string;
       receipt_file_path: string;
       receipt_file_original_name: string;
+      receipt_file_data?: Buffer; // NEW: Store file in database
+      receipt_file_size?: number; // NEW: Store file size
+      receipt_file_mimetype?: string; // NEW: Store MIME type
       file_buffer: Buffer; // Add buffer for hash generation
     },
     req: any,
@@ -453,6 +456,9 @@ export class PurchaseRequestService {
       claim_description: data.claim_description,
       receipt_file_path: data.receipt_file_path,
       receipt_file_original_name: data.receipt_file_original_name,
+      receipt_file_data: data.receipt_file_data, // NEW: Store file data in DB
+      receipt_file_size: data.receipt_file_size, // NEW: Store file size
+      receipt_file_mimetype: data.receipt_file_mimetype, // NEW: Store MIME type
       file_hash: fileHash, // Store hash for future duplicate checks
       uploaded_by_user_id: userId,
       status: ClaimStatus.PENDING,

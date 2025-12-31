@@ -260,32 +260,24 @@ export class PurchaseRequestController {
       bufferLength: file.buffer?.length,
       firstBytes: file.buffer?.slice(0, 20).toString('hex'),
       bufferIsBuffer: Buffer.isBuffer(file.buffer),
+      mimetype: file.mimetype,
+      size: file.size,
     });
 
-    // Step 2: Save file to disk with UUID filename (after ClamAV scan passes)
+    // Step 2: Store file data in database (NEW APPROACH - matches working accountant_files)
+    // No longer saving to disk to avoid file system issues
+    // File is stored as BYTEA in PostgreSQL, just like accountant_files
     const fileExt = file.originalname.split('.').pop();
-    const uniqueFilename = `${uuidv4()}.${fileExt}`;
-    const filePath = join(this.uploadDir, uniqueFilename);
-    
-    // DEBUG: Log before write
-    console.log('[UPLOAD] Writing to disk:', {
-      filePath,
+    const uniqueFilename = `${uuidv4()}.${fileExt}`; // Still generate for backwards compatibility
+
+    console.log('[UPLOAD] Storing file in database (not disk):', {
+      filename: file.originalname,
+      size: file.size,
+      mimetype: file.mimetype,
       bufferSize: file.buffer.length,
     });
-    
-    await fs.writeFile(filePath, file.buffer);
 
-    // DEBUG: Verify file was written correctly
-    const writtenBuffer = await fs.readFile(filePath);
-    console.log('[UPLOAD] File written verification:', {
-      originalSize: file.buffer.length,
-      writtenSize: writtenBuffer.length,
-      sizesMatch: file.buffer.length === writtenBuffer.length,
-      firstBytesMatch: file.buffer.slice(0, 20).equals(writtenBuffer.slice(0, 20)),
-      writtenFirstBytes: writtenBuffer.slice(0, 20).toString('hex'),
-    });
-
-    // Step 3: Create claim in database (with duplicate file check and one-claim-per-PR check)
+    // Step 3: Create claim in database with file data
     return this.purchaseRequestService.createClaim(
       userId,
       userRole,
@@ -296,8 +288,11 @@ export class PurchaseRequestController {
         amount_claimed: parseFloat(dto.amount_claimed.toString()),
         purchase_date: dto.purchase_date,
         claim_description: dto.claim_description,
-        receipt_file_path: filePath,
+        receipt_file_path: uniqueFilename, // Store filename for backwards compatibility
         receipt_file_original_name: file.originalname,
+        receipt_file_data: file.buffer, // NEW: Store file in database
+        receipt_file_size: file.size, // NEW: Store file size
+        receipt_file_mimetype: file.mimetype, // NEW: Store MIME type
         file_buffer: file.buffer, // Pass buffer for hash generation
       },
       req,
@@ -354,6 +349,8 @@ export class PurchaseRequestController {
    * Download claim receipt file
    * Accountants and SuperAdmins can download any receipt
    * Sales/Marketing can download their own receipts
+   * 
+   * NEW: Files stored in database (matching accountant_files pattern that works)
    */
   @Get('claims/:id/download')
   @Roles(Role.SALES, Role.MARKETING, Role.ACCOUNTANT, Role.SUPER_ADMIN)
@@ -368,77 +365,80 @@ export class PurchaseRequestController {
     // Get claim with ownership check
     const claim = await this.purchaseRequestService.getClaimById(id, userId, userRole);
 
-    // DEBUG: Log claim details
     console.log('[DOWNLOAD] Claim details:', {
       id: claim.id,
       originalName: claim.receipt_file_original_name,
-      filePath: claim.receipt_file_path,
-      amountClaimed: claim.amount_claimed,
+      hasFileData: !!claim.receipt_file_data,
+      fileDataSize: claim.receipt_file_data?.length || 0,
+      storedSize: claim.receipt_file_size,
+      mimetype: claim.receipt_file_mimetype,
     });
 
-    // Check if file exists
-    try {
-      await fs.access(claim.receipt_file_path);
-      const stats = await fs.stat(claim.receipt_file_path);
-      console.log('[DOWNLOAD] File exists:', {
-        size: stats.size,
-        modified: stats.mtime,
+    // NEW: Check if file is stored in database (preferred method - matches accountant_files)
+    if (claim.receipt_file_data && claim.receipt_file_data.length > 0) {
+      console.log('[DOWNLOAD] Using database-stored file');
+      
+      // Log download
+      await this.auditService.logFromRequest(req, userId, 'DOWNLOAD_RECEIPT', 'claim', id, {
+        filename: claim.receipt_file_original_name,
+        amount_claimed: claim.amount_claimed,
+        method: 'database',
       });
-    } catch (error) {
-      console.error('[DOWNLOAD] File not found:', {
-        path: claim.receipt_file_path,
-        error: error.message,
+
+      // Use stored MIME type or fallback
+      const contentType = claim.receipt_file_mimetype || this.getMimeTypeFromFilename(claim.receipt_file_original_name);
+
+      // Set headers (exact same as accountant files)
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(claim.receipt_file_original_name)}"`);
+
+      console.log('[DOWNLOAD] Sending from DB:', {
+        size: claim.receipt_file_data.length,
+        contentType,
+        firstBytes: claim.receipt_file_data.slice(0, 20).toString('hex'),
       });
-      throw new NotFoundException('Receipt file not found on server');
+
+      // Send directly from database (same as accountant files - THIS WORKS)
+      return res.send(Buffer.from(claim.receipt_file_data));
     }
 
-    // Read the file
+    // FALLBACK: Old disk-based method (for backwards compatibility)
+    console.log('[DOWNLOAD] Falling back to disk file');
+    
+    try {
+      await fs.access(claim.receipt_file_path);
+    } catch (error) {
+      throw new NotFoundException('Receipt file not found');
+    }
+
     const fileBuffer = await fs.readFile(claim.receipt_file_path);
 
-    // DEBUG: Log file buffer details
-    console.log('[DOWNLOAD] File buffer read:', {
-      bufferLength: fileBuffer.length,
-      firstBytes: fileBuffer.slice(0, 20).toString('hex'),
-      isBuffer: Buffer.isBuffer(fileBuffer),
-    });
-
-    // Log download
     await this.auditService.logFromRequest(req, userId, 'DOWNLOAD_RECEIPT', 'claim', id, {
       filename: claim.receipt_file_original_name,
       amount_claimed: claim.amount_claimed,
+      method: 'disk',
     });
 
-    // Determine correct MIME type based on file extension
-    const fileExt = claim.receipt_file_original_name.toLowerCase().split('.').pop() || '';
-    const mimeTypes: { [key: string]: string } = {
+    const contentType = this.getMimeTypeFromFilename(claim.receipt_file_original_name);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(claim.receipt_file_original_name)}"`);
+
+    return res.send(fileBuffer);
+  }
+
+  /**
+   * Helper: Get MIME type from filename
+   */
+  private getMimeTypeFromFilename(filename: string): string {
+    const ext = filename.toLowerCase().split('.').pop() || '';
+    const types: { [key: string]: string } = {
       'pdf': 'application/pdf',
       'jpg': 'image/jpeg',
       'jpeg': 'image/jpeg',
       'png': 'image/png',
       'gif': 'image/gif',
-      'doc': 'application/msword',
-      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'xls': 'application/vnd.ms-excel',
-      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     };
-    const contentType = mimeTypes[fileExt] || 'application/octet-stream';
-
-    // DEBUG: Log response headers
-    console.log('[DOWNLOAD] Sending response:', {
-      contentType,
-      contentLength: fileBuffer.length,
-      filename: claim.receipt_file_original_name,
-    });
-
-    // Set response headers with correct MIME type
-    res.setHeader('Content-Type', contentType);
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${encodeURIComponent(claim.receipt_file_original_name)}"`,
-    );
-
-    // Send file
-    return res.send(fileBuffer);
+    return types[ext] || 'application/octet-stream';
   }
 
   /**

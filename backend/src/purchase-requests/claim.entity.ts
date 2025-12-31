@@ -41,6 +41,16 @@ export class Claim {
   @Column({ type: 'varchar', length: 500 })
   receipt_file_original_name: string;
 
+  // NEW: Store file data in database (preferred method - matches accountant_files)
+  @Column({ type: 'bytea', nullable: true })
+  receipt_file_data: Buffer;
+
+  @Column({ type: 'bigint', nullable: true })
+  receipt_file_size: number;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  receipt_file_mimetype: string;
+
   @Column({ type: 'varchar', length: 64, nullable: true })
   file_hash: string; // SHA-256 hash to prevent duplicate file uploads
 

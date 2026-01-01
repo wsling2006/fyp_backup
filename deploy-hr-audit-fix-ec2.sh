@@ -52,11 +52,35 @@ echo ""
 
 # Step 4: Verify compiled code has anti-spam logic
 echo -e "${BLUE}[4/5] Verifying compiled code...${NC}"
-COMPILED_FILE="dist/employees/hr.controller.js"
-if [ ! -f "$COMPILED_FILE" ]; then
-    echo -e "${RED}✗ Compiled hr.controller.js not found!${NC}"
+
+# Check if dist directory exists
+if [ ! -d "dist" ]; then
+    echo -e "${RED}✗ dist directory not found!${NC}"
+    echo "Build may have failed. Check the build output above."
     exit 1
 fi
+
+# Try different possible paths for the compiled controller
+COMPILED_FILE=""
+if [ -f "dist/employees/hr.controller.js" ]; then
+    COMPILED_FILE="dist/employees/hr.controller.js"
+elif [ -f "dist/src/employees/hr.controller.js" ]; then
+    COMPILED_FILE="dist/src/employees/hr.controller.js"
+else
+    echo -e "${YELLOW}⚠ Searching for hr.controller.js in dist...${NC}"
+    FOUND=$(find dist -name "hr.controller.js" | head -1)
+    if [ -n "$FOUND" ]; then
+        COMPILED_FILE="$FOUND"
+        echo "Found at: $COMPILED_FILE"
+    else
+        echo -e "${RED}✗ hr.controller.js not found anywhere in dist!${NC}"
+        echo "Available files in dist:"
+        find dist -name "*.controller.js" | head -10
+        exit 1
+    fi
+fi
+
+echo "Checking: $COMPILED_FILE"
 
 if grep -q "viewedEmployees" "$COMPILED_FILE"; then
     echo -e "${GREEN}✓ Anti-spam logic found in compiled code${NC}"

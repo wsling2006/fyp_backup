@@ -48,6 +48,10 @@ import { AuditService } from '../audit/audit.service';
 @Roles(Role.HR, Role.SUPER_ADMIN)
 export class HRController {
   private readonly logger = new Logger(HRController.name);
+  
+  // Track viewed employees per user session to prevent spam
+  // Format: Map<userId, Set<employeeId>>
+  private readonly viewedEmployees = new Map<string, Set<string>>();
 
   constructor(
     private readonly hrService: HRService,
@@ -113,35 +117,65 @@ export class HRController {
    * 
    * Action: VIEW_EMPLOYEE_PROFILE (counts as VIEW action in audit dashboard)
    * 
+   * Anti-Spam Feature (Server-Side Tracking):
+   * - Tracks viewed employees per user in-memory on backend
+   * - First view of an employee → Creates audit log
+   * - Subsequent views (refreshes) → Skips audit log
+   * - More reliable than client-side sessionStorage
+   * - Resets when backend restarts (expected behavior)
+   * 
    * @param id - Employee UUID
+   * @param req - Request object with user info
    * @returns Full employee object
    */
   @Get('employees/:id')
-  async getEmployeeById(@Param('id') id: string, @Req() req: any) {
+  async getEmployeeById(
+    @Param('id') id: string, 
+    @Query('silent') silent: string,
+    @Req() req: any
+  ) {
     const employee = await this.hrService.getEmployeeById(id);
+    const userId = req.user.userId;
 
-    // ⚠️ CRITICAL: Log access to sensitive data
-    // This will count as a "View Action" in the audit dashboard
-    await this.auditService.logFromRequest(
-      req,
-      req.user.userId,
-      'VIEW_EMPLOYEE_PROFILE',
-      'employee',
-      id,
-      {
-        employee_id: employee.employee_id,
-        name: employee.name,
-        accessed_fields: [
-          'email',
-          'phone',
-          'address',
-          'emergency_contact',
-          'ic_number',
-          'birthday',
-          'bank_account_number',
-        ],
-      },
-    );
+    // Check if this user has already viewed this employee
+    if (!this.viewedEmployees.has(userId)) {
+      this.viewedEmployees.set(userId, new Set());
+    }
+    
+    const userViewedEmployees = this.viewedEmployees.get(userId)!;
+    const hasViewedBefore = userViewedEmployees.has(id);
+
+    // Only log if:
+    // 1. User hasn't viewed this employee before (first view)
+    // 2. AND silent parameter is not explicitly set to 'true'
+    const isSilent = silent === 'true';
+    const shouldLog = !hasViewedBefore && !isSilent;
+
+    if (shouldLog) {
+      await this.auditService.logFromRequest(
+        req,
+        userId,
+        'VIEW_EMPLOYEE_PROFILE',
+        'employee',
+        id,
+        {
+          employee_id: employee.employee_id,
+          name: employee.name,
+          accessed_fields: [
+            'email',
+            'phone',
+            'address',
+            'emergency_contact',
+            'ic_number',
+            'birthday',
+            'bank_account_number',
+          ],
+        },
+      );
+      
+      // Mark this employee as viewed by this user
+      userViewedEmployees.add(id);
+    }
 
     return { employee };
   }
@@ -460,4 +494,4 @@ export class HRController {
     };
   }
 
-}
+  /**/}

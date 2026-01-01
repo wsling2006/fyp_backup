@@ -40,6 +40,40 @@ export class HRService {
   ) {}
 
   /**
+   * Check if employee view should be logged
+   * Returns true only if:
+   * - No view log exists for this user + employee today
+   * - This prevents spam from page refreshes
+   * 
+   * Smart throttling: Only log once per user per employee per day
+   * 
+   * @param userId - User who is viewing
+   * @param employeeId - Employee being viewed
+   * @returns Promise<boolean> - True if should log, false if already logged today
+   */
+  async shouldLogEmployeeView(userId: string, employeeId: string): Promise<boolean> {
+    // Get start of today (00:00:00) in local timezone
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    // Check if a VIEW_EMPLOYEE_PROFILE log exists for this user + employee today
+    const existingLog = await this.auditRepo.findOne({
+      where: {
+        user_id: userId,
+        action: 'VIEW_EMPLOYEE_PROFILE',
+        resource: 'employee',
+        resource_id: employeeId,
+        timestamp: MoreThanOrEqual(startOfToday),
+      },
+      order: { timestamp: 'DESC' },
+    });
+
+    // If no log found, should log (first view today)
+    // If log found, should NOT log (already logged today)
+    return !existingLog;
+  }
+
+  /**
    * Get employee list with minimal data
    * Only returns: employee_id, name, status
    * 
@@ -252,40 +286,6 @@ export class HRService {
    * 
    * @param documentId - Document UUID
    * @returns Promise<EmployeeDocument> - Full document with binary data
-   * @throws NotFoundException if not found
-   */
-  async getDocumentById(documentId: string): Promise<EmployeeDocument> {
-    const document = await this.documentRepo.findOne({
-      where: { id: documentId },
-      relations: ['employee', 'uploaded_by'],
-    });
-
-    if (!document) {
-      throw new NotFoundException('Document not found');
-    }
-
-    return document;
-  }
-
-  /**
-   * Delete document
-   * 
-   * @param documentId - Document UUID
-   * @returns Promise<void>
-   * @throws NotFoundException if not found
-   */
-  async deleteDocument(documentId: string): Promise<void> {
-    const document = await this.documentRepo.findOne({ where: { id: documentId } });
-    if (!document) {
-      throw new NotFoundException('Document not found');
-    }
-
-    await this.documentRepo.delete(documentId);
-  }
-
-  /**
-   * Create new employee
-   * Generates unique employee_id automatically
    * 
    * @param employeeData - Employee information
    * @returns Promise<Employee> - Created employee

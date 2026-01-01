@@ -281,46 +281,46 @@ export default function EmployeeDetailPage() {
 
         {/* Personal Information Card */}
         <Card variant="gradient" className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+          <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
             <span className="mr-2">👤</span>
             Personal Information
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1">
+              <label className="block text-sm font-semibold text-gray-300 mb-1">
                 Full Name
               </label>
-              <p className="text-gray-900 text-lg">{employee.name}</p>
+              <p className="text-white text-lg">{employee.name}</p>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1">
+              <label className="block text-sm font-semibold text-gray-300 mb-1">
                 Email
               </label>
-              <p className="text-gray-900 text-lg">{employee.email}</p>
+              <p className="text-white text-lg">{employee.email}</p>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1">
+              <label className="block text-sm font-semibold text-gray-300 mb-1">
                 Phone Number
               </label>
-              <p className="text-gray-900 text-lg">{employee.phone || 'N/A'}</p>
+              <p className="text-white text-lg">{employee.phone || 'N/A'}</p>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1">
+              <label className="block text-sm font-semibold text-gray-300 mb-1">
                 Birthday
               </label>
-              <p className="text-gray-900 text-lg">{formatDate(employee.birthday)}</p>
+              <p className="text-white text-lg">{formatDate(employee.birthday)}</p>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-600 mb-1">
+              <label className="block text-sm font-semibold text-gray-300 mb-1">
                 Address
               </label>
-              <p className="text-gray-900 text-lg">{employee.address || 'N/A'}</p>
+              <p className="text-white text-lg">{employee.address || 'N/A'}</p>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1">
+              <label className="block text-sm font-semibold text-gray-300 mb-1">
                 Emergency Contact
               </label>
-              <p className="text-gray-900 text-lg">{employee.emergency_contact || 'N/A'}</p>
+              <p className="text-white text-lg">{employee.emergency_contact || 'N/A'}</p>
             </div>
           </div>
         </Card>
@@ -330,26 +330,26 @@ export default function EmployeeDetailPage() {
           <div className="flex items-start mb-4">
             <span className="text-2xl mr-2">🔒</span>
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900">Sensitive Information</h2>
-              <p className="text-sm text-amber-700 mt-1">
+              <h2 className="text-2xl font-bold text-white">Sensitive Information</h2>
+              <p className="text-sm text-amber-300 mt-1">
                 ⚠️ Access to this information is logged for audit purposes
               </p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1">
+              <label className="block text-sm font-semibold text-gray-300 mb-1">
                 IC Number / Passport
               </label>
-              <p className="text-gray-900 text-lg font-mono bg-amber-50 px-3 py-2 rounded border border-amber-200">
+              <p className="text-white text-lg font-mono bg-gray-700/50 px-3 py-2 rounded border border-gray-600">
                 {employee.ic_number || 'N/A'}
               </p>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1">
+              <label className="block text-sm font-semibold text-gray-300 mb-1">
                 Bank Account Number
               </label>
-              <p className="text-gray-900 text-lg font-mono bg-amber-50 px-3 py-2 rounded border border-amber-200">
+              <p className="text-white text-lg font-mono bg-gray-700/50 px-3 py-2 rounded border border-gray-600">
                 {employee.bank_account_number || 'N/A'}
               </p>
             </div>
@@ -358,28 +358,28 @@ export default function EmployeeDetailPage() {
 
         {/* Employment Information Card */}
         <Card variant="gradient" className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+          <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
             <span className="mr-2">💼</span>
             Employment Information
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1">
+              <label className="block text-sm font-semibold text-gray-300 mb-1">
                 Position
               </label>
-              <p className="text-gray-900 text-lg">{employee.position || 'N/A'}</p>
+              <p className="text-white text-lg">{employee.position || 'N/A'}</p>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1">
+              <label className="block text-sm font-semibold text-gray-300 mb-1">
                 Department
               </label>
-              <p className="text-gray-900 text-lg">{employee.department || 'N/A'}</p>
+              <p className="text-white text-lg">{employee.department || 'N/A'}</p>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1">
+              <label className="block text-sm font-semibold text-gray-300 mb-1">
                 Date of Joining
               </label>
-              <p className="text-gray-900 text-lg">{formatDate(employee.date_of_joining)}</p>
+              <p className="text-white text-lg">{formatDate(employee.date_of_joining)}</p>
             </div>
           </div>
         </Card>
@@ -387,7 +387,7 @@ export default function EmployeeDetailPage() {
         {/* Employee Documents Section */}
         <Card variant="gradient" className="mb-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+            <h2 className="text-2xl font-bold text-white flex items-center">
               <span className="mr-2">📄</span>
               Employee Documents
             </h2>
@@ -406,10 +406,10 @@ export default function EmployeeDetailPage() {
           {documentsLoading ? (
             <div className="text-center py-8">
               <Loader />
-              <p className="text-gray-600 mt-2">Loading documents...</p>
+              <p className="text-gray-300 mt-2">Loading documents...</p>
             </div>
           ) : documents.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-300">
               <span className="text-4xl mb-2 block">📭</span>
               No documents uploaded yet
             </div>
@@ -417,23 +417,23 @@ export default function EmployeeDetailPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                  <tr className="border-b-2 border-gray-600">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-300">
                       Document Type
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-300">
                       File Name
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-300">
                       Size
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-300">
                       Uploaded By
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-300">
                       Upload Date
                     </th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">
+                    <th className="text-center py-3 px-4 font-semibold text-gray-300">
                       Actions
                     </th>
                   </tr>
@@ -442,26 +442,26 @@ export default function EmployeeDetailPage() {
                   {documents.map((doc) => (
                     <tr
                       key={doc.id}
-                      className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors"
+                      className="border-b border-gray-700 hover:bg-gray-700/50 transition-colors"
                     >
                       <td className="py-3 px-4">
-                        <span className="inline-block px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">
+                        <span className="inline-block px-2 py-1 rounded bg-blue-600 text-white text-xs font-semibold">
                           {doc.document_type.replace(/_/g, ' ')}
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="text-gray-900 font-medium">{doc.filename}</span>
+                        <span className="text-white font-medium">{doc.filename}</span>
                         {doc.description && (
-                          <p className="text-xs text-gray-500 mt-1">{doc.description}</p>
+                          <p className="text-xs text-gray-400 mt-1">{doc.description}</p>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-gray-600 text-sm">
+                      <td className="py-3 px-4 text-gray-300 text-sm">
                         {formatFileSize(doc.size)}
                       </td>
-                      <td className="py-3 px-4 text-gray-600 text-sm">
+                      <td className="py-3 px-4 text-gray-300 text-sm">
                         {doc.uploaded_by.email}
                       </td>
-                      <td className="py-3 px-4 text-gray-600 text-sm">
+                      <td className="py-3 px-4 text-gray-300 text-sm">
                         {formatDate(doc.created_at)}
                       </td>
                       <td className="py-3 px-4 text-center">

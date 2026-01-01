@@ -173,18 +173,18 @@ export default function EmployeesPage() {
                   variant="outline"
                   onClick={loadEmployees}
                   disabled={loading}
-                  className="w-auto px-6"
+                  className="w-auto px-6 bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300 hover:border-blue-400 transition-all"
                 >
                   <span className="flex items-center space-x-2">
-                    <span>🔄</span>
-                    <span>{loading ? 'Loading...' : 'Refresh'}</span>
+                    <span className="text-lg">🔄</span>
+                    <span className="font-medium">{loading ? 'Loading...' : 'Refresh'}</span>
                   </span>
                 </Button>
               </div>
             </Card>
 
             {/* Employee Count */}
-            <div className="mb-4 text-sm text-gray-600">
+            <div className="mb-4 text-sm text-gray-700 font-medium">
               Showing {filteredEmployees.length} of {employees.length} employees
             </div>
 
@@ -193,17 +193,17 @@ export default function EmployeesPage() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b-2 border-gray-200">
-                      <th className="text-left py-4 px-4 font-semibold text-gray-700">
+                    <tr className="border-b-2 border-gray-700">
+                      <th className="text-left py-4 px-4 font-semibold text-gray-300">
                         Employee ID
                       </th>
-                      <th className="text-left py-4 px-4 font-semibold text-gray-700">
+                      <th className="text-left py-4 px-4 font-semibold text-gray-300">
                         Full Name
                       </th>
-                      <th className="text-left py-4 px-4 font-semibold text-gray-700">
+                      <th className="text-left py-4 px-4 font-semibold text-gray-300">
                         Status
                       </th>
-                      <th className="text-center py-4 px-4 font-semibold text-gray-700">
+                      <th className="text-center py-4 px-4 font-semibold text-gray-300">
                         Actions
                       </th>
                     </tr>
@@ -211,7 +211,7 @@ export default function EmployeesPage() {
                   <tbody>
                     {filteredEmployees.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="text-center py-8 text-gray-500">
+                        <td colSpan={4} className="text-center py-8 text-gray-400">
                           {searchQuery ? 'No employees found matching your search' : 'No employees available'}
                         </td>
                       </tr>
@@ -219,15 +219,15 @@ export default function EmployeesPage() {
                       filteredEmployees.map((employee) => (
                         <tr
                           key={employee.id}
-                          className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors"
+                          className="border-b border-gray-700 hover:bg-gray-700/50 transition-colors"
                         >
                           <td className="py-4 px-4">
-                            <span className="font-mono text-sm text-gray-700">
+                            <span className="font-mono text-sm text-white">
                               {employee.employee_id || 'N/A'}
                             </span>
                           </td>
                           <td className="py-4 px-4">
-                            <span className="font-medium text-gray-900">
+                            <span className="font-medium text-white">
                               {employee.name}
                             </span>
                           </td>

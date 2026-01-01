@@ -1101,6 +1101,11 @@ function ViewClaimsModal({
   const [success, setSuccess] = useState<string | null>(null);
   const [claims, setClaims] = useState<any[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [verifyModal, setVerifyModal] = useState<{ claimId: string; action: 'VERIFIED' | 'REJECTED' | 'PROCESSED' } | null>(null);
+  const [otpPassword, setOtpPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [verificationNotes, setVerificationNotes] = useState('');
+  const [otpRequested, setOtpRequested] = useState(false);
 
   useEffect(() => {
     loadClaims();
@@ -1159,6 +1164,46 @@ function ViewClaimsModal({
       console.error('Failed to delete claim:', err);
       setError(err.response?.data?.message || 'Failed to delete claim');
       setDeleteConfirm(null);
+    }
+  };
+
+  const handleRequestOtp = async () => {
+    try {
+      setError(null);
+      await api.post('/purchase-requests/request-otp/verify-claim', {
+        password: otpPassword,
+      });
+      setSuccess('OTP sent to your email');
+      setOtpRequested(true);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to request OTP');
+    }
+  };
+
+  const handleVerifyClaim = async () => {
+    if (!verifyModal) return;
+    
+    try {
+      setError(null);
+      setLoading(true);
+      await api.put(`/purchase-requests/claims/${verifyModal.claimId}/verify`, {
+        status: verifyModal.action,
+        verification_notes: verificationNotes,
+        otp: otp,
+      });
+      setSuccess(`Claim ${verifyModal.action.toLowerCase()} successfully`);
+      setVerifyModal(null);
+      setOtp('');
+      setOtpPassword('');
+      setVerificationNotes('');
+      setOtpRequested(false);
+      // Reload claims
+      await loadClaims();
+    } catch (err: any) {
+      console.error('Failed to verify claim:', err);
+      setError(err.response?.data?.message || 'Failed to verify claim');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1278,7 +1323,45 @@ function ViewClaimsModal({
                     </button>
                   </div>
 
-                  {canDeleteClaim() && claim.status === 'VERIFIED' && (
+                  {/* Verify/Reject buttons for PENDING claims (Accountants only) */}
+                  {canDeleteClaim() && claim.status === 'PENDING' && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <p className="text-sm font-medium text-gray-700 mb-3">Review this claim:</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setVerifyModal({ claimId: claim.id, action: 'VERIFIED' })}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          Verify
+                        </button>
+                        <button
+                          onClick={() => setVerifyModal({ claimId: claim.id, action: 'PROCESSED' })}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                          </svg>
+                          Process
+                        </button>
+                        <button
+                          onClick={() => setVerifyModal({ claimId: claim.id, action: 'REJECTED' })}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Delete button for reviewed claims */}
+                  {canDeleteClaim() && claim.status !== 'PROCESSED' && (
                     <div className="mt-4 flex gap-2">
                       <button
                         onClick={() => setDeleteConfirm(claim.id)}
@@ -1324,6 +1407,97 @@ function ViewClaimsModal({
           </button>
         </div>
       </div>
+
+      {/* Verification Modal */}
+      {verifyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              {verifyModal.action === 'VERIFIED' && 'Verify Claim'}
+              {verifyModal.action === 'PROCESSED' && 'Process Claim'}
+              {verifyModal.action === 'REJECTED' && 'Reject Claim'}
+            </h3>
+
+            {!otpRequested ? (
+              <>
+                <p className="text-sm text-gray-600 mb-4">
+                  Enter your password to receive an OTP for verification:
+                </p>
+                <input
+                  type="password"
+                  value={otpPassword}
+                  onChange={(e) => setOtpPassword(e.target.value)}
+                  placeholder="Your password"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-4"
+                />
+                <div className="flex gap-2 justify-end">
+                  <button
+                    onClick={() => {
+                      setVerifyModal(null);
+                      setOtpPassword('');
+                    }}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRequestOtp}
+                    disabled={!otpPassword}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    Request OTP
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-600 mb-4">
+                  Enter the OTP sent to your email:
+                </p>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="Enter OTP"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-4"
+                />
+                <textarea
+                  value={verificationNotes}
+                  onChange={(e) => setVerificationNotes(e.target.value)}
+                  placeholder="Verification notes (optional)"
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-4"
+                />
+                <div className="flex gap-2 justify-end">
+                  <button
+                    onClick={() => {
+                      setVerifyModal(null);
+                      setOtp('');
+                      setOtpPassword('');
+                      setVerificationNotes('');
+                      setOtpRequested(false);
+                    }}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleVerifyClaim}
+                    disabled={!otp || loading}
+                    className={`px-4 py-2 text-white rounded-lg disabled:opacity-50 ${
+                      verifyModal.action === 'VERIFIED' ? 'bg-green-600 hover:bg-green-700' :
+                      verifyModal.action === 'PROCESSED' ? 'bg-blue-600 hover:bg-blue-700' :
+                      'bg-red-600 hover:bg-red-700'
+                    }`}
+                  >
+                    {loading ? 'Processing...' : `Confirm ${verifyModal.action}`}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -463,6 +463,35 @@ export class PurchaseRequestController {
   }
 
   /**
+   * Verify/Process/Reject claim (with OTP verification)
+   * Only accountants and super admins can verify claims
+   */
+  @Put('claims/:id/verify')
+  @Roles(Role.ACCOUNTANT, Role.SUPER_ADMIN)
+  async verifyClaim(
+    @Param('id') id: string,
+    @Body() dto: VerifyClaimDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+
+    if (!dto.otp) {
+      throw new BadRequestException('OTP is required. Please request OTP first.');
+    }
+
+    return this.purchaseRequestService.verifyClaim(
+      id,
+      userId,
+      dto.otp,
+      {
+        status: dto.status,
+        verification_notes: dto.verification_notes,
+      },
+      req,
+    );
+  }
+
+  /**
    * Delete claim (Accountant or Super Admin only)
    * Only VERIFIED claims can be deleted (already reviewed)
    */

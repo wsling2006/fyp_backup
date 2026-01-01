@@ -777,12 +777,12 @@ export class PurchaseRequestService {
   }
 
   /**
-   * Delete a claim (Accountant or Super Admin only, must be VERIFIED status)
+   * Delete a claim (Accountant or Super Admin only)
    * 
    * Business Rules:
    * - Only accountants and super admins can delete claims
-   * - Claim must be in VERIFIED status (already reviewed)
-   * - Cannot delete PENDING or PROCESSED claims
+   * - Can delete claims in any status except PROCESSED
+   * - PROCESSED claims are finalized and should not be deleted
    * 
    * @param claimId - UUID of the claim to delete
    * @param userId - ID of the user performing the deletion
@@ -810,10 +810,10 @@ export class PurchaseRequestService {
       throw new NotFoundException('Claim not found');
     }
 
-    // Check claim status - only allow deletion of VERIFIED claims
-    if (claim.status !== ClaimStatus.VERIFIED) {
+    // Check claim status - cannot delete PROCESSED claims (finalized)
+    if (claim.status === ClaimStatus.PROCESSED) {
       throw new BadRequestException(
-        `Cannot delete claim in ${claim.status} status. Only VERIFIED claims can be deleted.`
+        'Cannot delete PROCESSED claims. These claims have been finalized and paid.'
       );
     }
 

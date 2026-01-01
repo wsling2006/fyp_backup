@@ -285,17 +285,21 @@ export class HRController {
 
     try {
       // Step 1: Validate file
+      this.logger.log(`[HR] Validating file: ${file.originalname}`);
       this.hrService.validateFile(file);
 
       // Step 2: Scan with ClamAV (CRITICAL SECURITY STEP)
+      this.logger.log(`[HR] Scanning file with ClamAV: ${file.originalname}`);
       const isClean = await this.clamavService.scanFile(file.buffer, file.originalname);
       if (!isClean) {
         throw new BadRequestException(
           'File upload rejected: malware detected. Please scan your files before uploading.'
         );
       }
+      this.logger.log(`[HR] ClamAV scan passed: ${file.originalname}`);
 
       // Step 3: Upload to database (includes duplicate check)
+      this.logger.log(`[HR] Uploading document to database for employee: ${employeeId}`);
       const document = await this.hrService.uploadDocument(
         employeeId,
         file,
@@ -303,6 +307,8 @@ export class HRController {
         description || null,
         req.user.userId,
       );
+
+      this.logger.log(`[HR] Document uploaded successfully: ${document.id}`);
 
       // NO AUDIT LOGGING - Document uploads are operational, not sensitive data access
 
@@ -317,6 +323,8 @@ export class HRController {
         },
       };
     } catch (error) {
+      this.logger.error(`[HR] Document upload failed: ${error.message}`, error.stack);
+      
       if (error instanceof BadRequestException) {
         throw error;
       }

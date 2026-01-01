@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual } from 'typeorm';
 import { Employee } from './employee.entity';
@@ -30,6 +30,8 @@ interface UploadedFile {
  */
 @Injectable()
 export class HRService {
+  private readonly logger = new Logger(HRService.name);
+
   constructor(
     @InjectRepository(Employee)
     private readonly employeeRepo: Repository<Employee>,
@@ -219,24 +221,36 @@ export class HRService {
     description: string | null,
     uploadedBy: string,
   ): Promise<EmployeeDocument> {
+    this.logger.log(`[uploadDocument] Starting upload for employee: ${employeeId}`);
+    this.logger.log(`[uploadDocument] File: ${file.originalname}, Type: ${documentType}, UploadedBy: ${uploadedBy}`);
+    
     // Verify employee exists
+    this.logger.log(`[uploadDocument] Checking if employee exists...`);
     const employee = await this.employeeRepo.findOne({ where: { id: employeeId } });
     if (!employee) {
+      this.logger.error(`[uploadDocument] Employee not found: ${employeeId}`);
       throw new NotFoundException('Employee not found');
     }
+    this.logger.log(`[uploadDocument] Employee found: ${employee.name}`);
 
     // Generate file hash
+    this.logger.log(`[uploadDocument] Generating file hash...`);
     const fileHash = this.generateFileHash(file.buffer);
+    this.logger.log(`[uploadDocument] File hash: ${fileHash.substring(0, 16)}...`);
 
     // Check for duplicates
+    this.logger.log(`[uploadDocument] Checking for duplicate files...`);
     const duplicate = await this.findDocumentByHash(fileHash);
     if (duplicate) {
+      this.logger.warn(`[uploadDocument] Duplicate file detected: ${duplicate.filename}`);
       throw new BadRequestException(
         `This file has already been uploaded on ${duplicate.created_at.toISOString()}`
       );
     }
+    this.logger.log(`[uploadDocument] No duplicate found`);
 
     // Create document record
+    this.logger.log(`[uploadDocument] Creating document record...`);
     const document = this.documentRepo.create({
       employee_id: employeeId,
       filename: file.originalname,
@@ -248,8 +262,16 @@ export class HRService {
       description,
       uploaded_by_id: uploadedBy,
     });
+    this.logger.log(`[uploadDocument] Document record created, saving to database...`);
 
-    return this.documentRepo.save(document);
+    try {
+      const savedDocument = await this.documentRepo.save(document);
+      this.logger.log(`[uploadDocument] Document saved successfully with ID: ${savedDocument.id}`);
+      return savedDocument;
+    } catch (error) {
+      this.logger.error(`[uploadDocument] Failed to save document: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 
   /**

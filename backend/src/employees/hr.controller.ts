@@ -84,6 +84,8 @@ export class HRController {
    * Search employees by name or employee_id
    * Returns minimal data only
    * 
+   * ⚠️ NOT AUDIT LOGGED - Just a search/filter operation
+   * 
    * @param query - Search query string
    * @returns Object with employees array
    */
@@ -95,15 +97,7 @@ export class HRController {
 
     const employees = await this.hrService.searchEmployees(query);
 
-    // Log search
-    await this.auditService.logFromRequest(
-      req,
-      req.user.userId,
-      'HR_SEARCH_EMPLOYEES',
-      'employee',
-      undefined,
-      { query, results: employees.length },
-    );
+    // No audit logging - just a search/filter, not viewing sensitive data
 
     return { employees };
   }
@@ -240,20 +234,7 @@ export class HRController {
         req.user.userId,
       );
 
-      // Step 4: Audit log
-      await this.auditService.logFromRequest(
-        req,
-        req.user.userId,
-        'HR_UPLOAD_EMPLOYEE_DOCUMENT',
-        'employee_document',
-        document.id,
-        {
-          employee_id: employeeId,
-          filename: file.originalname,
-          document_type: documentType,
-          size: file.size,
-        },
-      );
+      // NO AUDIT LOGGING - Document uploads are operational, not sensitive data access
 
       return {
         success: true,
@@ -302,20 +283,7 @@ export class HRController {
         throw new BadRequestException('Document does not belong to specified employee');
       }
 
-      // Audit log
-      await this.auditService.logFromRequest(
-        req,
-        req.user.userId,
-        'HR_DOWNLOAD_EMPLOYEE_DOCUMENT',
-        'employee_document',
-        documentId,
-        {
-          employee_id: employeeId,
-          filename: document.filename,
-          document_type: document.document_type,
-          size: document.size,
-        },
-      );
+      // NO AUDIT LOGGING - Document downloads are operational
 
       // Set proper headers for download
       res.setHeader('Content-Type', document.mimetype);
@@ -359,19 +327,7 @@ export class HRController {
     // Delete document
     await this.hrService.deleteDocument(documentId);
 
-    // Audit log
-    await this.auditService.logFromRequest(
-      req,
-      req.user.userId,
-      'HR_DELETE_EMPLOYEE_DOCUMENT',
-      'employee_document',
-      documentId,
-      {
-        employee_id: employeeId,
-        filename: document.filename,
-        document_type: document.document_type,
-      },
-    );
+    // NO AUDIT LOGGING - Document deletions are operational
 
     return {
       success: true,
@@ -382,9 +338,9 @@ export class HRController {
   /**
    * Create new employee
    * Requires all employee information
-   * Audit logged
    * 
-   * Action: CREATE_EMPLOYEE (counts as CREATE action in audit dashboard)
+   * ⚠️ NOT AUDIT LOGGED - Employee creation is operational
+   * Only viewing employee profiles (sensitive data) is audit logged
    * 
    * @body employee data
    * @returns Created employee object
@@ -400,22 +356,7 @@ export class HRController {
       // Create employee
       const employee = await this.hrService.createEmployee(employeeData);
 
-      // Log creation (audit log)
-      // This will count as a "Create Action" in the audit dashboard
-      await this.auditService.logFromRequest(
-        req,
-        req.user.userId,
-        'CREATE_EMPLOYEE',
-        'employee',
-        employee.id,
-        {
-          name: employee.name,
-          email: employee.email,
-          employee_id: employee.employee_id,
-          position: employee.position,
-          department: employee.department,
-        },
-      );
+      // NO AUDIT LOGGING - Only profile views are logged
 
       this.logger.log(`Employee created: ${employee.employee_id} by user ${req.user.userId}`);
 

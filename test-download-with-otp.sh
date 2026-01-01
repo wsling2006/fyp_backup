@@ -44,7 +44,7 @@ TOKEN_RESPONSE=$(curl -s -X POST http://localhost:3000/auth/verify-otp \
 
 echo "Response: $TOKEN_RESPONSE"
 
-TOKEN=$(echo "$TOKEN_RESPONSE" | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
+TOKEN=$(echo "$TOKEN_RESPONSE" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
 
 if [ -z "$TOKEN" ]; then
     echo "❌ Failed to get token. OTP might be wrong or expired."

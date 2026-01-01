@@ -100,6 +100,9 @@ export class PurchaseRequestController {
   /**
    * Get all purchase requests (role-based filtering)
    * Accountant/SuperAdmin see all, Sales/Marketing see only their own
+   * 
+   * ⚠️ NOT AUDIT LOGGED - Just a list view, would spam logs on every page refresh
+   * Only actions that change data are logged (create, approve, reject, delete)
    */
   @Get()
   @Roles(Role.SALES, Role.MARKETING, Role.ACCOUNTANT, Role.SUPER_ADMIN)
@@ -109,23 +112,16 @@ export class PurchaseRequestController {
 
     const requests = await this.purchaseRequestService.getAllPurchaseRequests(userId, userRole);
 
-    // Log view action for Accountant/SuperAdmin only (they see ALL requests)
-    if (userRole === Role.ACCOUNTANT || userRole === Role.SUPER_ADMIN) {
-      await this.auditService.logFromRequest(
-        req,
-        userId,
-        'VIEW_ALL_PURCHASE_REQUESTS',
-        'purchase_request',
-        undefined,
-        { count: requests.length },
-      );
-    }
+    // No audit logging - list view only, prevents log bloat on every page refresh
 
     return requests;
   }
 
   /**
    * Get purchase request by ID (with ownership check)
+   * 
+   * ⚠️ NOT AUDIT LOGGED - Just viewing data, not changing it
+   * Only actions that change data are logged (create, approve, reject, delete)
    */
   @Get(':id')
   @Roles(Role.SALES, Role.MARKETING, Role.ACCOUNTANT, Role.SUPER_ADMIN)
@@ -135,11 +131,7 @@ export class PurchaseRequestController {
 
     const pr = await this.purchaseRequestService.getPurchaseRequestById(id, userId, userRole);
 
-    // Log view
-    await this.auditService.logFromRequest(req, userId, 'VIEW_PURCHASE_REQUEST', 'purchase_request', id, {
-      title: pr.title,
-      status: pr.status,
-    });
+    // No audit logging - viewing only, focus logs on actions that matter
 
     return pr;
   }

@@ -1475,8 +1475,8 @@ function ViewClaimsModal({
                     </div>
                   )}
 
-                  {/* Delete button for reviewed claims */}
-                  {canDeleteClaim() && claim.status !== 'PROCESSED' && (
+                  {/* Delete button for all claims (accountant/super_admin can delete any claim) */}
+                  {canDeleteClaim() && (
                     <div className="mt-4 flex gap-2">
                       <button
                         onClick={() => setDeleteConfirm(claim.id)}

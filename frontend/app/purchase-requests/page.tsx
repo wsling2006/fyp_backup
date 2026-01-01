@@ -49,6 +49,7 @@ export default function PurchaseRequestsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
+  const [showViewClaimsModal, setShowViewClaimsModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<PurchaseRequest | null>(null);
 
   const [filterStatus, setFilterStatus] = useState('ALL');
@@ -307,6 +308,18 @@ export default function PurchaseRequestsPage() {
                         <button
                           onClick={async () => {
                             console.log('[CLAIMS BUTTON CLICKED]', request.claims);
+                            
+                            // Accountants should always see the modal (to access delete button)
+                            const isAccountant = user?.role === 'accountant' || user?.role === 'super_admin';
+                            
+                            // If accountant OR multiple claims, open VIEW modal
+                            if (isAccountant || request.claims.length > 1) {
+                              setSelectedRequest(request);
+                              setShowViewClaimsModal(true);
+                              return;
+                            }
+                            
+                            // Otherwise, download directly (single claim, non-accountant)
                             try {
                               const claim = request.claims[0];
                               console.log('[DOWNLOADING CLAIM]', claim.id, 'Filename:', claim.receipt_file_original_name);
@@ -347,9 +360,17 @@ export default function PurchaseRequestsPage() {
                             }
                           }}
                           className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap font-bold"
-                          title={request.claims.length === 1 ? "Click to download receipt" : "Click to view all claims"}
+                          title={
+                            user?.role === 'accountant' || user?.role === 'super_admin'
+                              ? "Click to view claims and manage"
+                              : request.claims.length === 1
+                              ? "Click to download receipt"
+                              : "Click to view all claims"
+                          }
                         >
-                          DOWNLOAD {request.claims.length} CLAIM(S)
+                          {user?.role === 'accountant' || user?.role === 'super_admin'
+                            ? `VIEW ${request.claims.length} CLAIM(S)`
+                            : `DOWNLOAD ${request.claims.length} CLAIM(S)`}
                         </button>
                       )}
                     </div>
@@ -397,6 +418,16 @@ export default function PurchaseRequestsPage() {
               setShowClaimModal(false);
               setSelectedRequest(null);
               loadRequests();
+            }}
+          />
+        )}
+
+        {showViewClaimsModal && selectedRequest && (
+          <ViewClaimsModal
+            request={selectedRequest}
+            onClose={() => {
+              setShowViewClaimsModal(false);
+              setSelectedRequest(null);
             }}
           />
         )}

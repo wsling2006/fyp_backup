@@ -114,9 +114,31 @@ export default function PurchaseRequestsPage() {
 
   const canUploadClaim = (request: PurchaseRequest) => {
     // Allow upload for APPROVED and PARTIALLY_PAID requests (user can add more claims)
-    if (!['APPROVED', 'PARTIALLY_PAID'].includes(request.status)) return false;
-    const isOwner = request.created_by_user_id === user?.userId;
-    return (user?.role === 'sales_department' || user?.role === 'marketing' || user?.role === 'super_admin') && (isOwner || user?.role === 'super_admin');
+    if (!['APPROVED', 'PARTIALLY_PAID'].includes(request.status)) {
+      console.log('[canUploadClaim] Status check failed:', request.status);
+      return false;
+    }
+    
+    // Check ownership - handle both userId and id properties
+    const currentUserId = user?.userId || user?.id;
+    const isOwner = request.created_by_user_id === currentUserId;
+    
+    console.log('[canUploadClaim] Checking permissions:', {
+      requestId: request.id.slice(0, 8),
+      status: request.status,
+      requestOwnerId: request.created_by_user_id,
+      currentUserId: currentUserId,
+      userRole: user?.role,
+      isOwner,
+    });
+    
+    // User must be in allowed roles AND (be owner OR be super_admin)
+    const hasRole = user?.role === 'sales_department' || user?.role === 'marketing' || user?.role === 'super_admin';
+    const canUpload = hasRole && (isOwner || user?.role === 'super_admin');
+    
+    console.log('[canUploadClaim] Result:', { hasRole, isOwner, canUpload });
+    
+    return canUpload;
   };
 
   const canEditRequest = (request: PurchaseRequest) => {

@@ -1133,7 +1133,9 @@ function ViewClaimsModal({
 
   // Check if user can delete claims (accountant or super_admin)
   const canDeleteClaim = () => {
-    return user?.role === 'accountant' || user?.role === 'super_admin';
+    const canDelete = user?.role === 'accountant' || user?.role === 'super_admin';
+    console.log('[Delete Claim] canDelete:', canDelete, 'user role:', user?.role);
+    return canDelete;
   };
 
   const getStatusBadgeColor = (status: string) => {
@@ -1178,6 +1180,7 @@ function ViewClaimsModal({
             ) : (
               claims.map((claim) => (
                 <div key={claim.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                  {console.log('[Claim]', claim.id.slice(0,8), 'Status:', claim.status, 'canDelete:', canDeleteClaim(), 'showButton:', canDeleteClaim() && claim.status === 'VERIFIED')}
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-3">
                       <h3 className="text-lg font-semibold text-gray-900">Claim #{claim.id.slice(0, 8)}</h3>

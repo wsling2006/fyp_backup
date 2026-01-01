@@ -1,7 +1,9 @@
-# 🚀 Quick Deploy to EC2 - Delete Fix
+# 🚀 Quick Deploy to EC2 - Delete Fix + Multiple Claims Fix
 
-## The Problem
-Your EC2 backend is running the OLD code. The fix I made is only on GitHub, not deployed yet.
+## The Problems Fixed
+
+1. **Delete APPROVED Request Issue**: Backend was using cached data when checking claims
+2. **Add Second Claim Error**: `approved_amount.toFixed is not a function` - PostgreSQL returns DECIMAL as string
 
 ## Quick Deploy Steps
 
@@ -38,6 +40,7 @@ pm2 logs backend --lines 20
 
 ## What Was Fixed
 
+### Fix 1: Delete APPROVED Request (Cache Issue)
 The backend was using **cached data** when checking if a purchase request has claims. Even after you deleted all claims, the cache still showed claims existed.
 
 **The fix:** Added `cache: false` to force fresh data from database:
@@ -50,8 +53,23 @@ const pr = await this.purchaseRequestRepo.findOne({
 });
 ```
 
+### Fix 2: Add Multiple Claims (toFixed Error)
+When adding a second claim, the backend crashed because it tried to call `.toFixed()` on `approved_amount` which is a string (PostgreSQL returns DECIMAL as string).
+
+**The fix:** Convert to number before using:
+
+```typescript
+const approvedAmount = Number(pr.approved_amount);
+if (newTotalClaimed > approvedAmount) {
+  throw new BadRequestException(
+    `Total claimed amount ($${newTotalClaimed.toFixed(2)}) would exceed approved amount ($${approvedAmount.toFixed(2)}). `
+  );
+}
+```
+
 ## Testing After Deploy
 
+### Test 1: Delete APPROVED Request
 1. **Monitor backend logs** (in EC2 terminal):
    ```bash
    pm2 logs backend --lines 50
@@ -69,6 +87,13 @@ const pr = await this.purchaseRequestRepo.findOne({
    ```
 
 4. **If successful**: Purchase request will be deleted! ✅
+
+### Test 2: Add Multiple Claims
+1. Create or find an APPROVED purchase request with approved amount > $10
+2. Add a first claim (e.g., $5)
+3. Add a second claim (e.g., $3)
+4. **Should work without error!** ✅
+5. Check that total claimed validation works (try to exceed approved amount)
 
 5. **If still failing**: 
    - Check if `Claims count:` is still > 0

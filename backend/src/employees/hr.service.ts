@@ -1,0 +1,263 @@
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Employee } from './employee.entity';
+import { EmployeeDocument } from './employee-document.entity';
+import * as crypto from 'crypto';
+
+// Minimal uploaded file interface
+interface UploadedFile {
+  originalname: string;
+  mimetype: string;
+  size: number;
+  buffer: Buffer;
+}
+
+/**
+ * HR Service
+ * 
+ * Business logic for HR operations:
+ * - Employee list (minimal data)
+ * - Employee detail (full sensitive data)
+ * - Employee document upload/download
+ * 
+ * Security:
+ * - Reuses existing file upload patterns (accountant-files, claims)
+ * - All sensitive data access should be audit logged
+ * - Role-based access enforced at controller level
+ */
+@Injectable()
+export class HRService {
+  constructor(
+    @InjectRepository(Employee)
+    private readonly employeeRepo: Repository<Employee>,
+    @InjectRepository(EmployeeDocument)
+    private readonly documentRepo: Repository<EmployeeDocument>,
+  ) {}
+
+  /**
+   * Get employee list with minimal data
+   * Only returns: employee_id, name, status
+   * 
+   * @returns Promise<Employee[]> - Array of employees with public fields only
+   */
+  async getEmployeeList(): Promise<Partial<Employee>[]> {
+    const employees = await this.employeeRepo.find({
+      select: ['id', 'employee_id', 'name', 'status'],
+      order: { name: 'ASC' },
+    });
+    return employees;
+  }
+
+  /**
+   * Get employee by ID with ALL sensitive data
+   * This should be audit logged when called
+   * 
+   * @param id - Employee UUID
+   * @returns Promise<Employee> - Full employee record
+   * @throws NotFoundException if employee not found
+   */
+  async getEmployeeById(id: string): Promise<Employee> {
+    const employee = await this.employeeRepo.findOne({
+      where: { id },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    return employee;
+  }
+
+  /**
+   * Search employees by name or employee_id
+   * Returns minimal data only
+   * 
+   * @param query - Search query string
+   * @returns Promise<Employee[]> - Matching employees
+   */
+  async searchEmployees(query: string): Promise<Partial<Employee>[]> {
+    const employees = await this.employeeRepo
+      .createQueryBuilder('employee')
+      .select(['employee.id', 'employee.employee_id', 'employee.name', 'employee.status'])
+      .where('employee.name ILIKE :query', { query: `%${query}%` })
+      .orWhere('employee.employee_id ILIKE :query', { query: `%${query}%` })
+      .orderBy('employee.name', 'ASC')
+      .getMany();
+
+    return employees;
+  }
+
+  /**
+   * Validate uploaded file
+   * Reuses validation logic from accountant-files
+   * 
+   * Allowed types: PDF, Word, Excel, Images, Text
+   * Max size: 10MB
+   */
+  validateFile(file: UploadedFile): void {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    const allowedMimeTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      'application/msword', // .doc
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/vnd.ms-excel', // .xls
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'text/plain',
+    ];
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Invalid file type. Allowed: PDF, Word, Excel, Images (JPG/PNG), Text files'
+      );
+    }
+
+    if (file.size > maxSize) {
+      throw new BadRequestException(
+        `File size exceeds limit. Maximum allowed: ${maxSize / 1024 / 1024}MB`
+      );
+    }
+  }
+
+  /**
+   * Generate SHA256 hash from file buffer
+   * Reuses pattern from accountant-files and claims
+   */
+  private generateFileHash(buffer: Buffer): string {
+    return crypto.createHash('sha256').update(buffer).digest('hex');
+  }
+
+  /**
+   * Check for duplicate file by hash
+   */
+  async findDocumentByHash(hash: string): Promise<EmployeeDocument | null> {
+    return this.documentRepo.findOne({
+      where: { file_hash: hash },
+      select: ['id', 'filename', 'created_at', 'employee_id'],
+    });
+  }
+
+  /**
+   * Upload employee document
+   * Reuses file upload pattern from accountant-files
+   * 
+   * @param employeeId - Employee UUID
+   * @param file - Validated and scanned file
+   * @param documentType - Type of document
+   * @param description - Optional description
+   * @param uploadedBy - User ID of uploader
+   * @returns Promise<EmployeeDocument> - Saved document
+   */
+  async uploadDocument(
+    employeeId: string,
+    file: UploadedFile,
+    documentType: string,
+    description: string | null,
+    uploadedBy: string,
+  ): Promise<EmployeeDocument> {
+    // Verify employee exists
+    const employee = await this.employeeRepo.findOne({ where: { id: employeeId } });
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    // Generate file hash
+    const fileHash = this.generateFileHash(file.buffer);
+
+    // Check for duplicates
+    const duplicate = await this.findDocumentByHash(fileHash);
+    if (duplicate) {
+      throw new BadRequestException(
+        `This file has already been uploaded on ${duplicate.created_at.toISOString()}`
+      );
+    }
+
+    // Create document record
+    const document = this.documentRepo.create({
+      employee_id: employeeId,
+      filename: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      data: file.buffer,
+      file_hash: fileHash,
+      document_type: documentType as any,
+      description,
+      uploaded_by_id: uploadedBy,
+    });
+
+    return this.documentRepo.save(document);
+  }
+
+  /**
+   * Get all documents for an employee
+   * Returns metadata only (no file data for performance)
+   * 
+   * @param employeeId - Employee UUID
+   * @returns Promise<EmployeeDocument[]> - Array of documents
+   */
+  async getEmployeeDocuments(employeeId: string): Promise<Partial<EmployeeDocument>[]> {
+    const documents = await this.documentRepo
+      .createQueryBuilder('doc')
+      .leftJoinAndSelect('doc.uploaded_by', 'uploader')
+      .select([
+        'doc.id',
+        'doc.filename',
+        'doc.mimetype',
+        'doc.size',
+        'doc.document_type',
+        'doc.description',
+        'doc.created_at',
+        'uploader.id',
+        'uploader.email',
+      ])
+      .where('doc.employee_id = :employeeId', { employeeId })
+      .orderBy('doc.created_at', 'DESC')
+      .getMany();
+
+    return documents;
+  }
+
+  /**
+   * Get document by ID with full data (for download)
+   * 
+   * @param documentId - Document UUID
+   * @returns Promise<EmployeeDocument> - Full document with binary data
+   * @throws NotFoundException if not found
+   */
+  async getDocumentById(documentId: string): Promise<EmployeeDocument> {
+    const document = await this.documentRepo.findOne({
+      where: { id: documentId },
+      relations: ['employee', 'uploaded_by'],
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    return document;
+  }
+
+  /**
+   * Delete document
+   * 
+   * @param documentId - Document UUID
+   * @returns Promise<void>
+   * @throws NotFoundException if not found
+   */
+  async deleteDocument(documentId: string): Promise<void> {
+    const document = await this.documentRepo.findOne({ where: { id: documentId } });
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    await this.documentRepo.delete(documentId);
+  }
+}

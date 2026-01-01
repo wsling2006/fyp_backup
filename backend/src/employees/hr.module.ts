@@ -12,6 +12,13 @@ import { DocumentController } from './document.controller';
 import { ActivityLog } from './activitylog.entity';
 import { ActivityLogService } from './activitylog.service';
 import { ActivityLogController } from './activitylog.controller';
+// NEW: HR Employee Management
+import { Employee } from './employee.entity';
+import { EmployeeDocument } from './employee-document.entity';
+import { HRService } from './hr.service';
+import { HRController } from './hr.controller';
+import { ClamavModule } from '../clamav/clamav.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
@@ -20,19 +27,26 @@ import { ActivityLogController } from './activitylog.controller';
       Announcement,
       Document,
       ActivityLog,
+      Employee, // Add Employee entity
+      EmployeeDocument, // Add EmployeeDocument entity
     ]),
+    ClamavModule, // Import ClamAV for file scanning
+    AuditModule, // Import Audit for logging
   ],
   providers: [
     AttendanceService,
     AnnouncementService,
     DocumentService,
     ActivityLogService,
+    HRService, // Add HR service
   ],
   controllers: [
     AttendanceController,
     AnnouncementController,
     DocumentController,
     ActivityLogController,
+    HRController, // Add HR controller
   ],
+  exports: [HRService], // Export for potential use in other modules
 })
 export class HRModule {}

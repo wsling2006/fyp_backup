@@ -7,11 +7,15 @@ import { useAuth } from '../context/AuthContext';
 // Example role-based menu config
 const menu = [
 	{ label: 'Dashboard', href: '/' },
+	// HR Module - Employee Management
+	{ label: 'Employee Management', href: '/hr/employees', roles: ['human_resources', 'super_admin'] },
+	// Legacy HR features (keep for backward compatibility)
 	{ label: 'Employees', href: '/employees', roles: ['SUPER_ADMIN', 'HR'] },
 	{ label: 'Attendance', href: '/attendance', roles: ['SUPER_ADMIN', 'HR'] },
 	{ label: 'Announcements', href: '/announcements', roles: ['SUPER_ADMIN', 'HR'] },
 	{ label: 'Documents', href: '/documents', roles: ['SUPER_ADMIN', 'HR'] },
 	{ label: 'Activity Logs', href: '/activity-logs', roles: ['SUPER_ADMIN', 'HR'] },
+	// Accounting features
 	{ label: 'Company Revenue', href: '/company-revenue', roles: ['SUPER_ADMIN', 'ACCOUNTANT'] },
 	{ label: 'Cash Flow', href: '/cash-flow', roles: ['SUPER_ADMIN', 'ACCOUNTANT'] },
 	{ label: 'Financial Statements', href: '/financial-statements', roles: ['SUPER_ADMIN', 'ACCOUNTANT'] },

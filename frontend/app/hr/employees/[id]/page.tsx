@@ -1,0 +1,611 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import api from '@/lib/api';
+import { Card } from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import Loader from '@/components/ui/Loader';
+
+interface Employee {
+  id: string;
+  employee_id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  address: string | null;
+  emergency_contact: string | null;
+  ic_number: string | null;
+  birthday: string | null;
+  bank_account_number: string | null;
+  position: string | null;
+  department: string | null;
+  date_of_joining: string | null;
+  status: 'ACTIVE' | 'INACTIVE' | 'TERMINATED';
+  created_at: string;
+  updated_at: string;
+}
+
+interface EmployeeDocument {
+  id: string;
+  filename: string;
+  mimetype: string;
+  size: number;
+  document_type: string;
+  description: string | null;
+  uploaded_by: {
+    id: string;
+    email: string;
+  };
+  created_at: string;
+}
+
+export default function EmployeeDetailPage() {
+  const { user, logout, isInitialized } = useAuth();
+  const router = useRouter();
+  const params = useParams();
+  const employeeId = params?.id as string;
+
+  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+
+  useEffect(() => {
+    if (!isInitialized) {
+      return;
+    }
+
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    if (user.role !== 'human_resources' && user.role !== 'super_admin') {
+      router.push('/dashboard');
+      return;
+    }
+
+    if (employeeId) {
+      loadEmployeeDetails();
+      loadEmployeeDocuments();
+    }
+  }, [isInitialized, user, router, employeeId]);
+
+  const loadEmployeeDetails = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.get(`/hr/employees/${employeeId}`);
+      console.log('[HR] Loaded employee details');
+      setEmployee(response.data);
+    } catch (err: any) {
+      console.error('[HR] Failed to load employee:', err);
+      setError(err.response?.data?.message || 'Failed to load employee details');
+      
+      if (err.response?.status === 401) {
+        logout();
+      } else if (err.response?.status === 403) {
+        setError('Access denied. HR permissions required.');
+      } else if (err.response?.status === 404) {
+        setError('Employee not found.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadEmployeeDocuments = async () => {
+    try {
+      setDocumentsLoading(true);
+      const response = await api.get(`/hr/employees/${employeeId}/documents`);
+      console.log('[HR] Loaded employee documents:', response.data.length);
+      setDocuments(response.data);
+    } catch (err: any) {
+      console.error('[HR] Failed to load documents:', err);
+    } finally {
+      setDocumentsLoading(false);
+    }
+  };
+
+  const handleDownloadDocument = async (documentId: string, filename: string) => {
+    try {
+      console.log('[HR] Downloading document:', documentId);
+      const response = await api.get(
+        `/hr/employees/${employeeId}/documents/${documentId}/download`,
+        { responseType: 'blob' }
+      );
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      console.log('[HR] Document downloaded successfully');
+    } catch (err: any) {
+      console.error('[HR] Failed to download document:', err);
+      alert(err.response?.data?.message || 'Failed to download document');
+    }
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'ACTIVE':
+        return 'bg-green-100 text-green-800 border-green-300';
+      case 'INACTIVE':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'TERMINATED':
+        return 'bg-red-100 text-red-800 border-red-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="text-center">
+          <Loader />
+          <p className="text-gray-600 mt-4 text-lg">Loading employee details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !employee) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-8">
+        <div className="max-w-4xl mx-auto">
+          <Card className="border-l-4 border-red-500 bg-red-50">
+            <div className="flex items-center mb-4">
+              <span className="text-3xl mr-3">⚠️</span>
+              <div>
+                <h3 className="font-semibold text-red-900 text-xl">Error</h3>
+                <p className="text-red-700">{error}</p>
+              </div>
+            </div>
+            <Button variant="primary" onClick={() => router.push('/hr/employees')} className="w-auto">
+              ← Back to Employee List
+            </Button>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!employee) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/hr/employees')}
+              className="w-auto mb-4 px-4 py-2"
+            >
+              ← Back to Employee List
+            </Button>
+            <h1 className="text-4xl font-bold text-gray-900">{employee.name}</h1>
+            <p className="text-gray-600 mt-1">
+              Employee ID: {employee.employee_id || 'N/A'}
+            </p>
+          </div>
+          <span
+            className={`inline-block px-4 py-2 rounded-full text-sm font-semibold border ${getStatusBadgeColor(
+              employee.status
+            )}`}
+          >
+            {employee.status}
+          </span>
+        </div>
+
+        {/* Personal Information Card */}
+        <Card variant="gradient" className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+            <span className="mr-2">👤</span>
+            Personal Information
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-600 mb-1">
+                Full Name
+              </label>
+              <p className="text-gray-900 text-lg">{employee.name}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-600 mb-1">
+                Email
+              </label>
+              <p className="text-gray-900 text-lg">{employee.email}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-600 mb-1">
+                Phone Number
+              </label>
+              <p className="text-gray-900 text-lg">{employee.phone || 'N/A'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-600 mb-1">
+                Birthday
+              </label>
+              <p className="text-gray-900 text-lg">{formatDate(employee.birthday)}</p>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-600 mb-1">
+                Address
+              </label>
+              <p className="text-gray-900 text-lg">{employee.address || 'N/A'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-600 mb-1">
+                Emergency Contact
+              </label>
+              <p className="text-gray-900 text-lg">{employee.emergency_contact || 'N/A'}</p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Sensitive Information Card */}
+        <Card variant="glass" className="mb-6 border-l-4 border-amber-500">
+          <div className="flex items-start mb-4">
+            <span className="text-2xl mr-2">🔒</span>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-gray-900">Sensitive Information</h2>
+              <p className="text-sm text-amber-700 mt-1">
+                ⚠️ Access to this information is logged for audit purposes
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-600 mb-1">
+                IC Number / Passport
+              </label>
+              <p className="text-gray-900 text-lg font-mono bg-amber-50 px-3 py-2 rounded border border-amber-200">
+                {employee.ic_number || 'N/A'}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-600 mb-1">
+                Bank Account Number
+              </label>
+              <p className="text-gray-900 text-lg font-mono bg-amber-50 px-3 py-2 rounded border border-amber-200">
+                {employee.bank_account_number || 'N/A'}
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Employment Information Card */}
+        <Card variant="gradient" className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+            <span className="mr-2">💼</span>
+            Employment Information
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-600 mb-1">
+                Position
+              </label>
+              <p className="text-gray-900 text-lg">{employee.position || 'N/A'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-600 mb-1">
+                Department
+              </label>
+              <p className="text-gray-900 text-lg">{employee.department || 'N/A'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-600 mb-1">
+                Date of Joining
+              </label>
+              <p className="text-gray-900 text-lg">{formatDate(employee.date_of_joining)}</p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Employee Documents Section */}
+        <Card variant="gradient" className="mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+              <span className="mr-2">📄</span>
+              Employee Documents
+            </h2>
+            <Button
+              variant="primary"
+              onClick={() => setShowUploadModal(true)}
+              className="w-auto px-6"
+            >
+              <span className="flex items-center space-x-2">
+                <span>📤</span>
+                <span>Upload Document</span>
+              </span>
+            </Button>
+          </div>
+
+          {documentsLoading ? (
+            <div className="text-center py-8">
+              <Loader />
+              <p className="text-gray-600 mt-2">Loading documents...</p>
+            </div>
+          ) : documents.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <span className="text-4xl mb-2 block">📭</span>
+              No documents uploaded yet
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-gray-200">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                      Document Type
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                      File Name
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                      Size
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                      Uploaded By
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                      Upload Date
+                    </th>
+                    <th className="text-center py-3 px-4 font-semibold text-gray-700">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {documents.map((doc) => (
+                    <tr
+                      key={doc.id}
+                      className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors"
+                    >
+                      <td className="py-3 px-4">
+                        <span className="inline-block px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">
+                          {doc.document_type.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-gray-900 font-medium">{doc.filename}</span>
+                        {doc.description && (
+                          <p className="text-xs text-gray-500 mt-1">{doc.description}</p>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-gray-600 text-sm">
+                        {formatFileSize(doc.size)}
+                      </td>
+                      <td className="py-3 px-4 text-gray-600 text-sm">
+                        {doc.uploaded_by.email}
+                      </td>
+                      <td className="py-3 px-4 text-gray-600 text-sm">
+                        {formatDate(doc.created_at)}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <Button
+                          variant="primary"
+                          onClick={() => handleDownloadDocument(doc.id, doc.filename)}
+                          className="w-auto px-4 py-2 text-sm"
+                        >
+                          <span className="flex items-center space-x-1">
+                            <span>⬇️</span>
+                            <span>Download</span>
+                          </span>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        {/* Audit Notice */}
+        <Card className="bg-blue-50 border-l-4 border-blue-500">
+          <div className="flex items-start">
+            <span className="text-2xl mr-3">ℹ️</span>
+            <div>
+              <h3 className="font-semibold text-blue-900 mb-1">Audit Trail Notice</h3>
+              <p className="text-sm text-blue-700">
+                Your access to this employee profile and any document downloads are logged for
+                security and compliance purposes. All sensitive data access is monitored.
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Upload Document Modal */}
+      {showUploadModal && (
+        <UploadDocumentModal
+          employeeId={employeeId}
+          onClose={() => setShowUploadModal(false)}
+          onSuccess={() => {
+            setShowUploadModal(false);
+            loadEmployeeDocuments();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Upload Document Modal Component
+function UploadDocumentModal({
+  employeeId,
+  onClose,
+  onSuccess,
+}: {
+  employeeId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [documentType, setDocumentType] = useState('OTHER');
+  const [description, setDescription] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+      setError(null);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setError('Please select a file');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setError(null);
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('document_type', documentType);
+      if (description) {
+        formData.append('description', description);
+      }
+
+      await api.post(`/hr/employees/${employeeId}/documents`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log('[HR] Document uploaded successfully');
+      onSuccess();
+    } catch (err: any) {
+      console.error('[HR] Failed to upload document:', err);
+      setError(err.response?.data?.message || 'Failed to upload document');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <Card className="max-w-2xl w-full" variant="glass">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Upload Employee Document</h2>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            ⚠️ {error}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {/* File Selector */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Select File *
+            </label>
+            <input
+              type="file"
+              onChange={handleFileChange}
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {selectedFile && (
+              <p className="mt-2 text-sm text-gray-600">
+                Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
+              </p>
+            )}
+          </div>
+
+          {/* Document Type */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Document Type *
+            </label>
+            <select
+              value={documentType}
+              onChange={(e) => setDocumentType(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="RESUME">Resume / CV</option>
+              <option value="EMPLOYMENT_CONTRACT">Employment Contract</option>
+              <option value="OFFER_LETTER">Offer Letter</option>
+              <option value="IDENTITY_DOCUMENT">Identity Document (IC/Passport)</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Description (Optional)
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Add notes about this document..."
+              rows={3}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex space-x-3 mt-6">
+          <Button
+            variant="primary"
+            onClick={handleUpload}
+            disabled={uploading || !selectedFile}
+            className="flex-1"
+          >
+            {uploading ? 'Uploading...' : 'Upload Document'}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={onClose}
+            disabled={uploading}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+        </div>
+
+        {/* Info */}
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+          ℹ️ Files will be scanned for malware before upload. Maximum file size: 10MB.
+        </div>
+      </Card>
+    </div>
+  );
+}

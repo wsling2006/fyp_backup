@@ -552,7 +552,7 @@ function DeleteEmployeeModal({
       setLoading(true);
       setError(null);
 
-      await api.post(`/hr/employees/${employee.id}/delete/request-otp`, {
+      await api.post(`/hr/employees/${employee.id}/request-delete-otp`, {
         password,
       });
 

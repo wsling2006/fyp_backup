@@ -117,14 +117,25 @@ export class HRController {
    * 
    * Action: VIEW_EMPLOYEE_PROFILE (counts as VIEW action in audit dashboard)
    * 
-   * Anti-Spam Feature (Server-Side Tracking):
-   * - Tracks viewed employees per user in-memory on backend
-   * - First view of an employee → Creates audit log
-   * - Subsequent views (refreshes) → Skips audit log
-   * - More reliable than client-side sessionStorage
-   * - Resets when backend restarts (expected behavior)
+   * Smart Anti-Spam (Hybrid Approach - Best of Both Worlds):
+   * 
+   * 🔹 In-Memory Tracking (Fast):
+   *    - Prevents spam during page refreshes in the same session
+   *    - Clears when backend restarts
+   * 
+   * 🔹 Database Check (Persistent):
+   *    - Limits to ONE audit log per user per employee per DAY
+   *    - Survives backend restarts
+   *    - Resets at midnight (00:00:00)
+   * 
+   * Result: Secure audit trail + No spam!
+   * - First view today → Audit log created ✓
+   * - Refresh 100 times → NO additional logs ✓
+   * - Backend restart, view again → Still NO log (already viewed today) ✓
+   * - Tomorrow (new day) → New audit log created ✓
    * 
    * @param id - Employee UUID
+   * @param silent - Optional query param to suppress audit logging
    * @param req - Request object with user info
    * @returns Full employee object
    */
@@ -137,26 +148,37 @@ export class HRController {
     const employee = await this.hrService.getEmployeeById(id);
     const userId = req.user.userId;
 
-    // Check if this user has already viewed this employee
+    // HYBRID ANTI-SPAM APPROACH:
+    // 1. In-memory check (fast, prevents spam in same session)
+    // 2. Database check (persistent, limits to once per day)
+    
+    // STEP 1: Fast in-memory check
     if (!this.viewedEmployees.has(userId)) {
       this.viewedEmployees.set(userId, new Set());
     }
     
     const userViewedEmployees = this.viewedEmployees.get(userId)!;
-    const hasViewedBefore = userViewedEmployees.has(id);
+    const hasViewedInMemory = userViewedEmployees.has(id);
 
-    // Only log if:
-    // 1. User hasn't viewed this employee before (first view)
-    // 2. AND silent parameter is not explicitly set to 'true'
+    // STEP 2: If not in memory, check database (once per day limit)
+    let hasViewedToday = false;
+    if (!hasViewedInMemory) {
+      // shouldLogEmployeeView returns TRUE if should log (not viewed today)
+      // We want hasViewedToday = TRUE if already viewed today
+      hasViewedToday = !(await this.hrService.shouldLogEmployeeView(userId, id));
+    }
+
+    // Determine if we should log
     const isSilent = silent === 'true';
-    const shouldLog = !hasViewedBefore && !isSilent;
+    const shouldLog = !hasViewedInMemory && !hasViewedToday && !isSilent;
 
-    // DEBUG LOGGING - Remove after testing
-    this.logger.debug(`[AUDIT SPAM DEBUG] userId=${userId}, employeeId=${id}, hasViewedBefore=${hasViewedBefore}, isSilent=${isSilent}, shouldLog=${shouldLog}`);
-    this.logger.debug(`[AUDIT SPAM DEBUG] Total users tracked: ${this.viewedEmployees.size}, This user viewed: ${userViewedEmployees.size} employees`);
+    // DEBUG LOGGING
+    this.logger.debug(`[AUDIT SPAM DEBUG] userId=${userId}, employeeId=${id}`);
+    this.logger.debug(`[AUDIT SPAM DEBUG] hasViewedInMemory=${hasViewedInMemory}, hasViewedToday=${hasViewedToday}, isSilent=${isSilent}, shouldLog=${shouldLog}`);
+    this.logger.debug(`[AUDIT SPAM DEBUG] In-memory: ${this.viewedEmployees.size} users tracked, this user viewed ${userViewedEmployees.size} employees`);
 
     if (shouldLog) {
-      this.logger.log(`Creating audit log for VIEW_EMPLOYEE_PROFILE - First time user ${userId} viewed employee ${id}`);
+      this.logger.log(`✓ Creating audit log - First view TODAY: user ${userId} → employee ${id}`);
       await this.auditService.logFromRequest(
         req,
         userId,
@@ -178,11 +200,19 @@ export class HRController {
         },
       );
       
-      // Mark this employee as viewed by this user
+      // Mark as viewed in memory
       userViewedEmployees.add(id);
-      this.logger.debug(`[AUDIT SPAM DEBUG] Added employee ${id} to user ${userId}'s viewed list. Now tracking ${userViewedEmployees.size} employees for this user.`);
+      this.logger.debug(`[AUDIT SPAM DEBUG] Added to in-memory tracking`);
     } else {
-      this.logger.log(`Skipping audit log for VIEW_EMPLOYEE_PROFILE - User ${userId} already viewed employee ${id} (hasViewedBefore=${hasViewedBefore}) or silent mode (isSilent=${isSilent})`);
+      if (hasViewedInMemory) {
+        this.logger.log(`✗ Skipping audit log - Already viewed in this session (in-memory check)`);
+      } else if (hasViewedToday) {
+        this.logger.log(`✗ Skipping audit log - Already viewed today (database check)`);
+        // Add to in-memory to avoid future DB checks
+        userViewedEmployees.add(id);
+      } else if (isSilent) {
+        this.logger.log(`✗ Skipping audit log - Silent mode enabled`);
+      }
     }
 
     return { employee };

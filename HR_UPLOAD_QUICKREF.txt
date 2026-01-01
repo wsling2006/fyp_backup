@@ -1,0 +1,127 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                   HR UPLOAD BUG - QUICK REFERENCE                          ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+📋 PROBLEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+File uploads stuck showing "Uploading..." forever
+- Both create employee and edit employee affected
+- Users cannot upload resumes, agreements, etc.
+
+🔍 ROOT CAUSE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Missing timeout in frontend upload code
+- Backend ClamAV scan takes 30-60 seconds
+- Frontend had no timeout → waited forever
+- Accountant upload works because it HAS timeout
+
+✅ FIX STATUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Code fixed (local)
+✅ Documentation written
+✅ Diagnostic tools created
+✅ Committed to git
+✅ Pushed to GitHub
+⏳ PENDING: Deploy to EC2 and test
+
+📦 WHAT WAS CHANGED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+File: frontend/app/hr/employees/[id]/page.tsx
+  - Added: timeout: 120000 (upload modal)
+
+File: frontend/app/hr/employees/add/page.tsx  
+  - Added: timeout: 120000 (create employee)
+
+🚀 DEPLOY TO EC2
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ssh -i /path/to/key.pem ubuntu@YOUR_EC2_IP
+
+cd /home/ubuntu/fyp_system
+git pull origin main
+cd backend && npm run build && cd ..
+cd frontend && npm run build && cd ..
+pm2 restart all
+pm2 status
+
+🧪 TEST ON EC2
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Go to: http://YOUR_EC2_IP:3001/hr/employees
+2. Click any employee → Click "Upload Document"
+3. Select PDF → Upload
+4. Should complete in 30-90 seconds ✅
+
+5. Go to: http://YOUR_EC2_IP:3001/hr/employees/add
+6. Fill form → Attach resume/agreement PDFs
+7. Click "Create Employee"
+8. Should complete in 30-90 seconds ✅
+
+📊 MONITORING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Watch logs during testing:
+pm2 logs backend --lines 0
+pm2 logs frontend --lines 0
+
+Look for:
+- "[HR] Uploading document for employee"
+- "[ClamAV] Scanning file"
+- "[ClamAV] File is clean"
+- "[HR] Document uploaded successfully"
+
+🔧 IF STILL BROKEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+On EC2:
+
+1. Verify latest code:
+   git log -1 --oneline
+   # Should mention "upload" fix
+
+2. Check services:
+   pm2 status
+   # Both should be "online"
+
+3. Check ClamAV:
+   sudo systemctl status clamav-daemon
+   # Should be "active (running)"
+
+4. Rebuild if needed:
+   cd ~/fyp_system
+   cd backend && npm run build && cd ..
+   cd frontend && npm run build && cd ..
+   pm2 restart all
+
+📚 DETAILED DOCS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HR_UPLOAD_BUG_ANALYSIS.md   - Complete technical analysis
+HR_UPLOAD_DEPLOYMENT.md      - Step-by-step deployment guide
+diagnose-hr-upload.sh        - Automated diagnostic script
+verify-hr-upload-fix.sh      - Fix verification script
+
+🎯 SUCCESS CRITERIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Upload completes in < 2 minutes
+✅ Shows "Uploading..." during scan
+✅ Shows success message when done
+✅ Document appears in list
+✅ No more infinite "stuck" uploads
+
+⏱️ TIMELINE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Expected upload time breakdown:
+  File upload to server:  2-5 seconds
+  ClamAV malware scan:    30-60 seconds  ← Main delay
+  Database save:          2-5 seconds
+  ─────────────────────────────────────
+  Total:                  34-70 seconds
+  Timeout:                120 seconds (safe buffer)
+
+🔑 KEY INSIGHT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The fix matches the WORKING accountant upload pattern:
+- Same timeout: 120000ms
+- Same endpoint pattern: /upload suffix
+- Same ClamAV scan process
+- If accountant works, HR should work too!
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  NEXT STEP: Deploy to EC2, rebuild, test, and confirm fix works!         ║
+╚═══════════════════════════════════════════════════════════════════════════╝

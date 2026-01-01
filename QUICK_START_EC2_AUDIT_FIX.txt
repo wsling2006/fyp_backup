@@ -1,0 +1,76 @@
+╔════════════════════════════════════════════════════════════════╗
+║                                                                ║
+║        HR AUDIT LOG SPAM FIX - QUICK START ON EC2             ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+
+📋 WHAT TO DO ON EC2:
+
+1️⃣  RUN DIAGNOSTIC (tells you exactly what's wrong)
+   ────────────────────────────────────────────────────
+   cd ~/fyp_system
+   git pull
+   ./diagnose-ec2-audit-complete.sh
+
+2️⃣  IF DIAGNOSTIC SAYS "REBUILD NEEDED"
+   ────────────────────────────────────────────────────
+   cd ~/fyp_system/backend
+   npm run build
+   pm2 restart backend
+
+3️⃣  TEST THE FIX
+   ────────────────────────────────────────────────────
+   a) Login as HR user in browser
+   b) View an employee profile
+   c) Check logs:
+      pm2 logs backend --lines 30 | grep "AUDIT SPAM DEBUG"
+      → Should see: "First view - creating audit log"
+   
+   d) Refresh the page (F5)
+   e) Check logs again:
+      pm2 logs backend --lines 30 | grep "AUDIT SPAM DEBUG"
+      → Should see: "Already viewed, skipping audit log"
+
+✅ SUCCESS = No duplicate "Employee View" audit logs on refresh!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 HOW THE FIX WORKS:
+
+Server-side Map tracks which users have viewed which employees:
+• First view → Audit log created ✓
+• Refresh → No audit log (spam prevented) ✓
+• Different employee → New audit log ✓
+• Backend restart → Map clears (by design)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔍 QUICK COMMANDS:
+
+View logs in real-time:
+   pm2 logs backend
+
+Check for spam:
+   pm2 logs backend --lines 100 | grep "Employee View"
+
+Check debug messages:
+   pm2 logs backend --lines 100 | grep "AUDIT SPAM DEBUG"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 FULL DOCUMENTATION:
+   • HR_AUDIT_COMPLETE_GUIDE.md - Complete troubleshooting guide
+   • diagnose-ec2-audit-complete.sh - Full diagnostic tool
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚨 IF SPAM PERSISTS:
+   1. Check diagnostic output carefully
+   2. Verify debug logs are appearing
+   3. Ensure backend was rebuilt and restarted
+   4. Clear browser cache and localStorage
+   5. Check that JWT auth is working (req.user.id exists)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The diagnostic script will tell you EXACTLY what's wrong!

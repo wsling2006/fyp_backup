@@ -208,7 +208,16 @@ export class HRController {
     }
 
     // Validate document type
-    const validTypes = ['RESUME', 'EMPLOYMENT_CONTRACT', 'OFFER_LETTER', 'IDENTITY_DOCUMENT', 'OTHER'];
+    const validTypes = [
+      'RESUME',
+      'EMPLOYMENT_AGREEMENT',
+      'EMPLOYMENT_CONTRACT',
+      'OFFER_LETTER',
+      'IDENTITY_DOCUMENT',
+      'CERTIFICATION',
+      'PERFORMANCE_REVIEW',
+      'OTHER'
+    ];
     if (!validTypes.includes(documentType)) {
       throw new BadRequestException(
         `Invalid document type. Allowed: ${validTypes.join(', ')}`

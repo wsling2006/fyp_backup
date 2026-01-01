@@ -100,23 +100,16 @@ export class HRService {
       throw new BadRequestException('No file uploaded');
     }
 
+    // ONLY ALLOW PDF for employee documents (resume, agreement, etc.)
     const allowedMimeTypes = [
       'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
-      'application/msword', // .doc
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-      'application/vnd.ms-excel', // .xls
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'text/plain',
     ];
 
     const maxSize = 10 * 1024 * 1024; // 10MB
 
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException(
-        'Invalid file type. Allowed: PDF, Word, Excel, Images (JPG/PNG), Text files'
+        'Invalid file type. Only PDF files are allowed for employee documents (resume, employment agreement, etc.).'
       );
     }
 

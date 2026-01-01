@@ -480,7 +480,26 @@ function UploadDocumentModal({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+      const file = e.target.files[0];
+      
+      // Validate PDF only
+      if (file.type !== 'application/pdf') {
+        setError('Only PDF files are allowed. Please select a PDF file.');
+        setSelectedFile(null);
+        e.target.value = ''; // Clear the input
+        return;
+      }
+      
+      // Validate file size (10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        setError('File size exceeds 10MB limit.');
+        setSelectedFile(null);
+        e.target.value = '';
+        return;
+      }
+      
+      setSelectedFile(file);
       setError(null);
     }
   };
@@ -533,14 +552,17 @@ function UploadDocumentModal({
           {/* File Selector */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Select File *
+              Select PDF File * <span className="text-sm text-gray-500">(PDF only, max 10MB)</span>
             </label>
             <input
               type="file"
               onChange={handleFileChange}
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls"
+              accept=".pdf,application/pdf"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            <p className="mt-1 text-xs text-gray-500">
+              ⚠️ Only PDF files are allowed for employee documents (resume, employment agreement, etc.)
+            </p>
             {selectedFile && (
               <p className="mt-2 text-sm text-gray-600">
                 Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
@@ -558,11 +580,14 @@ function UploadDocumentModal({
               onChange={(e) => setDocumentType(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="RESUME">Resume / CV</option>
-              <option value="EMPLOYMENT_CONTRACT">Employment Contract</option>
-              <option value="OFFER_LETTER">Offer Letter</option>
-              <option value="IDENTITY_DOCUMENT">Identity Document (IC/Passport)</option>
-              <option value="OTHER">Other</option>
+              <option value="RESUME">📄 Resume / CV</option>
+              <option value="EMPLOYMENT_AGREEMENT">📝 Employment Agreement</option>
+              <option value="EMPLOYMENT_CONTRACT">📋 Employment Contract</option>
+              <option value="OFFER_LETTER">💼 Offer Letter</option>
+              <option value="IDENTITY_DOCUMENT">🆔 Identity Document (IC/Passport)</option>
+              <option value="CERTIFICATION">🎓 Certification / Qualification</option>
+              <option value="PERFORMANCE_REVIEW">⭐ Performance Review</option>
+              <option value="OTHER">📎 Other</option>
             </select>
           </div>
 

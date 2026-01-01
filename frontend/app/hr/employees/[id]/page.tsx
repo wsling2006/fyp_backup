@@ -877,10 +877,12 @@ function UploadDocumentModal({
         formData.append('description', description);
       }
 
-      await api.post(`/hr/employees/${employeeId}/documents`, formData, {
+      // FIXED: Correct endpoint path and add timeout for ClamAV scan
+      await api.post(`/hr/employees/${employeeId}/documents/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 120000, // 2 minutes timeout for malware scan
       });
 
       console.log('[HR] Document uploaded successfully');

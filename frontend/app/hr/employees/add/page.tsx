@@ -77,8 +77,10 @@ export default function AddEmployeePage() {
     formData.append('document_type', documentType);
     formData.append('description', `Uploaded during employee creation`);
 
+    // FIXED: Add timeout for ClamAV malware scan
     await api.post(`/hr/employees/${employeeId}/documents/upload`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000, // 2 minutes timeout for malware scan
     });
   };
 

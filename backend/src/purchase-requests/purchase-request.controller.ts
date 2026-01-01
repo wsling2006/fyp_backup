@@ -237,9 +237,7 @@ export class PurchaseRequestController {
       throw new BadRequestException('Receipt file is required');
     }
 
-    if (!dto.otp) {
-      throw new BadRequestException('OTP is required. Please request OTP first.');
-    }
+    // OTP check removed: Users can now upload claims without OTP verification
 
     const userId = req.user.userId;
     const userRole = req.user.role;
@@ -299,11 +297,10 @@ export class PurchaseRequestController {
       file_buffer: `Buffer(${claimData.file_buffer?.length || 0} bytes)`,
     });
 
-    // Step 3: Create claim in database with file data
+    // Step 3: Create claim in database with file data (no OTP required)
     return this.purchaseRequestService.createClaim(
       userId,
       userRole,
-      dto.otp,
       claimData,
       req,
     );

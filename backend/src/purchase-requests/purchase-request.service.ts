@@ -375,11 +375,11 @@ export class PurchaseRequestService {
 
   /**
    * Upload receipt and create claim (Sales/Marketing/SuperAdmin - only for APPROVED requests)
+   * OTP verification removed to simplify the claim upload process
    */
   async createClaim(
     userId: string,
     userRole: string,
-    otp: string,
     data: {
       purchase_request_id: string;
       vendor_name: string;
@@ -395,8 +395,8 @@ export class PurchaseRequestService {
     },
     req: any,
   ): Promise<Claim> {
-    // Verify OTP
-    this.verifyOtp(userId, otp, 'UPLOAD_RECEIPT');
+    // OTP verification removed: Users can now upload claims without OTP verification
+    // This simplifies the claim upload process and removes unnecessary friction
 
     // Get purchase request
     const pr = await this.purchaseRequestRepo.findOne({

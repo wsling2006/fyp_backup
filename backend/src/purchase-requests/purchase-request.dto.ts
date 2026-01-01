@@ -96,9 +96,8 @@ export class CreateClaimDto {
   @IsNotEmpty()
   claim_description: string;
 
-  @IsString()
-  @IsNotEmpty()
-  otp: string;
+  // OTP removed: Users can now upload claims without OTP verification
+  // This simplifies the claim upload process and removes unnecessary friction
 }
 
 export class VerifyClaimDto {

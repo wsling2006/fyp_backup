@@ -943,7 +943,7 @@ function UploadClaimModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const [step, setStep] = useState<'form' | 'otp'>('form');
+  // OTP flow removed: Users can now upload claims without OTP verification
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -952,33 +952,7 @@ function UploadClaimModal({
     amount_claimed: request.approved_amount?.toString() || '',
     purchase_date: new Date().toISOString().split('T')[0],
     claim_description: '',
-    password: '',
-    otp: '',
   });
-
-  const requestOtp = async () => {
-    if (!formData.password) {
-      setError('Please enter your password');
-      return;
-    }
-    if (!file) {
-      setError('Please select a receipt file');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      await api.post('/purchase-requests/request-otp/upload-receipt', {
-        password: formData.password,
-      });
-      setStep('otp');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to send OTP');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async () => {
     if (!file) {
@@ -997,7 +971,6 @@ function UploadClaimModal({
       uploadData.append('amount_claimed', formData.amount_claimed);
       uploadData.append('purchase_date', formData.purchase_date);
       uploadData.append('claim_description', formData.claim_description);
-      uploadData.append('otp', formData.otp);
 
       await api.post('/purchase-requests/claims/upload', uploadData, {
         headers: {
@@ -1052,150 +1025,97 @@ function UploadClaimModal({
           </div>
         )}
 
-        {step === 'form' ? (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Receipt File (PDF/JPG/PNG, max 10MB) *</label>
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              {file && (
-                <p className="text-sm text-green-600 mt-1">✓ {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Vendor Name *</label>
-              <input
-                type="text"
-                value={formData.vendor_name}
-                onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., ABC Supplies Inc."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amount Claimed ($) *</label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.amount_claimed}
-                onChange={(e) => setFormData({ ...formData, amount_claimed: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="0.00"
-                max={request.approved_amount || undefined}
-              />
-              {request.claims && request.claims.length > 0 ? (
-                (() => {
-                  const totalClaimed = request.claims.reduce((sum: number, claim: any) => sum + Number(claim.amount_claimed || 0), 0);
-                  const remaining = Number(request.approved_amount) - totalClaimed;
-                  return (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Total approved: ${formatCurrency(request.approved_amount)} | 
-                      Already claimed: ${formatCurrency(totalClaimed)} | 
-                      <span className="font-semibold text-green-600"> Remaining: ${formatCurrency(remaining)}</span>
-                    </p>
-                  );
-                })()
-              ) : (
-                <p className="text-xs text-gray-500 mt-1">Must not exceed approved amount: ${formatCurrency(request.approved_amount)}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Date *</label>
-              <input
-                type="date"
-                value={formData.purchase_date}
-                onChange={(e) => setFormData({ ...formData, purchase_date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Claim Description *</label>
-              <textarea
-                value={formData.claim_description}
-                onChange={(e) => setFormData({ ...formData, claim_description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                rows={3}
-                placeholder="Describe what was purchased..."
-              />
-            </div>
-
-            <div className="border-t pt-4">
-              <p className="text-sm text-gray-600 mb-3">To submit this claim, you need to verify your identity with OTP.</p>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Your Password *</label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter your password"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={requestOtp}
-                disabled={loading || !file || !formData.vendor_name || !formData.amount_claimed || !formData.claim_description || !formData.password}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Sending OTP...' : 'Request OTP'}
-              </button>
-            </div>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Receipt File (PDF/JPG/PNG, max 10MB) *</label>
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+            {file && (
+              <p className="text-sm text-green-600 mt-1">✓ {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</p>
+            )}
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-blue-800 text-sm">
-                ✉️ An OTP code has been sent to your registered email. Please check your inbox and enter the code below.
-              </p>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">OTP Code *</label>
-              <input
-                type="text"
-                value={formData.otp}
-                onChange={(e) => setFormData({ ...formData, otp: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-center text-2xl tracking-widest"
-                placeholder="000000"
-                maxLength={6}
-              />
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setStep('form')}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                disabled={loading}
-              >
-                Back
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={loading || !formData.otp || formData.otp.length !== 6}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Uploading...' : 'Submit Claim'}
-              </button>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Vendor Name *</label>
+            <input
+              type="text"
+              value={formData.vendor_name}
+              onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., ABC Supplies Inc."
+            />
           </div>
-        )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Amount Claimed ($) *</label>
+            <input
+              type="number"
+              step="0.01"
+              value={formData.amount_claimed}
+              onChange={(e) => setFormData({ ...formData, amount_claimed: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="0.00"
+              max={request.approved_amount || undefined}
+            />
+            {request.claims && request.claims.length > 0 ? (
+              (() => {
+                const totalClaimed = request.claims.reduce((sum: number, claim: any) => sum + Number(claim.amount_claimed || 0), 0);
+                const remaining = Number(request.approved_amount) - totalClaimed;
+                return (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Total approved: ${formatCurrency(request.approved_amount)} | 
+                    Already claimed: ${formatCurrency(totalClaimed)} | 
+                    <span className="font-semibold text-green-600"> Remaining: ${formatCurrency(remaining)}</span>
+                  </p>
+                );
+              })()
+            ) : (
+              <p className="text-xs text-gray-500 mt-1">Must not exceed approved amount: ${formatCurrency(request.approved_amount)}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Date *</label>
+            <input
+              type="date"
+              value={formData.purchase_date}
+              onChange={(e) => setFormData({ ...formData, purchase_date: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Claim Description *</label>
+            <textarea
+              value={formData.claim_description}
+              onChange={(e) => setFormData({ ...formData, claim_description: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              rows={3}
+              placeholder="Describe what was purchased..."
+            />
+          </div>
+
+          <div className="flex gap-3 mt-6">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={loading || !file || !formData.vendor_name || !formData.amount_claimed || !formData.claim_description}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Uploading...' : 'Submit Claim'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

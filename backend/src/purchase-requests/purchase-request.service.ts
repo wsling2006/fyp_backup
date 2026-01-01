@@ -419,20 +419,27 @@ export class PurchaseRequestService {
       throw new BadRequestException('You can only submit claims for APPROVED purchase requests');
     }
 
-    // ONE CLAIM PER PURCHASE REQUEST CHECK
-    const existingClaim = await this.claimRepo.findOne({
+    // REMOVED: One claim per purchase request restriction
+    // Users can now submit multiple claims (multiple receipts) for the same purchase request
+    // This allows users to split expenses across multiple vendors/receipts
+    
+    // Amount validation: Check total claimed amount across all claims
+    const existingClaims = await this.claimRepo.find({
       where: { purchase_request_id: data.purchase_request_id },
     });
 
-    if (existingClaim) {
-      throw new BadRequestException(
-        'A claim has already been submitted for this purchase request. Only one claim per purchase request is allowed.',
-      );
-    }
+    const totalClaimedSoFar = existingClaims.reduce((sum, claim) => {
+      return sum + Number(claim.amount_claimed);
+    }, 0);
 
-    // Amount validation
-    if (data.amount_claimed > pr.approved_amount) {
-      throw new BadRequestException('Claimed amount cannot exceed approved amount');
+    const newTotalClaimed = totalClaimedSoFar + data.amount_claimed;
+
+    if (newTotalClaimed > pr.approved_amount) {
+      throw new BadRequestException(
+        `Total claimed amount ($${newTotalClaimed.toFixed(2)}) would exceed approved amount ($${pr.approved_amount.toFixed(2)}). ` +
+        `Already claimed: $${totalClaimedSoFar.toFixed(2)}. ` +
+        `You can claim up to $${(pr.approved_amount - totalClaimedSoFar).toFixed(2)} more.`
+      );
     }
 
     // DUPLICATE FILE CHECK (by hash)

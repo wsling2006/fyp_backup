@@ -993,7 +993,13 @@ function UploadClaimModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Upload Receipt & Submit Claim</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Upload Receipt & Submit Claim</h2>
+        
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <p className="text-blue-800 text-sm">
+            💡 <strong>Tip:</strong> You can submit multiple claims for this purchase request. Each claim should have one receipt file.
+          </p>
+        </div>
 
         <div className="bg-gray-50 rounded-lg p-4 mb-6">
           <h3 className="font-semibold text-gray-900 mb-2">{request.title}</h3>
@@ -1007,6 +1013,14 @@ function UploadClaimModal({
               <p className="font-medium">{request.status}</p>
             </div>
           </div>
+          
+          {request.claims && request.claims.length > 0 && (
+            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                📋 <strong>{request.claims.length} claim(s) already submitted.</strong> You can add more claims if needed.
+              </p>
+            </div>
+          )}
         </div>
 
         {error && (
@@ -1052,7 +1066,21 @@ function UploadClaimModal({
                 placeholder="0.00"
                 max={request.approved_amount || undefined}
               />
-              <p className="text-xs text-gray-500 mt-1">Must not exceed approved amount: ${formatCurrency(request.approved_amount)}</p>
+              {request.claims && request.claims.length > 0 ? (
+                (() => {
+                  const totalClaimed = request.claims.reduce((sum: number, claim: any) => sum + Number(claim.amount_claimed || 0), 0);
+                  const remaining = Number(request.approved_amount) - totalClaimed;
+                  return (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Total approved: ${formatCurrency(request.approved_amount)} | 
+                      Already claimed: ${formatCurrency(totalClaimed)} | 
+                      <span className="font-semibold text-green-600"> Remaining: ${formatCurrency(remaining)}</span>
+                    </p>
+                  );
+                })()
+              ) : (
+                <p className="text-xs text-gray-500 mt-1">Must not exceed approved amount: ${formatCurrency(request.approved_amount)}</p>
+              )}
             </div>
 
             <div>

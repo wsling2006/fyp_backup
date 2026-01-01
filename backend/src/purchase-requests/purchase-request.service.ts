@@ -836,4 +836,82 @@ export class PurchaseRequestService {
     // Delete the claim
     await this.claimRepo.delete(claimId);
   }
+
+  /**
+   * Delete a purchase request (Accountant or Super Admin only)
+   * 
+   * Business Rules:
+   * - Only accountants and super admins can delete purchase requests
+   * - Can delete: DRAFT, SUBMITTED, REJECTED (no active workflow)
+   * - Cannot delete: APPROVED, UNDER_REVIEW, PAID (have active workflow or claims)
+   * 
+   * @param prId - UUID of the purchase request to delete
+   * @param userId - ID of the user performing the deletion
+   * @param userRole - Role of the user
+   * @param req - Request object for audit logging
+   */
+  async deletePurchaseRequest(
+    prId: string,
+    userId: string,
+    userRole: string,
+    req: any,
+  ): Promise<void> {
+    // Check user has permission
+    if (userRole !== Role.ACCOUNTANT && userRole !== Role.SUPER_ADMIN) {
+      throw new ForbiddenException('Only accountants and super admins can delete purchase requests');
+    }
+
+    // Find the purchase request
+    const pr = await this.purchaseRequestRepo.findOne({
+      where: { id: prId },
+      relations: ['createdBy', 'claims'],
+    });
+
+    if (!pr) {
+      throw new NotFoundException('Purchase request not found');
+    }
+
+    // Check status - only allow deletion of inactive/rejected requests
+    const deletableStatuses = [
+      PurchaseRequestStatus.DRAFT,
+      PurchaseRequestStatus.SUBMITTED,
+      PurchaseRequestStatus.REJECTED,
+    ];
+
+    if (!deletableStatuses.includes(pr.status)) {
+      throw new BadRequestException(
+        `Cannot delete purchase request with status ${pr.status}. ` +
+        `Only DRAFT, SUBMITTED, or REJECTED requests can be deleted. ` +
+        `APPROVED, UNDER_REVIEW, or PAID requests have active workflows.`
+      );
+    }
+
+    // Check if there are any claims (should be deleted first)
+    if (pr.claims && pr.claims.length > 0) {
+      throw new BadRequestException(
+        `Cannot delete purchase request with existing claims. ` +
+        `Please delete all claims first (found ${pr.claims.length} claim(s)).`
+      );
+    }
+
+    // Log the deletion for audit trail
+    await this.auditService.logFromRequest(
+      req,
+      userId,
+      'DELETE_PURCHASE_REQUEST',
+      'purchase_request',
+      prId,
+      {
+        purchase_request_id: prId,
+        title: pr.title,
+        status: pr.status,
+        estimated_amount: pr.estimated_amount,
+        created_by: pr.createdBy?.email || 'Unknown',
+        department: pr.department,
+      },
+    );
+
+    // Delete the purchase request
+    await this.purchaseRequestRepo.delete(prId);
+  }
 }

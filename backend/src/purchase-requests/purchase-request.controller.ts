@@ -492,8 +492,7 @@ export class PurchaseRequestController {
   }
 
   /**
-   * Delete claim (Accountant or Super Admin only)
-   * Only VERIFIED claims can be deleted (already reviewed)
+   * Delete claim (Accountant/SuperAdmin can delete any non-PROCESSED claim)
    */
   @Delete('claims/:id')
   @Roles(Role.ACCOUNTANT, Role.SUPER_ADMIN)
@@ -506,6 +505,25 @@ export class PurchaseRequestController {
     return {
       success: true,
       message: 'Claim deleted successfully',
+    };
+  }
+
+  /**
+   * Delete purchase request (Accountant/SuperAdmin only)
+   * Can delete DRAFT, SUBMITTED, or REJECTED requests
+   * Cannot delete APPROVED, UNDER_REVIEW, or PAID requests (have active workflow)
+   */
+  @Delete(':id')
+  @Roles(Role.ACCOUNTANT, Role.SUPER_ADMIN)
+  async deletePurchaseRequest(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    await this.purchaseRequestService.deletePurchaseRequest(id, userId, userRole, req);
+
+    return {
+      success: true,
+      message: 'Purchase request deleted successfully',
     };
   }
 

@@ -51,6 +51,7 @@ export default function PurchaseRequestsPage() {
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [showViewClaimsModal, setShowViewClaimsModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<PurchaseRequest | null>(null);
+  const [deleteConfirmRequest, setDeleteConfirmRequest] = useState<string | null>(null);
 
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterDepartment, setFilterDepartment] = useState('ALL');
@@ -126,6 +127,27 @@ export default function PurchaseRequestsPage() {
     return claim.status === 'PENDING';
   };
 
+  const canDeleteRequest = (request: PurchaseRequest) => {
+    // Only accountant or super_admin can delete
+    if (user?.role !== 'accountant' && user?.role !== 'super_admin') return false;
+    
+    // Can only delete DRAFT, SUBMITTED, or REJECTED (no active workflow)
+    return ['DRAFT', 'SUBMITTED', 'REJECTED'].includes(request.status);
+  };
+
+  const handleDeleteRequest = async (requestId: string) => {
+    try {
+      setError(null);
+      await api.delete(`/purchase-requests/${requestId}`);
+      setDeleteConfirmRequest(null);
+      // Reload requests
+      await loadRequests();
+    } catch (err: any) {
+      console.error('Failed to delete purchase request:', err);
+      setError(err.response?.data?.message || 'Failed to delete purchase request');
+      setDeleteConfirmRequest(null);
+    }
+  };
 
   const filteredRequests = requests.filter((req) => {
     if (filterStatus !== 'ALL' && req.status !== filterStatus) return false;
@@ -375,6 +397,47 @@ export default function PurchaseRequestsPage() {
                       )}
                     </div>
                   </div>
+
+                  {/* Delete button for purchase requests (Accountant/Super Admin only) */}
+                  {canDeleteRequest(request) && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      {deleteConfirmRequest === request.id ? (
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-gray-700 font-medium">
+                            Are you sure you want to delete this purchase request?
+                            {request.claims.length > 0 && (
+                              <span className="text-red-600 block text-xs mt-1">
+                                ⚠️ Please delete all claims first ({request.claims.length} claim(s) found)
+                              </span>
+                            )}
+                          </p>
+                          <button
+                            onClick={() => handleDeleteRequest(request.id)}
+                            disabled={request.claims.length > 0}
+                            className="px-3 py-1 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Yes, Delete
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmRequest(null)}
+                            className="px-3 py-1 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setDeleteConfirmRequest(request.id)}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 text-sm"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v1a1 1 0 001 1h1v10a2 2 0 002 2h8a2 2 0 002-2V7h1a1 1 0 001-1V6a2 2 0 00-2-2h-1V3a1 1 0 00-1-1H6zm8 2H6v2h8V4zm-8 4h8v10H6V8z" clipRule="evenodd" />
+                          </svg>
+                          Delete Purchase Request
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })

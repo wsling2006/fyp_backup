@@ -1,15 +1,20 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
+import * as nodemailer from 'nodemailer';
 import { Role } from './roles.enum';
 
 @Injectable()
 export class UsersService {
+  private otpStore = new Map<string, { otp: string; expiresAt: Date; action: string }>();
+
   constructor(
     @InjectRepository(User)
     private usersRepo: Repository<User>,
+    private configService: ConfigService,
   ) {}
 
   create(user: Partial<User>) {
@@ -105,5 +110,99 @@ export class UsersService {
 
   async deleteUser(id: string) {
     return this.usersRepo.delete(id);
+  }
+
+  /**
+   * Generate OTP for sensitive operations
+   * Sends OTP via email using nodemailer
+   */
+  async generateOtp(userId: string, action: string): Promise<{ otp: string; message: string }> {
+    const user = await this.usersRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 5); // 5 minute expiry
+
+    // Store OTP in memory (same as purchase-requests)
+    this.otpStore.set(`${userId}:${action}`, {
+      otp,
+      expiresAt,
+      action,
+    });
+
+    // Send OTP email
+    await this.sendOtpEmail(user, otp, action);
+
+    return {
+      otp,
+      message: 'OTP sent to your email. Please check and enter the code to proceed.',
+    };
+  }
+
+  /**
+   * Verify OTP for an action
+   */
+  verifyOtp(userId: string, otp: string, action: string): void {
+    const key = `${userId}:${action}`;
+    const stored = this.otpStore.get(key);
+
+    if (!stored) {
+      throw new UnauthorizedException('OTP not found or expired. Please request a new OTP.');
+    }
+
+    if (stored.expiresAt < new Date()) {
+      this.otpStore.delete(key);
+      throw new UnauthorizedException('OTP has expired. Please request a new OTP.');
+    }
+
+    if (stored.otp !== otp) {
+      throw new UnauthorizedException('Invalid OTP. Please try again.');
+    }
+
+    // OTP is valid - delete it (one-time use)
+    this.otpStore.delete(key);
+  }
+
+  /**
+   * Send OTP email using nodemailer
+   */
+  private async sendOtpEmail(user: any, otp: string, action: string): Promise<void> {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: this.configService.get<string>('EMAIL_USER'),
+        pass: this.configService.get<string>('EMAIL_PASS'),
+      },
+    });
+
+    const actionDescriptions: { [key: string]: string } = {
+      DELETE_EMPLOYEE: 'delete an employee record (irreversible action)',
+      CLEAR_AUDIT_LOGS: 'clear all audit logs',
+      DELETE_PURCHASE_REQUEST: 'delete a purchase request',
+      RESET_USER_PASSWORD: 'reset a user password',
+    };
+
+    const mailOptions = {
+      from: this.configService.get<string>('EMAIL_USER'),
+      to: user.email,
+      subject: `OTP Verification - ${action}`,
+      html: `
+        <h2>FYP System - OTP Verification</h2>
+        <p>Hello ${user.email},</p>
+        <p>You are attempting to <strong>${actionDescriptions[action] || action}</strong>.</p>
+        <p>Your OTP code is: <strong style="font-size: 24px; color: #dc2626;">${otp}</strong></p>
+        <p>This code will expire in <strong>5 minutes</strong>.</p>
+        <p style="color: #dc2626;"><strong>⚠️ WARNING:</strong> This is a critical action that cannot be undone.</p>
+        <p><em>If you did not request this action, please contact your system administrator immediately.</em></p>
+        <hr>
+        <p style="color: #666; font-size: 12px;">FYP System - Secure Operations</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
   }
 }

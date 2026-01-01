@@ -577,18 +577,12 @@ export class HRController {
       throw new UnauthorizedException('Invalid password. Please enter your correct password to confirm this critical action.');
     }
 
-    // STEP 2: Verify OTP
-    if (!user.otp_code || !user.otp_expires_at) {
-      throw new BadRequestException('No OTP found. Please request a new OTP.');
-    }
-
-    if (user.otp_expires_at < new Date()) {
-      throw new BadRequestException('OTP has expired. Please request a new OTP.');
-    }
-
-    if (user.otp_code !== otpCode) {
+    // STEP 2: Verify OTP using UsersService (same as purchase-requests)
+    try {
+      this.usersService.verifyOtp(userId, otpCode, 'DELETE_EMPLOYEE');
+    } catch (error) {
       this.logger.warn(`Failed employee deletion attempt - Invalid OTP for user ${userId}`);
-      throw new UnauthorizedException('Invalid OTP code. Please check your email and try again.');
+      throw error;
     }
 
     // STEP 3: Create audit log BEFORE deletion
@@ -617,11 +611,6 @@ export class HRController {
     // STEP 4: Perform deletion
     await this.hrService.deleteEmployee(id);
 
-    // STEP 5: Clear OTP after successful use
-    user.otp_code = '';
-    user.otp_expires_at = null;
-    await this.usersService.create(user);
-
     this.logger.log(`✓ Employee ${employee.employee_id} (${employee.name}) permanently deleted by user ${userId}`);
 
     return {
@@ -644,8 +633,15 @@ export class HRController {
   @Post('employees/:id/request-delete-otp')
   async requestDeleteOtp(
     @Param('id') id: string,
+    @Body() body: { password: string },
     @Req() req: any,
   ) {
+    const { password } = body;
+    
+    if (!password) {
+      throw new BadRequestException('Password is required');
+    }
+    
     // Verify employee exists
     const employee = await this.hrService.getEmployeeById(id);
     
@@ -656,27 +652,23 @@ export class HRController {
       throw new UnauthorizedException('User not found');
     }
 
-    // Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minute expiry
+    // Verify password
+    const isPasswordValid = await argon2.verify(user.password_hash, password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid password');
+    }
 
-    // Save OTP to user
-    user.otp_code = otp;
-    user.otp_expires_at = expiresAt;
-    await this.usersService.create(user);
+    // Generate OTP using UsersService (same as purchase requests)
+    const otpResult = await this.usersService.generateOtp(userId, 'DELETE_EMPLOYEE');
 
-    // Send email (reuse your existing email service)
-    // For now, just log it - you can implement email sending later
-    this.logger.log(`OTP for employee deletion: ${otp} (expires at ${expiresAt.toISOString()})`);
-    this.logger.log(`Employee deletion OTP requested for: ${employee.name} (${employee.employee_id})`);
+    this.logger.log(`OTP for employee deletion requested by user ${userId} for employee: ${employee.name} (${employee.employee_id})`);
 
     return {
       success: true,
-      message: 'OTP sent to your email. It will expire in 10 minutes.',
+      message: 'OTP sent to your email. It will expire in 5 minutes.',
       email: user.email,
-      // For development - remove in production
-      otp_debug: process.env.NODE_ENV === 'development' ? otp : undefined,
+      // For development - include OTP in response
+      otp_debug: process.env.NODE_ENV === 'development' ? otpResult.otp : undefined,
     };
   }
 

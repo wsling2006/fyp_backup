@@ -541,6 +541,7 @@ function DeleteEmployeeModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [otpRequested, setOtpRequested] = useState(false);
+  const [debugOtp, setDebugOtp] = useState<string | null>(null);
 
   const handleRequestOtp = async () => {
     if (!password) {
@@ -552,11 +553,19 @@ function DeleteEmployeeModal({
       setLoading(true);
       setError(null);
 
-      await api.post(`/hr/employees/${employee.id}/request-delete-otp`, {
+      const response = await api.post(`/hr/employees/${employee.id}/request-delete-otp`, {
         password,
       });
 
       console.log('[HR] OTP requested successfully');
+      console.log('[HR] OTP Response:', response.data);
+      
+      // Capture debug OTP if returned (development mode)
+      if (response.data?.otp_debug) {
+        setDebugOtp(response.data.otp_debug);
+        console.log('[HR] Debug OTP:', response.data.otp_debug);
+      }
+      
       setOtpRequested(true);
       setStep('otp');
     } catch (err: any) {
@@ -726,9 +735,21 @@ function DeleteEmployeeModal({
               </p>
             </div>
 
+            {debugOtp && (
+              <div className="p-4 bg-blue-50 border border-blue-400 rounded">
+                <p className="text-sm text-blue-900">
+                  <strong>🔧 Development Mode - Your OTP:</strong>
+                  <br />
+                  <span className="text-2xl font-mono font-bold tracking-widest">{debugOtp}</span>
+                  <br />
+                  <span className="text-xs">In production, this would be sent to your email instead.</span>
+                </p>
+              </div>
+            )}
+
             <div className="p-4 bg-amber-50 border border-amber-200 rounded">
               <p className="text-sm text-amber-800">
-                <strong>⚠️ Development Mode:</strong> Check the backend logs for your OTP code.
+                <strong>⚠️ Development Mode:</strong> {debugOtp ? 'OTP shown above.' : 'Check the backend logs for your OTP code.'}
                 <br />
                 In production, the OTP would be sent to your registered email address.
               </p>

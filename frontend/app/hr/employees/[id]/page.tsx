@@ -71,14 +71,13 @@ export default function EmployeeDetailPage() {
     }
 
     if (employeeId) {
-      // Check if this employee has been viewed before in this session
-      // Use sessionStorage to persist across page refreshes (but not browser close)
-      const sessionKey = `hr_viewed_employee_${employeeId}`;
-      const hasViewedBefore = sessionStorage.getItem(sessionKey) === 'true';
-      
       // Check if this is a post-update refresh (should use silent mode)
       const refreshParam = searchParams?.get('refresh');
-      const useSilentMode = refreshParam === 'silent' || hasViewedBefore;
+      const useSilentMode = refreshParam === 'silent';
+      
+      // DON'T check sessionStorage here - let the backend decide
+      // Backend has the authoritative in-memory Map
+      // SessionStorage is only for sending ?silent=true AFTER first successful load
       
       loadEmployeeDetails(useSilentMode);
       loadEmployeeDocuments();
@@ -88,15 +87,15 @@ export default function EmployeeDetailPage() {
   /**
    * Load employee details with optional silent mode
    * 
-   * @param silent - If true, adds ?silent=true to skip audit logging (for page refresh)
+   * @param silent - If true, adds ?silent=true to skip audit logging
    * 
    * Pattern:
-   * - First load: silent=false (logs VIEW_EMPLOYEE_PROFILE)
-   * - Page refresh: silent=true (no log, prevents spam)
-   * - After update: silent=true (no log, prevents spam)
+   * - First load: silent=false (backend creates audit log if not in Map)
+   * - Page refresh: Uses browser navigation (backend checks Map, skips log)
+   * - After update: ?refresh=silent (prevents duplicate log after update)
    * 
-   * This prevents audit log spam while still tracking initial access
-   * Same pattern as revenue controller
+   * The backend's in-memory Map is the source of truth for spam prevention.
+   * Frontend just passes silent=true for specific cases (like post-update refresh).
    */
   const loadEmployeeDetails = async (silent: boolean = false) => {
     try {
@@ -112,10 +111,7 @@ export default function EmployeeDetailPage() {
       console.log(`[HR] Loaded employee details (silent=${silent})`);
       setEmployee(response.data?.employee || response.data);
       
-      // Mark that this employee has been viewed in this session
-      // This persists across page refreshes (F5) but not browser close
-      const sessionKey = `hr_viewed_employee_${employeeId}`;
-      sessionStorage.setItem(sessionKey, 'true');
+      // No need to manage sessionStorage - backend handles spam prevention
     } catch (err: any) {
       console.error('[HR] Failed to load employee:', err);
       setError(err.response?.data?.message || 'Failed to load employee details');

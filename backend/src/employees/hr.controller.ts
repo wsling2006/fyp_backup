@@ -58,6 +58,9 @@ export class HRController {
    * Get employee list with minimal data
    * Returns: employee_id, name, status only
    * 
+   * ⚠️ NOT AUDIT LOGGED - This is just a list view with minimal data
+   * Only viewing individual profiles is audit logged (sensitive data access)
+   * 
    * @returns Object with employees array
    */
   @Get('employees')
@@ -65,15 +68,8 @@ export class HRController {
     try {
       const employees = await this.hrService.getEmployeeList();
 
-      // Log access (not sensitive - just list view)
-      await this.auditService.logFromRequest(
-        req,
-        req.user.userId,
-        'HR_VIEW_EMPLOYEE_LIST',
-        'employee',
-        undefined,
-        { count: employees?.length || 0 },
-      );
+      // No audit logging - just a list view with minimal data (employee_id, name, status)
+      // Only individual profile access is logged (contains IC, bank account, etc.)
 
       // Always return an array, even if empty
       return { employees: employees || [] };
@@ -120,6 +116,8 @@ export class HRController {
    * - Birthday
    * - Phone, address, emergency contact
    * 
+   * Action: VIEW_EMPLOYEE_PROFILE (counts as VIEW action in audit dashboard)
+   * 
    * @param id - Employee UUID
    * @returns Full employee object
    */
@@ -128,10 +126,11 @@ export class HRController {
     const employee = await this.hrService.getEmployeeById(id);
 
     // ⚠️ CRITICAL: Log access to sensitive data
+    // This will count as a "View Action" in the audit dashboard
     await this.auditService.logFromRequest(
       req,
       req.user.userId,
-      'HR_VIEW_EMPLOYEE_PROFILE',
+      'VIEW_EMPLOYEE_PROFILE',
       'employee',
       id,
       {
@@ -156,6 +155,9 @@ export class HRController {
    * Get employee documents list
    * Returns metadata only (no file data)
    * 
+   * ⚠️ NOT AUDIT LOGGED - This is just metadata (filename, type, size)
+   * Actual document downloads are audit logged (file content access)
+   * 
    * @param id - Employee UUID
    * @returns Object with documents array
    */
@@ -163,15 +165,8 @@ export class HRController {
   async getEmployeeDocuments(@Param('id') id: string, @Req() req: any) {
     const documents = await this.hrService.getEmployeeDocuments(id);
 
-    // Log access
-    await this.auditService.logFromRequest(
-      req,
-      req.user.userId,
-      'HR_VIEW_EMPLOYEE_DOCUMENTS',
-      'employee',
-      id,
-      { document_count: documents.length },
-    );
+    // No audit logging - just metadata view
+    // Document downloads are logged (actual sensitive data access)
 
     return { documents };
   }
@@ -389,6 +384,8 @@ export class HRController {
    * Requires all employee information
    * Audit logged
    * 
+   * Action: CREATE_EMPLOYEE (counts as CREATE action in audit dashboard)
+   * 
    * @body employee data
    * @returns Created employee object
    */
@@ -404,10 +401,11 @@ export class HRController {
       const employee = await this.hrService.createEmployee(employeeData);
 
       // Log creation (audit log)
+      // This will count as a "Create Action" in the audit dashboard
       await this.auditService.logFromRequest(
         req,
         req.user.userId,
-        'HR_CREATE_EMPLOYEE',
+        'CREATE_EMPLOYEE',
         'employee',
         employee.id,
         {

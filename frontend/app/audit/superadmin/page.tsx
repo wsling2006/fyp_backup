@@ -264,10 +264,23 @@ export default function AuditLogDashboard() {
               className="w-full px-3 py-2 border rounded-lg text-sm"
             >
               <option value="">All Actions</option>
-              <option value="VIEW_REVENUE">VIEW_REVENUE</option>
-              <option value="CREATE_REVENUE">CREATE_REVENUE</option>
-              <option value="UPDATE_REVENUE">UPDATE_REVENUE</option>
-              <option value="DELETE_REVENUE">DELETE_REVENUE</option>
+              <optgroup label="Revenue Actions">
+                <option value="VIEW_REVENUE">VIEW_REVENUE</option>
+                <option value="CREATE_REVENUE">CREATE_REVENUE</option>
+                <option value="UPDATE_REVENUE">UPDATE_REVENUE</option>
+                <option value="DELETE_REVENUE">DELETE_REVENUE</option>
+              </optgroup>
+              <optgroup label="Employee/HR Actions">
+                <option value="VIEW_EMPLOYEE_PROFILE">VIEW_EMPLOYEE_PROFILE</option>
+                <option value="CREATE_EMPLOYEE">CREATE_EMPLOYEE</option>
+                <option value="UPDATE_EMPLOYEE">UPDATE_EMPLOYEE</option>
+                <option value="DELETE_EMPLOYEE">DELETE_EMPLOYEE</option>
+              </optgroup>
+              <optgroup label="Document Actions">
+                <option value="UPLOAD_DOCUMENT">UPLOAD_DOCUMENT</option>
+                <option value="DOWNLOAD_DOCUMENT">DOWNLOAD_DOCUMENT</option>
+                <option value="DELETE_DOCUMENT">DELETE_DOCUMENT</option>
+              </optgroup>
             </select>
           </div>
           <div>
@@ -369,7 +382,7 @@ export default function AuditLogDashboard() {
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{log.resource}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{formatDate(log.created_at)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 font-mono text-xs">{log.ip_address || '-'}</td>
+                  <td className="px-4 py-3 text-xs text-gray-600 font-mono">{log.ip_address || '-'}</td>
                   <td className="px-4 py-3 text-sm">
                     {deleteConfirm === log.id ? (
                       <div className="flex gap-2">

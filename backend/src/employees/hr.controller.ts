@@ -117,22 +117,29 @@ export class HRController {
    * 
    * Action: VIEW_EMPLOYEE_PROFILE (counts as VIEW action in audit dashboard)
    * 
-   * Smart Anti-Spam (Hybrid Approach - Best of Both Worlds):
+   * Session-Based Anti-Spam (Perfect for "Show All Data" UI):
    * 
-   * 🔹 In-Memory Tracking (Fast):
-   *    - Prevents spam during page refreshes in the same session
+   * 🔹 In-Memory Tracking:
+   *    - Tracks which users have viewed which employees in this backend session
+   *    - Prevents spam from page refreshes
    *    - Clears when backend restarts
    * 
-   * 🔹 Database Check (Persistent):
-   *    - Limits to ONE audit log per user per employee per DAY
-   *    - Survives backend restarts
-   *    - Resets at midnight (00:00:00)
+   * 🔹 Frontend SessionStorage:
+   *    - Persists "viewed" state in browser
+   *    - Survives backend restarts (sends ?silent=true)
+   *    - Clears when browser closes or user logs out
    * 
-   * Result: Secure audit trail + No spam!
-   * - First view today → Audit log created ✓
-   * - Refresh 100 times → NO additional logs ✓
-   * - Backend restart, view again → Still NO log (already viewed today) ✓
-   * - Tomorrow (new day) → New audit log created ✓
+   * Result: ONE audit log per browser session per employee!
+   * - First view in session → Audit log created ✓
+   * - Refresh 100 times → NO logs (in-memory prevents spam) ✓
+   * - Backend restart, refresh → NO log (sessionStorage sends silent=true) ✓
+   * - Close browser, reopen → New audit log (new session) ✓
+   * 
+   * Why session-based is appropriate:
+   * - UI shows ALL data at once (IC, bank account, etc.)
+   * - Refreshing doesn't reveal "new" data
+   * - Session = meaningful access period
+   * - Logs when user "opens the profile", not every page load
    * 
    * @param id - Employee UUID
    * @param silent - Optional query param to suppress audit logging
@@ -148,37 +155,27 @@ export class HRController {
     const employee = await this.hrService.getEmployeeById(id);
     const userId = req.user.userId;
 
-    // HYBRID ANTI-SPAM APPROACH:
-    // 1. In-memory check (fast, prevents spam in same session)
-    // 2. Database check (persistent, limits to once per day)
+    // SESSION-BASED ANTI-SPAM (Simple & Appropriate for "show all data" UI)
+    // Check in-memory Map: Has this user viewed this employee in current session?
     
-    // STEP 1: Fast in-memory check
     if (!this.viewedEmployees.has(userId)) {
       this.viewedEmployees.set(userId, new Set());
     }
     
     const userViewedEmployees = this.viewedEmployees.get(userId)!;
-    const hasViewedInMemory = userViewedEmployees.has(id);
-
-    // STEP 2: If not in memory, check database (once per day limit)
-    let hasViewedToday = false;
-    if (!hasViewedInMemory) {
-      // shouldLogEmployeeView returns TRUE if should log (not viewed today)
-      // We want hasViewedToday = TRUE if already viewed today
-      hasViewedToday = !(await this.hrService.shouldLogEmployeeView(userId, id));
-    }
+    const hasViewedBefore = userViewedEmployees.has(id);
 
     // Determine if we should log
-    const isSilent = silent === 'true';
-    const shouldLog = !hasViewedInMemory && !hasViewedToday && !isSilent;
+    const isSilent = silent === 'true'; // Frontend sends silent=true after first view
+    const shouldLog = !hasViewedBefore && !isSilent;
 
     // DEBUG LOGGING
     this.logger.debug(`[AUDIT SPAM DEBUG] userId=${userId}, employeeId=${id}`);
-    this.logger.debug(`[AUDIT SPAM DEBUG] hasViewedInMemory=${hasViewedInMemory}, hasViewedToday=${hasViewedToday}, isSilent=${isSilent}, shouldLog=${shouldLog}`);
-    this.logger.debug(`[AUDIT SPAM DEBUG] In-memory: ${this.viewedEmployees.size} users tracked, this user viewed ${userViewedEmployees.size} employees`);
+    this.logger.debug(`[AUDIT SPAM DEBUG] hasViewedBefore=${hasViewedBefore}, isSilent=${isSilent}, shouldLog=${shouldLog}`);
+    this.logger.debug(`[AUDIT SPAM DEBUG] In-memory tracking: ${this.viewedEmployees.size} users, this user viewed ${userViewedEmployees.size} employees`);
 
     if (shouldLog) {
-      this.logger.log(`✓ Creating audit log - First view TODAY: user ${userId} → employee ${id}`);
+      this.logger.log(`✓ Creating audit log - First view in session: user ${userId} → employee ${id}`);
       await this.auditService.logFromRequest(
         req,
         userId,
@@ -204,14 +201,10 @@ export class HRController {
       userViewedEmployees.add(id);
       this.logger.debug(`[AUDIT SPAM DEBUG] Added to in-memory tracking`);
     } else {
-      if (hasViewedInMemory) {
+      if (hasViewedBefore) {
         this.logger.log(`✗ Skipping audit log - Already viewed in this session (in-memory check)`);
-      } else if (hasViewedToday) {
-        this.logger.log(`✗ Skipping audit log - Already viewed today (database check)`);
-        // Add to in-memory to avoid future DB checks
-        userViewedEmployees.add(id);
       } else if (isSilent) {
-        this.logger.log(`✗ Skipping audit log - Silent mode enabled`);
+        this.logger.log(`✗ Skipping audit log - Silent mode (frontend sessionStorage detected previous view)`);
       }
     }
 

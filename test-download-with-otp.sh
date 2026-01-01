@@ -38,7 +38,7 @@ echo "Size in DB: $SIZE bytes"
 
 echo ""
 echo "2. Logging in and verifying OTP..."
-TOKEN_RESPONSE=$(curl -s -X POST http://localhost:3000/auth/verify-login-otp \
+TOKEN_RESPONSE=$(curl -s -X POST http://localhost:3000/auth/verify-otp \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"lolzlolz706@gmail.com\",\"otp\":\"$OTP_CODE\"}")
 

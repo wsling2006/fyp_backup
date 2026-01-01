@@ -904,18 +904,18 @@ export class PurchaseRequestService {
       PurchaseRequestStatus.REJECTED,
     ];
 
-    // APPROVED requests can be deleted ONLY if no claims exist
-    const canDeleteApproved = pr.status === PurchaseRequestStatus.APPROVED && 
+    // APPROVED or PAID requests can be deleted ONLY if no claims exist
+    const canDeleteApprovedOrPaid = (pr.status === PurchaseRequestStatus.APPROVED || pr.status === PurchaseRequestStatus.PAID) && 
                               (!pr.claims || pr.claims.length === 0);
 
-    console.log('[deletePurchaseRequest] canDeleteApproved:', canDeleteApproved);
+    console.log('[deletePurchaseRequest] canDeleteApprovedOrPaid:', canDeleteApprovedOrPaid);
     console.log('[deletePurchaseRequest] alwaysDeletableStatuses.includes:', alwaysDeletableStatuses.includes(pr.status));
 
-    if (!alwaysDeletableStatuses.includes(pr.status) && !canDeleteApproved) {
+    if (!alwaysDeletableStatuses.includes(pr.status) && !canDeleteApprovedOrPaid) {
       throw new BadRequestException(
         `Cannot delete purchase request with status ${pr.status}. ` +
-        `Only DRAFT, SUBMITTED, REJECTED, or APPROVED (with no claims) requests can be deleted. ` +
-        `UNDER_REVIEW or PAID requests have active workflows.`
+        `Only DRAFT, SUBMITTED, REJECTED, or APPROVED/PAID (with no claims) requests can be deleted. ` +
+        `UNDER_REVIEW requests have active workflows.`
       );
     }
 

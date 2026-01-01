@@ -374,4 +374,60 @@ export class HRController {
       message: 'Document deleted successfully',
     };
   }
+
+  /**
+   * Create new employee
+   * Requires all employee information
+   * Audit logged
+   * 
+   * @body employee data
+   * @returns Created employee object
+   */
+  @Post('employees')
+  async createEmployee(@Body() employeeData: any, @Req() req: any) {
+    try {
+      // Validate required fields
+      if (!employeeData.name || !employeeData.email) {
+        throw new BadRequestException('Name and email are required');
+      }
+
+      // Create employee
+      const employee = await this.hrService.createEmployee(employeeData);
+
+      // Log creation (audit log)
+      await this.auditService.logFromRequest(
+        req,
+        req.user.userId,
+        'HR_CREATE_EMPLOYEE',
+        'employee',
+        employee.id,
+        {
+          name: employee.name,
+          email: employee.email,
+          employee_id: employee.employee_id,
+          position: employee.position,
+          department: employee.department,
+        },
+      );
+
+      this.logger.log(`Employee created: ${employee.employee_id} by user ${req.user.userId}`);
+
+      return {
+        success: true,
+        message: 'Employee created successfully',
+        employee: {
+          id: employee.id,
+          employee_id: employee.employee_id,
+          name: employee.name,
+          email: employee.email,
+          position: employee.position,
+          department: employee.department,
+          status: employee.status,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Failed to create employee: ${error.message}`);
+      throw new InternalServerErrorException(error.message || 'Failed to create employee');
+    }
+  }
 }

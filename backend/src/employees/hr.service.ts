@@ -260,4 +260,54 @@ export class HRService {
 
     await this.documentRepo.delete(documentId);
   }
+
+  /**
+   * Create new employee
+   * Generates unique employee_id automatically
+   * 
+   * @param employeeData - Employee information
+   * @returns Promise<Employee> - Created employee
+   */
+  async createEmployee(employeeData: any): Promise<Employee> {
+    // Generate employee_id (e.g., EMP001, EMP002...)
+    const lastEmployee = await this.employeeRepo.find({
+      order: { created_at: 'DESC' },
+      take: 1,
+    });
+
+    let nextNumber = 1;
+    if (lastEmployee.length > 0 && lastEmployee[0].employee_id) {
+      const match = lastEmployee[0].employee_id.match(/EMP(\d+)/);
+      if (match) {
+        nextNumber = parseInt(match[1]) + 1;
+      }
+    }
+    const employee_id = `EMP${nextNumber.toString().padStart(3, '0')}`;
+
+    // Parse dates safely
+    const birthday = employeeData.birthday ? new Date(employeeData.birthday) : undefined;
+    const dateOfJoining = employeeData.date_of_joining ? new Date(employeeData.date_of_joining) : new Date();
+
+    // Create employee entity
+    const employee = this.employeeRepo.create({
+      employee_id,
+      name: employeeData.name,
+      email: employeeData.email,
+      phone: employeeData.phone,
+      address: employeeData.address,
+      emergency_contact: employeeData.emergency_contact,
+      ic_number: employeeData.ic_number,
+      birthday,
+      bank_account_number: employeeData.bank_account_number,
+      position: employeeData.position,
+      department: employeeData.department,
+      date_of_joining: dateOfJoining,
+      status: employeeData.status || 'ACTIVE',
+      is_active: true,
+    });
+
+    // Save to database
+    const savedEmployee = await this.employeeRepo.save(employee);
+    return savedEmployee;
+  }
 }

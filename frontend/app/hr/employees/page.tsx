@@ -144,6 +144,13 @@ export default function EmployeesPage() {
               </div>
             </div>
             <Button
+              variant="primary"
+              onClick={() => router.push('/hr/employees/add')}
+              className="w-auto px-6"
+            >
+              ➕ Add Employee
+            </Button>
+            <Button
               variant="outline"
               onClick={loadEmployees}
               className="w-auto px-6"

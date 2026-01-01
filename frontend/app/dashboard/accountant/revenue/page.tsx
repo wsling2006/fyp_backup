@@ -41,6 +41,7 @@ export default function RevenueDashboard() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -128,6 +129,30 @@ export default function RevenueDashboard() {
         logout();
       }
     }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      setMessage(null);
+      await api.delete(`/revenue/${id}`);
+      setMessage('Revenue record deleted successfully');
+      setDeleteConfirm(null);
+      loadData();
+    } catch (e: any) {
+      setMessage(e.response?.data?.message || 'Failed to delete revenue record');
+      setDeleteConfirm(null);
+      if (e.response?.status === 401 || e.response?.status === 403) {
+        logout();
+      }
+    }
+  };
+
+  // Check if user can delete a revenue record
+  const canDelete = (record: RevenueRecord) => {
+    // Super admin can delete any record
+    if (user?.role === 'super_admin') return true;
+    // Accountant can only delete their own records
+    return record.created_by?.id === user?.id;
   };
 
   if (!allowedRole) {
@@ -328,6 +353,7 @@ export default function RevenueDashboard() {
               <th className="px-4 py-3 text-right text-sm font-semibold">Amount</th>
               <th className="px-4 py-3 text-left text-sm font-semibold">Status</th>
               <th className="px-4 py-3 text-left text-sm font-semibold">Created By</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -346,11 +372,21 @@ export default function RevenueDashboard() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-600">{r.created_by?.email || 'Unknown'}</td>
+                <td className="px-4 py-3 text-sm">
+                  {canDelete(r) && (
+                    <Button
+                      onClick={() => handleDelete(r.id)}
+                      className="text-red-600 hover:underline"
+                    >
+                      Delete
+                    </Button>
+                  )}
+                </td>
               </tr>
             ))}
             {revenues.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                   No revenue records found
                 </td>
               </tr>

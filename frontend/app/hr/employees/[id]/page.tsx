@@ -81,7 +81,7 @@ export default function EmployeeDetailPage() {
       setError(null);
       const response = await api.get(`/hr/employees/${employeeId}`);
       console.log('[HR] Loaded employee details');
-      setEmployee(response.data);
+      setEmployee(response.data?.employee || response.data);
     } catch (err: any) {
       console.error('[HR] Failed to load employee:', err);
       setError(err.response?.data?.message || 'Failed to load employee details');
@@ -102,10 +102,13 @@ export default function EmployeeDetailPage() {
     try {
       setDocumentsLoading(true);
       const response = await api.get(`/hr/employees/${employeeId}/documents`);
-      console.log('[HR] Loaded employee documents:', response.data.length);
-      setDocuments(response.data);
+      const docs = response.data?.documents || [];
+      console.log('[HR] Loaded employee documents:', docs.length);
+      setDocuments(docs);
     } catch (err: any) {
       console.error('[HR] Failed to load documents:', err);
+      // Set empty array on error to prevent crash
+      setDocuments([]);
     } finally {
       setDocumentsLoading(false);
     }

@@ -28,18 +28,19 @@ echo "✅ Frontend built successfully"
 echo ""
 
 # Restart frontend service
-echo "🔄 Restarting frontend service..."
-sudo systemctl restart frontend
+echo "🔄 Restarting frontend with PM2..."
+pm2 restart all
 if [ $? -ne 0 ]; then
-  echo "❌ Failed to restart frontend service"
-  exit 1
+  echo "❌ Failed to restart frontend"
+  echo "💡 Trying alternative: pm2 restart frontend"
+  pm2 restart frontend
 fi
-echo "✅ Frontend service restarted"
+echo "✅ Frontend restarted"
 echo ""
 
-# Check service status
-echo "📊 Checking service status..."
-sudo systemctl status frontend --no-pager | head -n 10
+# Check PM2 status
+echo "📊 Checking PM2 status..."
+pm2 list
 echo ""
 
 # Final instructions

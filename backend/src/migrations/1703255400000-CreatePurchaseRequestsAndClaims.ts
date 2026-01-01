@@ -227,18 +227,18 @@ export class CreatePurchaseRequestsAndClaims1703255400000 implements MigrationIn
       `CREATE INDEX idx_purchase_requests_created_by ON purchase_requests (created_by_user_id)`,
     );
     await queryRunner.query(
-      `CREATE INDEX idx_purchase_requests_status ON purchase_requests (status)`,
+      `CREATE INDEX IF NOT EXISTS idx_purchase_requests_status ON purchase_requests (status)`,
     );
     await queryRunner.query(
-      `CREATE INDEX idx_purchase_requests_department ON purchase_requests (department)`,
+      `CREATE INDEX IF NOT EXISTS idx_purchase_requests_department ON purchase_requests (department)`,
     );
     await queryRunner.query(
-      `CREATE INDEX idx_claims_purchase_request ON claims (purchase_request_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_claims_purchase_request ON claims (purchase_request_id)`,
     );
     await queryRunner.query(
-      `CREATE INDEX idx_claims_uploaded_by ON claims (uploaded_by_user_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_claims_uploaded_by ON claims (uploaded_by_user_id)`,
     );
-    await queryRunner.query(`CREATE INDEX idx_claims_status ON claims (status)`);
+    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_claims_status ON claims (status)`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

@@ -54,6 +54,7 @@ export default function EmployeeDetailPage() {
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (!isInitialized) {
@@ -259,6 +260,14 @@ export default function EmployeeDetailPage() {
             >
               {employee.status}
             </span>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteModal(true)}
+              className="w-auto px-6 py-2 flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-50"
+            >
+              <span>🗑️</span>
+              Delete Employee
+            </Button>
             <Button
               variant="primary"
               onClick={() => router.push(`/hr/employees/${employeeId}/edit`)}
@@ -501,6 +510,289 @@ export default function EmployeeDetailPage() {
           }}
         />
       )}
+
+      {/* Delete Employee Modal */}
+      {showDeleteModal && (
+        <DeleteEmployeeModal
+          employee={employee}
+          onClose={() => setShowDeleteModal(false)}
+          onSuccess={() => {
+            router.push('/hr/employees');
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Delete Employee Modal Component
+function DeleteEmployeeModal({
+  employee,
+  onClose,
+  onSuccess,
+}: {
+  employee: Employee;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [step, setStep] = useState<'confirm' | 'password' | 'otp'>('confirm');
+  const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [otpRequested, setOtpRequested] = useState(false);
+
+  const handleRequestOtp = async () => {
+    if (!password) {
+      setError('Please enter your password');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      await api.post(`/hr/employees/${employee.id}/delete/request-otp`, {
+        password,
+      });
+
+      console.log('[HR] OTP requested successfully');
+      setOtpRequested(true);
+      setStep('otp');
+    } catch (err: any) {
+      console.error('[HR] Failed to request OTP:', err);
+      setError(err.response?.data?.message || 'Failed to request OTP. Please check your password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!otp) {
+      setError('Please enter the OTP code');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      await api.delete(`/hr/employees/${employee.id}`, {
+        data: {
+          password,
+          otp_code: otp,
+        },
+      });
+
+      console.log('[HR] Employee deleted successfully');
+      onSuccess();
+    } catch (err: any) {
+      console.error('[HR] Failed to delete employee:', err);
+      setError(err.response?.data?.message || 'Failed to delete employee. Please check your OTP code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <Card className="max-w-2xl w-full" variant="glass">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-red-700 mb-2 flex items-center">
+            <span className="mr-2">⚠️</span>
+            Delete Employee
+          </h2>
+          <p className="text-gray-600">
+            You are about to permanently delete <strong>{employee.name}</strong> (ID: {employee.employee_id})
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            ⚠️ {error}
+          </div>
+        )}
+
+        {/* Step 1: Confirmation */}
+        {step === 'confirm' && (
+          <div className="space-y-4">
+            <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded">
+              <h3 className="font-bold text-red-900 mb-2">⚠️ WARNING: This action is irreversible!</h3>
+              <ul className="text-sm text-red-800 space-y-2">
+                <li className="flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>The employee record will be <strong>permanently deleted</strong></span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>All associated documents will be <strong>permanently deleted</strong></span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>This action <strong>CANNOT be undone</strong></span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>An audit log will be created for compliance</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded">
+              <p className="text-sm text-blue-800">
+                <strong>💡 Alternative:</strong> Consider changing the employee status to "TERMINATED" instead of deleting the record entirely. This preserves historical data.
+              </p>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setStep('password')}
+                className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
+              >
+                Proceed with Deletion
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={onClose}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Password Verification */}
+        {step === 'password' && (
+          <div className="space-y-4">
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded">
+              <p className="text-sm text-amber-800">
+                <strong>🔐 Security Verification Required</strong>
+                <br />
+                To proceed, you must verify your identity with your password and a one-time code (OTP).
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Your Password *
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !loading) {
+                    handleRequestOtp();
+                  }
+                }}
+              />
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <Button
+                variant="primary"
+                onClick={handleRequestOtp}
+                disabled={loading || !password}
+                className="flex-1"
+              >
+                {loading ? 'Verifying...' : 'Request OTP Code'}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setStep('confirm')}
+                disabled={loading}
+                className="flex-1"
+              >
+                Back
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: OTP Verification */}
+        {step === 'otp' && (
+          <div className="space-y-4">
+            <div className="p-4 bg-green-50 border border-green-200 rounded">
+              <p className="text-sm text-green-800">
+                <strong>✅ Password Verified</strong>
+                <br />
+                {otpRequested ? 
+                  'An OTP code has been generated. In production, this would be sent to your email.' :
+                  'Password verified. Please enter your OTP code.'}
+              </p>
+            </div>
+
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded">
+              <p className="text-sm text-amber-800">
+                <strong>⚠️ Development Mode:</strong> Check the backend logs for your OTP code.
+                <br />
+                In production, the OTP would be sent to your registered email address.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                OTP Code *
+              </label>
+              <input
+                type="text"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="Enter 6-digit OTP"
+                maxLength={6}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-lg tracking-widest text-center"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !loading && otp.length === 6) {
+                    handleDelete();
+                  }
+                }}
+              />
+              <p className="mt-1 text-xs text-gray-500 text-center">
+                Enter the 6-digit code from the backend logs
+              </p>
+            </div>
+
+            <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded">
+              <p className="text-sm text-red-800 font-semibold">
+                ⚠️ Final Warning: Clicking "Delete Employee" will permanently remove all data. This cannot be undone!
+              </p>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={handleDelete}
+                disabled={loading || otp.length !== 6}
+                className="flex-1 border-red-500 text-red-700 hover:bg-red-50 font-bold"
+              >
+                {loading ? 'Deleting...' : '🗑️ Delete Employee'}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={onClose}
+                disabled={loading}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          disabled={loading}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+          aria-label="Close"
+        >
+          <span className="text-2xl">×</span>
+        </button>
+      </Card>
     </div>
   );
 }

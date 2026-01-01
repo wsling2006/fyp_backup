@@ -31,7 +31,7 @@ echo "2. Getting authentication token..."
 # Login as accountant
 TOKEN_RESPONSE=$(curl -s -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"lolzlolz706@gmail.com","password":"Abc123456"}')
+  -d '{"email":"lolzlolz706@gmail.com","password":"1234"}')
 
 TOKEN=$(echo "$TOKEN_RESPONSE" | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
 

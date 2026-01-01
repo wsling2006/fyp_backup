@@ -896,7 +896,7 @@ function UploadDocumentModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <Card className="max-w-2xl w-full" variant="glass">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Upload Employee Document</h2>
+        <h2 className="text-2xl font-bold text-white mb-4">Upload Employee Document</h2>
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
@@ -907,20 +907,20 @@ function UploadDocumentModal({
         <div className="space-y-4">
           {/* File Selector */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Select PDF File * <span className="text-sm text-gray-500">(PDF only, max 10MB)</span>
+            <label className="block text-sm font-semibold text-gray-200 mb-2">
+              Select PDF File * <span className="text-sm text-gray-400">(PDF only, max 10MB)</span>
             </label>
             <input
               type="file"
               onChange={handleFileChange}
               accept=".pdf,application/pdf"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-amber-300">
               ⚠️ Only PDF files are allowed for employee documents (resume, employment agreement, etc.)
             </p>
             {selectedFile && (
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-gray-300">
                 Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
               </p>
             )}
@@ -928,13 +928,13 @@ function UploadDocumentModal({
 
           {/* Document Type */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-200 mb-2">
               Document Type *
             </label>
             <select
               value={documentType}
               onChange={(e) => setDocumentType(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="RESUME">📄 Resume / CV</option>
               <option value="EMPLOYMENT_AGREEMENT">📝 Employment Agreement</option>
@@ -949,7 +949,7 @@ function UploadDocumentModal({
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-200 mb-2">
               Description (Optional)
             </label>
             <textarea
@@ -957,7 +957,7 @@ function UploadDocumentModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add notes about this document..."
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             />
           </div>
         </div>
@@ -983,7 +983,7 @@ function UploadDocumentModal({
         </div>
 
         {/* Info */}
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+        <div className="mt-4 p-3 bg-blue-900/30 border border-blue-400 rounded-lg text-sm text-blue-200">
           ℹ️ Files will be scanned for malware before upload. Maximum file size: 10MB.
         </div>
       </Card>

@@ -19,6 +19,7 @@ import { HRService } from './hr.service';
 import { HRController } from './hr.controller';
 import { ClamavModule } from '../clamav/clamav.module';
 import { AuditModule } from '../audit/audit.module';
+import { UsersModule } from '../users/users.module'; // For password verification
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AuditModule } from '../audit/audit.module';
     ]),
     ClamavModule, // Import ClamAV for file scanning
     AuditModule, // Import Audit for logging
+    UsersModule, // Import Users for password verification in delete operation
   ],
   providers: [
     AttendanceService,

@@ -392,4 +392,34 @@ export class HRService {
     const savedEmployee = await this.employeeRepo.save(employee);
     return savedEmployee;
   }
+
+  /**
+   * Delete employee (CRITICAL OPERATION)
+   * 
+   * This is a PERMANENT deletion - cannot be undone!
+   * - Deletes employee record
+   * - Deletes all associated documents
+   * - Must be audit logged BEFORE deletion
+   * 
+   * Security:
+   * - Requires password + OTP verification (handled in controller)
+   * - Audit log created before deletion
+   * - Irreversible action
+   * 
+   * @param employeeId - Employee UUID to delete
+   * @returns Deleted employee data (for audit log reference)
+   * @throws NotFoundException if employee not found
+   */
+  async deleteEmployee(employeeId: string): Promise<Employee> {
+    // Get employee (will throw if not found)
+    const employee = await this.getEmployeeById(employeeId);
+
+    // Delete all associated documents first
+    await this.documentRepo.delete({ employee_id: employeeId });
+
+    // Delete the employee record
+    await this.employeeRepo.remove(employee);
+
+    return employee; // Return for audit log reference
+  }
 }

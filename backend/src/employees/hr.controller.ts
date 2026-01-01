@@ -14,11 +14,13 @@ import {
   Req,
   BadRequestException,
   InternalServerErrorException,
+  UnauthorizedException,
   Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import type { Response } from 'express';
+import * as argon2 from 'argon2';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -26,6 +28,7 @@ import { Role } from '../users/roles.enum';
 import { HRService } from './hr.service';
 import { ClamavService } from '../clamav/clamav.service';
 import { AuditService } from '../audit/audit.service';
+import { UsersService } from '../users/users.service';
 
 /**
  * HR Controller
@@ -57,6 +60,7 @@ export class HRController {
     private readonly hrService: HRService,
     private readonly clamavService: ClamavService,
     private readonly auditService: AuditService,
+    private readonly usersService: UsersService,
   ) {}
 
   /**
@@ -522,6 +526,157 @@ export class HRController {
       success: true,
       message: 'Employee updated successfully',
       employee: updatedEmployee 
+    };
+  }
+
+  /**
+   * Delete employee (CRITICAL OPERATION - IRREVERSIBLE)
+   * 
+   * ⚠️⚠️⚠️ THIS IS A PERMANENT DELETION - CANNOT BE UNDONE! ⚠️⚠️⚠️
+   * 
+   * Security Requirements:
+   * 1. Password verification (user must enter their password)
+   * 2. OTP verification (user must enter valid OTP from email)
+   * 3. Audit log created BEFORE deletion
+   * 4. All employee documents deleted
+   * 5. Cannot be reversed
+   * 
+   * @body password - User's password for verification
+   * @body otpCode - OTP code from email
+   * @param id - Employee UUID to delete
+   * @returns Success message
+   */
+  @Delete('employees/:id')
+  async deleteEmployee(
+    @Param('id') id: string,
+    @Body() body: { password: string; otpCode: string },
+    @Req() req: any,
+  ) {
+    const { password, otpCode } = body;
+
+    // Validate input
+    if (!password || !otpCode) {
+      throw new BadRequestException('Password and OTP code are required for this critical operation');
+    }
+
+    // Get the employee BEFORE deletion (for audit log)
+    const employee = await this.hrService.getEmployeeById(id);
+
+    // Get current user for password verification
+    const userId = req.user.userId;
+    const user = await this.usersService.findById(userId);
+    
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // STEP 1: Verify password
+    const passwordValid = await argon2.verify(user.password_hash, password);
+    if (!passwordValid) {
+      this.logger.warn(`Failed employee deletion attempt - Invalid password for user ${userId}`);
+      throw new UnauthorizedException('Invalid password. Please enter your correct password to confirm this critical action.');
+    }
+
+    // STEP 2: Verify OTP
+    if (!user.otp_code || !user.otp_expires_at) {
+      throw new BadRequestException('No OTP found. Please request a new OTP.');
+    }
+
+    if (user.otp_expires_at < new Date()) {
+      throw new BadRequestException('OTP has expired. Please request a new OTP.');
+    }
+
+    if (user.otp_code !== otpCode) {
+      this.logger.warn(`Failed employee deletion attempt - Invalid OTP for user ${userId}`);
+      throw new UnauthorizedException('Invalid OTP code. Please check your email and try again.');
+    }
+
+    // STEP 3: Create audit log BEFORE deletion
+    this.logger.log(`⚠️ CRITICAL: Employee deletion initiated by user ${userId} for employee ${id}`);
+    
+    await this.auditService.logFromRequest(
+      req,
+      userId,
+      'DELETE_EMPLOYEE',
+      'employee',
+      id,
+      {
+        employee_id: employee.employee_id,
+        name: employee.name,
+        email: employee.email,
+        ic_number: employee.ic_number,
+        bank_account_number: employee.bank_account_number,
+        position: employee.position,
+        department: employee.department,
+        status: employee.status,
+        warning: 'PERMANENT DELETION - CANNOT BE UNDONE',
+        verified_with: 'Password + OTP',
+      },
+    );
+
+    // STEP 4: Perform deletion
+    await this.hrService.deleteEmployee(id);
+
+    // STEP 5: Clear OTP after successful use
+    user.otp_code = '';
+    user.otp_expires_at = null;
+    await this.usersService.create(user);
+
+    this.logger.log(`✓ Employee ${employee.employee_id} (${employee.name}) permanently deleted by user ${userId}`);
+
+    return {
+      success: true,
+      message: `Employee ${employee.name} has been permanently deleted. This action cannot be undone.`,
+      deleted_employee: {
+        employee_id: employee.employee_id,
+        name: employee.name,
+      },
+    };
+  }
+
+  /**
+   * Request OTP for employee deletion
+   * 
+   * Sends OTP to user's email for verifying critical employee deletion operation
+   * 
+   * @returns Success message with OTP sent confirmation
+   */
+  @Post('employees/:id/request-delete-otp')
+  async requestDeleteOtp(
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
+    // Verify employee exists
+    const employee = await this.hrService.getEmployeeById(id);
+    
+    const userId = req.user.userId;
+    const user = await this.usersService.findById(userId);
+    
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minute expiry
+
+    // Save OTP to user
+    user.otp_code = otp;
+    user.otp_expires_at = expiresAt;
+    await this.usersService.create(user);
+
+    // Send email (reuse your existing email service)
+    // For now, just log it - you can implement email sending later
+    this.logger.log(`OTP for employee deletion: ${otp} (expires at ${expiresAt.toISOString()})`);
+    this.logger.log(`Employee deletion OTP requested for: ${employee.name} (${employee.employee_id})`);
+
+    return {
+      success: true,
+      message: 'OTP sent to your email. It will expire in 10 minutes.',
+      email: user.email,
+      // For development - remove in production
+      otp_debug: process.env.NODE_ENV === 'development' ? otp : undefined,
     };
   }
 

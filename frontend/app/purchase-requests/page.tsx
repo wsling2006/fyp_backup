@@ -161,10 +161,14 @@ export default function PurchaseRequestsPage() {
 
   const canDeleteRequest = (request: PurchaseRequest) => {
     // Only accountant or super_admin can delete
-    if (user?.role !== 'accountant' && user?.role !== 'super_admin') return false;
+    if (user?.role !== 'accountant' && user?.role !== 'super_admin') {
+      console.log(`[canDeleteRequest] User role ${user?.role} - NOT AUTHORIZED`);
+      return false;
+    }
     
     // Can delete DRAFT, SUBMITTED, or REJECTED (no active workflow)
     if (['DRAFT', 'SUBMITTED', 'REJECTED'].includes(request.status)) {
+      console.log(`[canDeleteRequest] Request ${request.id.slice(0,8)} - ${request.status} - CAN DELETE`);
       return true;
     }
     
@@ -493,16 +497,20 @@ export default function PurchaseRequestsPage() {
                         <div className="flex items-center gap-2">
                           <p className="text-sm text-gray-700 font-medium">
                             Are you sure you want to delete this purchase request?
-                            {request.claims.length > 0 && (
+                            {request.status === 'PAID' && request.claims.length > 0 && (
+                              <span className="text-blue-600 block text-xs mt-1">
+                                ℹ️ All {request.claims.length} claim(s) will be deleted automatically
+                              </span>
+                            )}
+                            {request.status === 'APPROVED' && request.claims.length > 0 && (
                               <span className="text-red-600 block text-xs mt-1">
-                                ⚠️ Please delete all claims first ({request.claims.length} claim(s) found)
+                                ⚠️ All {request.claims.length} claim(s) will be deleted automatically
                               </span>
                             )}
                           </p>
                           <button
                             onClick={() => handleDeleteRequest(request.id)}
-                            disabled={request.claims.length > 0}
-                            className="px-3 py-1 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors text-sm"
                           >
                             Yes, Delete
                           </button>

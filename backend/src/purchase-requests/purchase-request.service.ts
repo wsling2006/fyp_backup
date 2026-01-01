@@ -434,11 +434,14 @@ export class PurchaseRequestService {
 
     const newTotalClaimed = totalClaimedSoFar + data.amount_claimed;
 
-    if (newTotalClaimed > pr.approved_amount) {
+    // Convert approved_amount to number (PostgreSQL returns DECIMAL as string)
+    const approvedAmount = Number(pr.approved_amount);
+
+    if (newTotalClaimed > approvedAmount) {
       throw new BadRequestException(
-        `Total claimed amount ($${newTotalClaimed.toFixed(2)}) would exceed approved amount ($${pr.approved_amount.toFixed(2)}). ` +
+        `Total claimed amount ($${newTotalClaimed.toFixed(2)}) would exceed approved amount ($${approvedAmount.toFixed(2)}). ` +
         `Already claimed: $${totalClaimedSoFar.toFixed(2)}. ` +
-        `You can claim up to $${(pr.approved_amount - totalClaimedSoFar).toFixed(2)} more.`
+        `You can claim up to $${(approvedAmount - totalClaimedSoFar).toFixed(2)} more.`
       );
     }
 

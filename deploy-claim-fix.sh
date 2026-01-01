@@ -86,11 +86,20 @@ echo ""
 
 # Step 6: Verify build output
 echo -e "${BLUE}🔍 Step 6: Verifying build output${NC}"
-if [ -f "backend/dist/main.js" ]; then
+if [ -f "backend/dist/src/main.js" ]; then
+    echo -e "${GREEN}✅ Build output verified: backend/dist/src/main.js exists${NC}"
+    ls -lh backend/dist/src/main.js
+elif [ -f "backend/dist/main.js" ]; then
     echo -e "${GREEN}✅ Build output verified: backend/dist/main.js exists${NC}"
     ls -lh backend/dist/main.js
 else
     echo -e "${RED}❌ Build output missing${NC}"
+    echo "Checked locations:"
+    echo "  - backend/dist/src/main.js"
+    echo "  - backend/dist/main.js"
+    echo ""
+    echo "Build folder contents:"
+    ls -la backend/dist/ 2>&1 || echo "dist folder not found"
     exit 1
 fi
 echo ""

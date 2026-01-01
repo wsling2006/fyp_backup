@@ -231,7 +231,7 @@ pm2 delete all
 
 # Restart services manually
 cd /home/ubuntu/fyp_system/backend
-pm2 start dist/main.js --name backend
+pm2 start dist/src/main.js --name backend
 
 cd /home/ubuntu/fyp_system/frontend
 pm2 start npm --name frontend -- start

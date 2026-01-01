@@ -131,8 +131,18 @@ export default function PurchaseRequestsPage() {
     // Only accountant or super_admin can delete
     if (user?.role !== 'accountant' && user?.role !== 'super_admin') return false;
     
-    // Can only delete DRAFT, SUBMITTED, or REJECTED (no active workflow)
-    return ['DRAFT', 'SUBMITTED', 'REJECTED'].includes(request.status);
+    // Can delete DRAFT, SUBMITTED, or REJECTED (no active workflow)
+    if (['DRAFT', 'SUBMITTED', 'REJECTED'].includes(request.status)) {
+      return true;
+    }
+    
+    // Can also delete APPROVED requests IF no claims exist (no active claims workflow)
+    if (request.status === 'APPROVED' && (!request.claims || request.claims.length === 0)) {
+      return true;
+    }
+    
+    // Cannot delete UNDER_REVIEW, PAID, or APPROVED with claims
+    return false;
   };
 
   const handleDeleteRequest = async (requestId: string) => {

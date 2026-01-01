@@ -850,7 +850,8 @@ export class PurchaseRequestService {
    * Business Rules:
    * - Only accountants and super admins can delete purchase requests
    * - Can delete: DRAFT, SUBMITTED, REJECTED (no active workflow)
-   * - Cannot delete: APPROVED, UNDER_REVIEW, PAID (have active workflow or claims)
+   * - Can delete: APPROVED with NO claims (no active claims workflow)
+   * - Cannot delete: APPROVED with claims, UNDER_REVIEW, PAID (have active workflow)
    * 
    * @param prId - UUID of the purchase request to delete
    * @param userId - ID of the user performing the deletion
@@ -878,26 +879,30 @@ export class PurchaseRequestService {
       throw new NotFoundException('Purchase request not found');
     }
 
-    // Check status - only allow deletion of inactive/rejected requests
-    const deletableStatuses = [
-      PurchaseRequestStatus.DRAFT,
-      PurchaseRequestStatus.SUBMITTED,
-      PurchaseRequestStatus.REJECTED,
-    ];
-
-    if (!deletableStatuses.includes(pr.status)) {
-      throw new BadRequestException(
-        `Cannot delete purchase request with status ${pr.status}. ` +
-        `Only DRAFT, SUBMITTED, or REJECTED requests can be deleted. ` +
-        `APPROVED, UNDER_REVIEW, or PAID requests have active workflows.`
-      );
-    }
-
     // Check if there are any claims (should be deleted first)
     if (pr.claims && pr.claims.length > 0) {
       throw new BadRequestException(
         `Cannot delete purchase request with existing claims. ` +
         `Please delete all claims first (found ${pr.claims.length} claim(s)).`
+      );
+    }
+
+    // Check status - allow deletion based on status and claims
+    const alwaysDeletableStatuses = [
+      PurchaseRequestStatus.DRAFT,
+      PurchaseRequestStatus.SUBMITTED,
+      PurchaseRequestStatus.REJECTED,
+    ];
+
+    // APPROVED requests can be deleted ONLY if no claims exist
+    const canDeleteApproved = pr.status === PurchaseRequestStatus.APPROVED && 
+                              (!pr.claims || pr.claims.length === 0);
+
+    if (!alwaysDeletableStatuses.includes(pr.status) && !canDeleteApproved) {
+      throw new BadRequestException(
+        `Cannot delete purchase request with status ${pr.status}. ` +
+        `Only DRAFT, SUBMITTED, REJECTED, or APPROVED (with no claims) requests can be deleted. ` +
+        `UNDER_REVIEW or PAID requests have active workflows.`
       );
     }
 

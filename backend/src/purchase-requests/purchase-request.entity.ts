@@ -16,6 +16,7 @@ export enum PurchaseRequestStatus {
   UNDER_REVIEW = 'UNDER_REVIEW',
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
+  PARTIALLY_PAID = 'PARTIALLY_PAID', // NEW: When some claims processed but not all
   PAID = 'PAID',
 }
 
@@ -76,6 +77,41 @@ export class PurchaseRequest {
 
   @Column({ type: 'timestamp', nullable: true })
   reviewed_at: Date;
+
+  // Financial tracking columns for multiple claims
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    default: 0,
+  })
+  total_claimed?: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    default: 0,
+  })
+  total_paid?: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    default: 0,
+  })
+  total_rejected?: number;
+
+  @Column({
+    type: 'int',
+    nullable: true,
+    default: 0,
+  })
+  payment_progress?: number;
 
   @OneToMany('Claim', 'purchaseRequest')
   claims: any[];

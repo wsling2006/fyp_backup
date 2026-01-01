@@ -27,6 +27,11 @@ interface PurchaseRequest {
   reviewed_at: string | null;
   created_at: string;
   updated_at: string;
+  // Financial tracking fields for multiple claims
+  total_claimed?: number;
+  total_paid?: number;
+  total_rejected?: number;
+  payment_progress?: number;
   createdBy: {
     id: string;
     email: string;
@@ -140,14 +145,14 @@ export default function PurchaseRequestsPage() {
       return true;
     }
     
-    // Can also delete APPROVED or PAID requests IF no claims exist (no active claims workflow)
-    if (['APPROVED', 'PAID'].includes(request.status) && (!request.claims || request.claims.length === 0)) {
+    // Can also delete APPROVED, PARTIALLY_PAID, or PAID requests IF no claims exist (no active claims workflow)
+    if (['APPROVED', 'PARTIALLY_PAID', 'PAID'].includes(request.status) && (!request.claims || request.claims.length === 0)) {
       console.log(`[canDeleteRequest] Request ${request.id.slice(0,8)} - ${request.status} with ${request.claims?.length || 0} claims - CAN DELETE`);
       return true;
     }
     
     console.log(`[canDeleteRequest] Request ${request.id.slice(0,8)} - Status: ${request.status}, Claims: ${request.claims?.length || 0} - CANNOT DELETE`);
-    // Cannot delete UNDER_REVIEW, PAID, or APPROVED with claims
+    // Cannot delete UNDER_REVIEW, PAID, PARTIALLY_PAID, or APPROVED with claims
     return false;
   };
 
@@ -178,6 +183,7 @@ export default function PurchaseRequestsPage() {
       UNDER_REVIEW: 'bg-yellow-100 text-yellow-800',
       APPROVED: 'bg-green-100 text-green-800',
       REJECTED: 'bg-red-100 text-red-800',
+      PARTIALLY_PAID: 'bg-orange-100 text-orange-800', // NEW: Orange for partial payment
       PAID: 'bg-purple-100 text-purple-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
@@ -316,6 +322,38 @@ export default function PurchaseRequestsPage() {
                           <p className="text-sm text-gray-700">
                             <span className="font-medium">Review Notes:</span> {request.review_notes}
                           </p>
+                        </div>
+                      )}
+                      
+                      {/* Payment Progress for PARTIALLY_PAID or PAID status */}
+                      {(request.status === 'PARTIALLY_PAID' || request.status === 'PAID') && request.payment_progress !== undefined && (
+                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium text-gray-700">Payment Progress</span>
+                            <span className="text-sm font-semibold text-blue-800">{request.payment_progress}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                            <div 
+                              className={`h-2.5 rounded-full ${request.status === 'PAID' ? 'bg-green-600' : 'bg-orange-500'}`}
+                              style={{ width: `${Math.min(request.payment_progress || 0, 100)}%` }}
+                            />
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
+                            <div>
+                              <span className="text-gray-500">Paid:</span>
+                              <p className="font-semibold text-green-600">${formatCurrency(request.total_paid || 0)}</p>
+                            </div>
+                            {(request.total_rejected || 0) > 0 && (
+                              <div>
+                                <span className="text-gray-500">Rejected:</span>
+                                <p className="font-semibold text-red-600">${formatCurrency(request.total_rejected)}</p>
+                              </div>
+                            )}
+                            <div>
+                              <span className="text-gray-500">Approved:</span>
+                              <p className="font-semibold text-gray-900">${formatCurrency(request.approved_amount)}</p>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>

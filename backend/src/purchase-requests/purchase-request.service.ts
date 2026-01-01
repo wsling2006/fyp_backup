@@ -563,19 +563,18 @@ export class PurchaseRequestService {
 
     const saved = await this.claimRepo.save(claim);
 
-    // Update purchase request status to PAID if claim is processed
-    if (data.status === 'PROCESSED') {
-      await this.purchaseRequestRepo.update(
-        { id: claim.purchase_request_id },
-        { status: PurchaseRequestStatus.PAID },
-      );
-    }
+    // Update purchase request status intelligently based on all claims
+    // This replaces the old logic that would set PAID immediately when any claim was processed
+    await this.updateRequestStatusAfterClaimVerification(claim.purchase_request_id);
 
     // Audit log
     await this.auditService.logFromRequest(req, userId, 'PROCESS_CLAIM', 'claim', id, {
       status: data.status,
       verification_notes: data.verification_notes,
     });
+
+    // Intelligent status update for purchase request
+    await this.updateRequestStatusAfterClaimVerification(claim.purchase_request_id);
 
     return saved;
   }
@@ -904,9 +903,12 @@ export class PurchaseRequestService {
       PurchaseRequestStatus.REJECTED,
     ];
 
-    // APPROVED or PAID requests can be deleted ONLY if no claims exist
-    const canDeleteApprovedOrPaid = (pr.status === PurchaseRequestStatus.APPROVED || pr.status === PurchaseRequestStatus.PAID) && 
-                              (!pr.claims || pr.claims.length === 0);
+    // APPROVED, PARTIALLY_PAID, or PAID requests can be deleted ONLY if no claims exist
+    const canDeleteApprovedOrPaid = 
+      (pr.status === PurchaseRequestStatus.APPROVED || 
+       pr.status === PurchaseRequestStatus.PARTIALLY_PAID || 
+       pr.status === PurchaseRequestStatus.PAID) && 
+      (!pr.claims || pr.claims.length === 0);
 
     console.log('[deletePurchaseRequest] canDeleteApprovedOrPaid:', canDeleteApprovedOrPaid);
     console.log('[deletePurchaseRequest] alwaysDeletableStatuses.includes:', alwaysDeletableStatuses.includes(pr.status));
@@ -914,7 +916,7 @@ export class PurchaseRequestService {
     if (!alwaysDeletableStatuses.includes(pr.status) && !canDeleteApprovedOrPaid) {
       throw new BadRequestException(
         `Cannot delete purchase request with status ${pr.status}. ` +
-        `Only DRAFT, SUBMITTED, REJECTED, or APPROVED/PAID (with no claims) requests can be deleted. ` +
+        `Only DRAFT, SUBMITTED, REJECTED, or APPROVED/PARTIALLY_PAID/PAID (with no claims) requests can be deleted. ` +
         `UNDER_REVIEW requests have active workflows.`
       );
     }
@@ -940,5 +942,81 @@ export class PurchaseRequestService {
 
     // Delete the purchase request
     await this.purchaseRequestRepo.delete(prId);
+  }
+
+  /**
+   * Update purchase request status based on claim verification
+   * This intelligently determines if a request should be PAID, PARTIALLY_PAID, or remain APPROVED
+   * based on the status of all claims and total amounts.
+   */
+  private async updateRequestStatusAfterClaimVerification(requestId: string): Promise<void> {
+    const request = await this.purchaseRequestRepo.findOne({
+      where: { id: requestId },
+      relations: ['claims'],
+    });
+
+    if (!request) {
+      throw new NotFoundException('Purchase request not found');
+    }
+
+    // Get all claims for this request
+    const allClaims = await this.claimRepo.find({
+      where: { purchase_request_id: requestId },
+    });
+
+    // Categorize claims by status
+    const processedClaims = allClaims.filter(c => c.status === ClaimStatus.PROCESSED);
+    const pendingClaims = allClaims.filter(c => c.status === ClaimStatus.PENDING);
+    const rejectedClaims = allClaims.filter(c => c.status === ClaimStatus.REJECTED);
+
+    // Calculate financial totals
+    const totalClaimed = allClaims.reduce((sum, c) => sum + Number(c.amount_claimed || 0), 0);
+    const totalPaid = processedClaims.reduce((sum, c) => sum + Number(c.amount_claimed || 0), 0);
+    const totalRejected = rejectedClaims.reduce((sum, c) => sum + Number(c.amount_claimed || 0), 0);
+    
+    const approvedAmount = Number(request.approved_amount || 0);
+    const paymentProgress = approvedAmount > 0 ? Math.round((totalPaid / approvedAmount) * 100) : 0;
+
+    // Determine new status based on claim states and amounts
+    let newStatus = request.status;
+    
+    if (pendingClaims.length > 0) {
+      // Still have pending claims - keep as APPROVED (claims are being reviewed)
+      newStatus = PurchaseRequestStatus.APPROVED;
+    } else if (allClaims.length === 0) {
+      // No claims yet - keep current status
+      newStatus = request.status;
+    } else {
+      // All claims have been reviewed (no pending claims)
+      if (paymentProgress >= 95) {
+        // 95% or more paid - consider fully paid (allows for rounding differences)
+        newStatus = PurchaseRequestStatus.PAID;
+      } else if (totalPaid > 0) {
+        // Some amount paid but not enough - partially paid
+        newStatus = PurchaseRequestStatus.PARTIALLY_PAID;
+      } else if (totalPaid === 0 && rejectedClaims.length > 0) {
+        // All claims rejected or zero payment - revert to APPROVED (can resubmit claims)
+        newStatus = PurchaseRequestStatus.APPROVED;
+      }
+    }
+
+    // Update request with new status and financial tracking
+    await this.purchaseRequestRepo.update(requestId, {
+      status: newStatus,
+      total_claimed: totalClaimed,
+      total_paid: totalPaid,
+      total_rejected: totalRejected,
+      payment_progress: paymentProgress,
+    });
+
+    console.log(`[STATUS UPDATE] Request ${requestId}: ${request.status} → ${newStatus}`, {
+      totalClaimed,
+      totalPaid,
+      totalRejected,
+      paymentProgress: `${paymentProgress}%`,
+      pendingCount: pendingClaims.length,
+      processedCount: processedClaims.length,
+      rejectedCount: rejectedClaims.length,
+    });
   }
 }

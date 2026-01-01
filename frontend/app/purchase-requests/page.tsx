@@ -491,7 +491,9 @@ export default function PurchaseRequestsPage() {
             onClose={() => {
               setShowViewClaimsModal(false);
               setSelectedRequest(null);
+              loadRequests(); // Reload to get updated claims list
             }}
+            onClaimChanged={loadRequests} // Reload immediately after claim is deleted/verified
           />
         )}
       </div>
@@ -1182,9 +1184,11 @@ function UploadClaimModal({
 function ViewClaimsModal({
   request,
   onClose,
+  onClaimChanged,
 }: {
   request: PurchaseRequest;
   onClose: () => void;
+  onClaimChanged?: () => void;
 }) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -1249,8 +1253,12 @@ function ViewClaimsModal({
       await api.delete(`/purchase-requests/claims/${claimId}`);
       setSuccess('Claim deleted successfully');
       setDeleteConfirm(null);
-      // Reload claims
+      // Reload claims in modal
       await loadClaims();
+      // Notify parent to reload purchase requests (updates delete button visibility)
+      if (onClaimChanged) {
+        onClaimChanged();
+      }
     } catch (err: any) {
       console.error('Failed to delete claim:', err);
       setError(err.response?.data?.message || 'Failed to delete claim');
@@ -1288,8 +1296,12 @@ function ViewClaimsModal({
       setOtpPassword('');
       setVerificationNotes('');
       setOtpRequested(false);
-      // Reload claims
+      // Reload claims in modal
       await loadClaims();
+      // Notify parent to reload purchase requests
+      if (onClaimChanged) {
+        onClaimChanged();
+      }
     } catch (err: any) {
       console.error('Failed to verify claim:', err);
       setError(err.response?.data?.message || 'Failed to verify claim');

@@ -19,9 +19,10 @@ export default function EmployeesPage() {
   const { user, logout, isInitialized } = useAuth();
   const router = useRouter();
   const [employees, setEmployees] = useState<EmployeeListItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Don't auto-load
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [dataVisible, setDataVisible] = useState(false); // Control visibility
 
   useEffect(() => {
     // Wait for AuthContext to initialize
@@ -41,7 +42,8 @@ export default function EmployeesPage() {
       return;
     }
 
-    loadEmployees();
+    // DON'T auto-load - user must click "View Employees" button
+    // This prevents audit log spam on page navigation
   }, [isInitialized, user, router]);
 
   const loadEmployees = async () => {
@@ -93,17 +95,6 @@ export default function EmployeesPage() {
     );
   });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
-        <div className="text-center">
-          <Loader />
-          <p className="text-gray-600 mt-4 text-lg">Loading employees...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-8">
       <div className="max-w-7xl mx-auto">
@@ -126,133 +117,164 @@ export default function EmployeesPage() {
           </Card>
         )}
 
-        {/* Search Bar */}
-        <Card className="mb-6" variant="glass">
-          <div className="flex items-center space-x-4">
-            <div className="flex-1">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search by name or employee ID..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-3 pl-12 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                />
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">
-                  🔍
-                </span>
-              </div>
-            </div>
-            <Button
-              variant="primary"
-              onClick={() => router.push('/hr/employees/add')}
-              className="w-auto px-6"
-            >
-              ➕ Add Employee
-            </Button>
-            <Button
-              variant="outline"
-              onClick={loadEmployees}
-              className="w-auto px-6"
-            >
-              <span className="flex items-center space-x-2">
-                <span>🔄</span>
-                <span>Refresh</span>
-              </span>
-            </Button>
-          </div>
-        </Card>
-
-        {/* Employee Count */}
-        <div className="mb-4 text-sm text-gray-600">
-          Showing {filteredEmployees.length} of {employees.length} employees
-        </div>
-
-        {/* Employee Table */}
-        <Card variant="gradient">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b-2 border-gray-200">
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700">
-                    Employee ID
-                  </th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700">
-                    Full Name
-                  </th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700">
-                    Status
-                  </th>
-                  <th className="text-center py-4 px-4 font-semibold text-gray-700">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEmployees.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="text-center py-8 text-gray-500">
-                      {searchQuery ? 'No employees found matching your search' : 'No employees available'}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredEmployees.map((employee) => (
-                    <tr
-                      key={employee.id}
-                      className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors"
-                    >
-                      <td className="py-4 px-4">
-                        <span className="font-mono text-sm text-gray-700">
-                          {employee.employee_id || 'N/A'}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="font-medium text-gray-900">
-                          {employee.name}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span
-                          className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadgeColor(
-                            employee.status
-                          )}`}
-                        >
-                          {employee.status}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-center">
-                        <Button
-                          variant="primary"
-                          onClick={() => handleViewEmployee(employee.id)}
-                          className="w-auto px-4 py-2 text-sm"
-                        >
-                          <span className="flex items-center space-x-1">
-                            <span>👁️</span>
-                            <span>View Profile</span>
-                          </span>
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-
-        {/* Info Footer */}
-        <Card className="mt-6 bg-blue-50 border-l-4 border-blue-500">
-          <div className="flex items-start">
-            <span className="text-2xl mr-3">ℹ️</span>
-            <div>
-              <h3 className="font-semibold text-blue-900 mb-1">Data Privacy Notice</h3>
-              <p className="text-sm text-blue-700">
-                This list shows minimal employee information. Click "View Profile" to access full details.
-                All access to sensitive employee data is logged for audit purposes.
+        {/* If data not loaded yet, show "View Employees" button */}
+        {!dataVisible && !loading && (
+          <Card className="mb-6 text-center py-12">
+            <div className="max-w-md mx-auto">
+              <div className="text-6xl mb-4">👥</div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Employee Directory</h2>
+              <p className="text-gray-600 mb-6">
+                Click the button below to load the employee list. This ensures audit logs
+                only track intentional data access, not automatic page loads.
               </p>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setDataVisible(true);
+                  loadEmployees();
+                }}
+                disabled={loading}
+                className="w-auto px-8 py-3 text-lg"
+              >
+                {loading ? 'Loading...' : '📋 View Employee List'}
+              </Button>
             </div>
-          </div>
-        </Card>
+          </Card>
+        )}
+
+        {/* Show controls and data only after user clicks "View Employees" */}
+        {dataVisible && (
+          <>
+            {/* Search Bar and Actions */}
+            <Card className="mb-6" variant="glass">
+              <div className="flex items-center space-x-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search by name or employee ID..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full px-4 py-3 pl-12 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">
+                      🔍
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  variant="primary"
+                  onClick={() => router.push('/hr/employees/add')}
+                  className="w-auto px-6"
+                >
+                  ➕ Add Employee
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={loadEmployees}
+                  disabled={loading}
+                  className="w-auto px-6"
+                >
+                  <span className="flex items-center space-x-2">
+                    <span>🔄</span>
+                    <span>{loading ? 'Loading...' : 'Refresh'}</span>
+                  </span>
+                </Button>
+              </div>
+            </Card>
+
+            {/* Employee Count */}
+            <div className="mb-4 text-sm text-gray-600">
+              Showing {filteredEmployees.length} of {employees.length} employees
+            </div>
+
+            {/* Employee Table */}
+            <Card variant="gradient">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b-2 border-gray-200">
+                      <th className="text-left py-4 px-4 font-semibold text-gray-700">
+                        Employee ID
+                      </th>
+                      <th className="text-left py-4 px-4 font-semibold text-gray-700">
+                        Full Name
+                      </th>
+                      <th className="text-left py-4 px-4 font-semibold text-gray-700">
+                        Status
+                      </th>
+                      <th className="text-center py-4 px-4 font-semibold text-gray-700">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredEmployees.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="text-center py-8 text-gray-500">
+                          {searchQuery ? 'No employees found matching your search' : 'No employees available'}
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredEmployees.map((employee) => (
+                        <tr
+                          key={employee.id}
+                          className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors"
+                        >
+                          <td className="py-4 px-4">
+                            <span className="font-mono text-sm text-gray-700">
+                              {employee.employee_id || 'N/A'}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className="font-medium text-gray-900">
+                              {employee.name}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <span
+                              className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadgeColor(
+                                employee.status
+                              )}`}
+                            >
+                              {employee.status}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 text-center">
+                            <Button
+                              variant="primary"
+                              onClick={() => handleViewEmployee(employee.id)}
+                              className="w-auto px-4 py-2 text-sm"
+                            >
+                              <span className="flex items-center space-x-1">
+                                <span>👁️</span>
+                                <span>View Profile</span>
+                              </span>
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+
+            {/* Info Footer */}
+            <Card className="mt-6 bg-blue-50 border-l-4 border-blue-500">
+              <div className="flex items-start">
+                <span className="text-2xl mr-3">ℹ️</span>
+                <div>
+                  <h3 className="font-semibold text-blue-900 mb-1">Data Privacy Notice</h3>
+                  <p className="text-sm text-blue-700">
+                    This list shows minimal employee information. Click "View Profile" to access full details.
+                    All access to sensitive employee data is logged for audit purposes.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </>
+        )}
       </div>
     </div>
   );

@@ -842,8 +842,15 @@ export class PurchaseRequestService {
       },
     );
 
+    // Store purchase request ID before deletion
+    const purchaseRequestId = claim.purchase_request_id;
+
     // Delete the claim
     await this.claimRepo.delete(claimId);
+
+    // Update purchase request status after claim deletion
+    // This ensures PAID/PARTIALLY_PAID requests revert to appropriate status when claims are deleted
+    await this.updateRequestStatusAfterClaimVerification(purchaseRequestId);
   }
 
   /**

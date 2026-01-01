@@ -27,6 +27,11 @@ export default function AddEmployeePage() {
     status: 'ACTIVE',
   });
 
+  // File upload state
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [agreementFile, setAgreementFile] = useState<File | null>(null);
+  const [fileErrors, setFileErrors] = useState({ resume: '', agreement: '' });
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -35,15 +40,74 @@ export default function AddEmployeePage() {
     }));
   };
 
+  const handleFileChange = (type: 'resume' | 'agreement', file: File | null) => {
+    if (!file) return;
+
+    // Validate PDF only
+    if (file.type !== 'application/pdf') {
+      setFileErrors(prev => ({
+        ...prev,
+        [type]: 'Only PDF files are allowed'
+      }));
+      return;
+    }
+
+    // Validate file size (10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setFileErrors(prev => ({
+        ...prev,
+        [type]: 'File size exceeds 10MB limit'
+      }));
+      return;
+    }
+
+    // Clear error and set file
+    setFileErrors(prev => ({ ...prev, [type]: '' }));
+    if (type === 'resume') {
+      setResumeFile(file);
+    } else {
+      setAgreementFile(file);
+    }
+  };
+
+  const uploadDocument = async (employeeId: string, file: File, documentType: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('document_type', documentType);
+    formData.append('description', `Uploaded during employee creation`);
+
+    await api.post(`/hr/employees/${employeeId}/documents/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
+      // Step 1: Create employee
       const response = await api.post('/hr/employees', formData);
       
       if (response.data.success) {
+        const employeeId = response.data.employee.id;
+        
+        // Step 2: Upload documents if provided
+        const uploadPromises = [];
+        if (resumeFile) {
+          uploadPromises.push(uploadDocument(employeeId, resumeFile, 'RESUME'));
+        }
+        if (agreementFile) {
+          uploadPromises.push(uploadDocument(employeeId, agreementFile, 'EMPLOYMENT_AGREEMENT'));
+        }
+
+        // Wait for all uploads to complete
+        if (uploadPromises.length > 0) {
+          await Promise.all(uploadPromises);
+        }
+
         alert(`Employee created successfully! Employee ID: ${response.data.employee.employee_id}`);
         router.push('/hr/employees');
       }
@@ -290,6 +354,92 @@ export default function AddEmployeePage() {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Document Upload Section (Optional) */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 pb-2 border-b">
+              Documents <span className="text-sm font-normal text-gray-500">(Optional)</span>
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">
+              You can upload employee documents now or add them later from the employee detail page.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Resume Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Resume / CV
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => handleFileChange('resume', e.target.files?.[0] || null)}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  <p className="mt-2 text-xs text-gray-500">
+                    PDF only, max 10MB
+                  </p>
+                  {resumeFile && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-green-600">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      {resumeFile.name}
+                    </div>
+                  )}
+                  {fileErrors.resume && (
+                    <p className="mt-2 text-sm text-red-600">{fileErrors.resume}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Employment Agreement Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Employment Agreement
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => handleFileChange('agreement', e.target.files?.[0] || null)}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  <p className="mt-2 text-xs text-gray-500">
+                    PDF only, max 10MB
+                  </p>
+                  {agreementFile && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-green-600">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      {agreementFile.name}
+                    </div>
+                  )}
+                  {fileErrors.agreement && (
+                    <p className="mt-2 text-sm text-red-600">{fileErrors.agreement}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {(resumeFile || agreementFile) && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium">Document Upload</p>
+                    <p className="mt-1">
+                      Documents will be scanned for malware and securely stored after employee creation.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Submit Buttons */}

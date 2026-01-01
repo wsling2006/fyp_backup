@@ -166,8 +166,21 @@ export default function AccountantDashboard() {
 
   const download = async (id: string, filename: string) => {
     try {
-      const res = await api.get(`/accountant-files/${id}`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      // FIXED: Use fetch instead of axios for blob downloads
+      // axios has issues with blob responses through Next.js proxy
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/accountant-files/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!res.ok) {
+        throw new Error('Download failed');
+      }
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = filename;

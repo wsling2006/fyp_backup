@@ -79,11 +79,12 @@ async function handler(request: NextRequest, { params }: { params: { path: strin
     headers.set('x-real-ip', clientIp);
 
     // Get request body if present
-    let body: string | undefined;
+    // IMPORTANT: Use request.body directly to preserve binary data (file uploads)
+    // Do NOT use request.text() or request.json() as they will corrupt multipart/form-data
+    let body: ReadableStream<Uint8Array> | null = null;
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       try {
-        const text = await request.text();
-        body = text || undefined;
+        body = request.body;
       } catch {
         // No body or already consumed
       }

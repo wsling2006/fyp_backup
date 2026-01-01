@@ -89,6 +89,31 @@ export class HRService {
   }
 
   /**
+   * Update employee information
+   * 
+   * @param id - Employee UUID
+   * @param updateData - Fields to update
+   * @returns Promise<Employee> - Updated employee record
+   * @throws NotFoundException if employee not found
+   */
+  async updateEmployee(
+    id: string,
+    updateData: Partial<Employee>,
+  ): Promise<Employee> {
+    const employee = await this.employeeRepo.findOne({ where: { id } });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    // Update only provided fields
+    Object.assign(employee, updateData);
+
+    // Save and return updated employee
+    return await this.employeeRepo.save(employee);
+  }
+
+  /**
    * Validate uploaded file
    * Reuses validation logic from accountant-files
    * 

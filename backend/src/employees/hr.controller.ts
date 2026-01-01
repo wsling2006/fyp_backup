@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Delete,
   Param,
   Query,
@@ -378,4 +379,85 @@ export class HRController {
       throw new InternalServerErrorException(error.message || 'Failed to create employee');
     }
   }
+
+  /**
+   * Update employee information
+   * 
+   * ✅ AUDIT LOGGED - Updating employee data is a sensitive operation
+   * Logs what fields were changed and their old/new values
+   * 
+   * @param id - Employee UUID
+   * @param updateData - Fields to update
+   * @returns Updated employee object
+   */
+  @Put('employees/:id')
+  async updateEmployee(
+    @Param('id') id: string,
+    @Body() updateData: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      emergency_contact?: string;
+      ic_number?: string;
+      birthday?: string;
+      bank_account_number?: string;
+      position?: string;
+      department?: string;
+      date_of_joining?: string;
+      status?: 'ACTIVE' | 'INACTIVE' | 'TERMINATED';
+    },
+    @Req() req: any,
+  ) {
+    // Get original employee data before update
+    const originalEmployee = await this.hrService.getEmployeeById(id);
+
+    // Convert date strings to Date objects if provided
+    const processedData: any = { ...updateData };
+    if (updateData.birthday) {
+      processedData.birthday = new Date(updateData.birthday);
+    }
+    if (updateData.date_of_joining) {
+      processedData.date_of_joining = new Date(updateData.date_of_joining);
+    }
+
+    // Update employee
+    const updatedEmployee = await this.hrService.updateEmployee(id, processedData);
+
+    // Track what fields changed
+    const changedFields: string[] = [];
+    const oldValues: Record<string, any> = {};
+    const newValues: Record<string, any> = {};
+
+    for (const [key, newValue] of Object.entries(updateData)) {
+      if (newValue !== undefined && originalEmployee[key] !== newValue) {
+        changedFields.push(key);
+        oldValues[key] = originalEmployee[key];
+        newValues[key] = newValue;
+      }
+    }
+
+    // ⚠️ CRITICAL: Log the update action
+    await this.auditService.logFromRequest(
+      req,
+      req.user.userId,
+      'UPDATE_EMPLOYEE',
+      'employee',
+      id,
+      {
+        employee_id: originalEmployee.employee_id,
+        name: originalEmployee.name,
+        changed_fields: changedFields,
+        old_values: oldValues,
+        new_values: newValues,
+      },
+    );
+
+    return { 
+      success: true,
+      message: 'Employee updated successfully',
+      employee: updatedEmployee 
+    };
+  }
+
 }

@@ -217,8 +217,8 @@ cd /home/ubuntu/fyp_system/backend
 git pull origin main
 npm install
 npm run build
-pm2 restart fyp-backend
-pm2 logs fyp-backend --lines 50
+pm2 restart backend
+pm2 logs backend --lines 50
 ```
 
 **Frontend:**
@@ -227,8 +227,8 @@ cd /home/ubuntu/fyp_system/frontend
 git pull origin main
 npm install
 npm run build
-pm2 restart fyp-frontend
-pm2 logs fyp-frontend --lines 50
+pm2 restart frontend
+pm2 logs frontend --lines 50
 ```
 
 ---
@@ -321,8 +321,8 @@ Follow all 7 test scenarios in `TESTING_GUIDE_DELETE_PR.md`:
 
 ```bash
 # Check logs
-pm2 logs fyp-backend --lines 100
-pm2 logs fyp-frontend --lines 100
+pm2 logs backend --lines 100
+pm2 logs frontend --lines 100
 
 # Check audit logs
 psql -U postgres -d fyp_db -c "

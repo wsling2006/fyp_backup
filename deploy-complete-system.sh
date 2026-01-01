@@ -50,7 +50,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "  - Restarting backend with PM2..."
-pm2 restart fyp-backend
+pm2 restart backend
 if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to restart backend${NC}"
     exit 1
@@ -77,7 +77,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "  - Restarting frontend with PM2..."
-pm2 restart fyp-frontend
+pm2 restart frontend
 if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to restart frontend${NC}"
     exit 1
@@ -94,11 +94,11 @@ pm2 status
 
 echo ""
 echo "Backend Logs (last 20 lines):"
-pm2 logs fyp-backend --lines 20 --nostream
+pm2 logs backend --lines 20 --nostream
 
 echo ""
 echo "Frontend Logs (last 20 lines):"
-pm2 logs fyp-frontend --lines 20 --nostream
+pm2 logs frontend --lines 20 --nostream
 
 echo ""
 echo -e "${YELLOW}Step 5: Testing endpoints...${NC}"
@@ -141,8 +141,8 @@ echo "  5. Verify request is deleted from dashboard"
 echo "  6. Check audit logs in database"
 echo ""
 echo "COMMANDS TO VERIFY:"
-echo "  pm2 logs fyp-backend --lines 50"
-echo "  pm2 logs fyp-frontend --lines 50"
+echo "  pm2 logs backend --lines 50"
+echo "  pm2 logs frontend --lines 50"
 echo "  psql -U postgres -d fyp_db -c \"SELECT action FROM audit_logs WHERE action='DELETE_PURCHASE_REQUEST' ORDER BY created_at DESC LIMIT 5;\""
 echo ""
 echo "DOCUMENTATION:"

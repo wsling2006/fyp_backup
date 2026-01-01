@@ -308,8 +308,8 @@ cd /home/ubuntu/fyp_system/backend
 git pull origin main
 npm install
 npm run build
-pm2 restart fyp-backend
-pm2 logs fyp-backend --lines 50
+pm2 restart backend
+pm2 logs backend --lines 50
 ```
 
 ### Frontend Deployment
@@ -318,8 +318,8 @@ cd /home/ubuntu/fyp_system/frontend
 git pull origin main
 npm install
 npm run build
-pm2 restart fyp-frontend
-pm2 logs fyp-frontend --lines 50
+pm2 restart frontend
+pm2 logs frontend --lines 50
 ```
 
 ### Verify Deployment
@@ -402,8 +402,8 @@ All reported issues have been fixed:
 ### Debug Commands
 ```bash
 # Check logs
-pm2 logs fyp-backend --lines 100
-pm2 logs fyp-frontend --lines 100
+pm2 logs backend --lines 100
+pm2 logs frontend --lines 100
 
 # Check database
 psql -U postgres -d fyp_db -c "SELECT id, title, status FROM purchase_requests ORDER BY created_at DESC LIMIT 10;"

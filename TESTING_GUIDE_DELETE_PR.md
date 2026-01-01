@@ -38,19 +38,19 @@ cd /home/ubuntu/fyp_system/backend
 git pull origin main
 npm install
 npm run build
-pm2 restart fyp-backend
+pm2 restart backend
 
 # Frontend
 cd /home/ubuntu/fyp_system/frontend
 git pull origin main
 npm install
 npm run build
-pm2 restart fyp-frontend
+pm2 restart frontend
 
 # Verify
 pm2 status
-pm2 logs fyp-backend --lines 20
-pm2 logs fyp-frontend --lines 20
+pm2 logs backend --lines 20
+pm2 logs frontend --lines 20
 ```
 
 ---
@@ -231,7 +231,7 @@ curl -X DELETE http://your-ec2-ip:5000/purchase-requests/<REQUEST_ID> \
 ### Issue: Deletion fails
 
 **Check:**
-1. Backend logs: `pm2 logs fyp-backend --lines 50`
+1. Backend logs: `pm2 logs backend --lines 50`
 2. Database: Check if claims exist
 3. Network: Check browser DevTools Network tab
 4. Token: Ensure valid JWT token

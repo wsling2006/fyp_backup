@@ -135,8 +135,9 @@ export default function EditEmployeePage() {
       setSuccessMessage('Employee updated successfully! Redirecting...');
       
       // Redirect back to employee detail page after 1.5 seconds
+      // Add ?refresh=silent to indicate this is a post-update refresh (skip audit log)
       setTimeout(() => {
-        router.push(`/hr/employees/${employeeId}`);
+        router.push(`/hr/employees/${employeeId}?refresh=silent`);
       }, 1500);
       
     } catch (err: any) {

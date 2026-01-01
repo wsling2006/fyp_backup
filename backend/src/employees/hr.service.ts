@@ -1,8 +1,9 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThanOrEqual } from 'typeorm';
 import { Employee } from './employee.entity';
 import { EmployeeDocument } from './employee-document.entity';
+import { AuditLog } from '../audit/audit-log.entity';
 import * as crypto from 'crypto';
 
 // Minimal uploaded file interface
@@ -20,6 +21,7 @@ interface UploadedFile {
  * - Employee list (minimal data)
  * - Employee detail (full sensitive data)
  * - Employee document upload/download
+ * - Smart audit log throttling
  * 
  * Security:
  * - Reuses existing file upload patterns (accountant-files, claims)
@@ -33,6 +35,8 @@ export class HRService {
     private readonly employeeRepo: Repository<Employee>,
     @InjectRepository(EmployeeDocument)
     private readonly documentRepo: Repository<EmployeeDocument>,
+    @InjectRepository(AuditLog)
+    private readonly auditRepo: Repository<AuditLog>,
   ) {}
 
   /**

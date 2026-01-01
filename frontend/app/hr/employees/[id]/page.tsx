@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
 import { Card } from '@/components/ui/Card';
@@ -45,6 +45,7 @@ export default function EmployeeDetailPage() {
   const { user, logout, isInitialized } = useAuth();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const employeeId = params?.id as string;
 
   const [employee, setEmployee] = useState<Employee | null>(null);
@@ -53,6 +54,7 @@ export default function EmployeeDetailPage() {
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   useEffect(() => {
     if (!isInitialized) {
@@ -70,18 +72,46 @@ export default function EmployeeDetailPage() {
     }
 
     if (employeeId) {
-      loadEmployeeDetails();
+      // Check if this is a post-update refresh (should use silent mode)
+      const refreshParam = searchParams?.get('refresh');
+      const useSilentMode = refreshParam === 'silent' || hasLoadedOnce;
+      
+      loadEmployeeDetails(useSilentMode);
       loadEmployeeDocuments();
     }
   }, [isInitialized, user, router, employeeId]);
 
-  const loadEmployeeDetails = async () => {
+  /**
+   * Load employee details with optional silent mode
+   * 
+   * @param silent - If true, adds ?silent=true to skip audit logging (for page refresh)
+   * 
+   * Pattern:
+   * - First load: silent=false (logs VIEW_EMPLOYEE_PROFILE)
+   * - Page refresh: silent=true (no log, prevents spam)
+   * - After update: silent=true (no log, prevents spam)
+   * 
+   * This prevents audit log spam while still tracking initial access
+   * Same pattern as revenue controller
+   */
+  const loadEmployeeDetails = async (silent: boolean = false) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get(`/hr/employees/${employeeId}`);
-      console.log('[HR] Loaded employee details');
+      
+      // Build URL with optional silent parameter
+      const url = silent 
+        ? `/hr/employees/${employeeId}?silent=true`
+        : `/hr/employees/${employeeId}`;
+      
+      const response = await api.get(url);
+      console.log(`[HR] Loaded employee details (silent=${silent})`);
       setEmployee(response.data?.employee || response.data);
+      
+      // Mark that we've loaded once
+      if (!hasLoadedOnce) {
+        setHasLoadedOnce(true);
+      }
     } catch (err: any) {
       console.error('[HR] Failed to load employee:', err);
       setError(err.response?.data?.message || 'Failed to load employee details');

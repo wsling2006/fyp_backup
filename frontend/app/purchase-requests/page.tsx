@@ -1217,7 +1217,7 @@ function ViewClaimsModal({
   const [success, setSuccess] = useState<string | null>(null);
   const [claims, setClaims] = useState<any[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [verifyModal, setVerifyModal] = useState<{ claimId: string; action: 'VERIFIED' | 'REJECTED' } | null>(null);
+  const [verifyModal, setVerifyModal] = useState<{ claimId: string; action: 'VERIFIED' | 'REJECTED' | 'PROCESSED' } | null>(null);
   const [otpPassword, setOtpPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [verificationNotes, setVerificationNotes] = useState('');
@@ -1459,7 +1459,17 @@ function ViewClaimsModal({
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
-                          Verify (Approve)
+                          Verify
+                        </button>
+                        <button
+                          onClick={() => setVerifyModal({ claimId: claim.id, action: 'PROCESSED' })}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                          </svg>
+                          Process
                         </button>
                         <button
                           onClick={() => setVerifyModal({ claimId: claim.id, action: 'REJECTED' })}
@@ -1474,8 +1484,8 @@ function ViewClaimsModal({
                     </div>
                   )}
 
-                  {/* Delete button for all claims (Accountants can delete any claim) */}
-                  {canDeleteClaim() && (
+                  {/* Delete button for reviewed claims */}
+                  {canDeleteClaim() && claim.status !== 'PROCESSED' && (
                     <div className="mt-4 flex gap-2">
                       <button
                         onClick={() => setDeleteConfirm(claim.id)}
@@ -1527,7 +1537,8 @@ function ViewClaimsModal({
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60]">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-xl font-bold text-gray-900 mb-4">
-              {verifyModal.action === 'VERIFIED' && 'Verify (Approve) Claim'}
+              {verifyModal.action === 'VERIFIED' && 'Verify Claim'}
+              {verifyModal.action === 'PROCESSED' && 'Process Claim'}
               {verifyModal.action === 'REJECTED' && 'Reject Claim'}
             </h3>
 
@@ -1599,6 +1610,7 @@ function ViewClaimsModal({
                     disabled={!otp || loading}
                     className={`px-4 py-2 text-white rounded-lg disabled:opacity-50 ${
                       verifyModal.action === 'VERIFIED' ? 'bg-green-600 hover:bg-green-700' :
+                      verifyModal.action === 'PROCESSED' ? 'bg-blue-600 hover:bg-blue-700' :
                       'bg-red-600 hover:bg-red-700'
                     }`}
                   >

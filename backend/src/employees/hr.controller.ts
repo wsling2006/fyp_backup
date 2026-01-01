@@ -151,7 +151,12 @@ export class HRController {
     const isSilent = silent === 'true';
     const shouldLog = !hasViewedBefore && !isSilent;
 
+    // DEBUG LOGGING - Remove after testing
+    this.logger.debug(`[AUDIT SPAM DEBUG] userId=${userId}, employeeId=${id}, hasViewedBefore=${hasViewedBefore}, isSilent=${isSilent}, shouldLog=${shouldLog}`);
+    this.logger.debug(`[AUDIT SPAM DEBUG] Total users tracked: ${this.viewedEmployees.size}, This user viewed: ${userViewedEmployees.size} employees`);
+
     if (shouldLog) {
+      this.logger.log(`Creating audit log for VIEW_EMPLOYEE_PROFILE - First time user ${userId} viewed employee ${id}`);
       await this.auditService.logFromRequest(
         req,
         userId,
@@ -175,6 +180,9 @@ export class HRController {
       
       // Mark this employee as viewed by this user
       userViewedEmployees.add(id);
+      this.logger.debug(`[AUDIT SPAM DEBUG] Added employee ${id} to user ${userId}'s viewed list. Now tracking ${userViewedEmployees.size} employees for this user.`);
+    } else {
+      this.logger.log(`Skipping audit log for VIEW_EMPLOYEE_PROFILE - User ${userId} already viewed employee ${id} (hasViewedBefore=${hasViewedBefore}) or silent mode (isSilent=${isSilent})`);
     }
 
     return { employee };

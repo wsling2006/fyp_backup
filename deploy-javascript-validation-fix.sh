@@ -29,7 +29,7 @@ echo ""
 
 # Restart frontend service
 echo "🔄 Restarting frontend service..."
-sudo systemctl restart fyp-frontend
+sudo systemctl restart frontend
 if [ $? -ne 0 ]; then
   echo "❌ Failed to restart frontend service"
   exit 1
@@ -39,7 +39,7 @@ echo ""
 
 # Check service status
 echo "📊 Checking service status..."
-sudo systemctl status fyp-frontend --no-pager | head -n 10
+sudo systemctl status frontend --no-pager | head -n 10
 echo ""
 
 # Final instructions

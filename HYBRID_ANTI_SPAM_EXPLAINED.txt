@@ -1,0 +1,197 @@
+╔════════════════════════════════════════════════════════════════╗
+║                                                                ║
+║      🎯 HYBRID ANTI-SPAM: ONCE PER DAY AUDIT LOGGING 🎯      ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+
+✅ UPGRADED IMPLEMENTATION
+
+The system now uses a HYBRID approach combining:
+1. In-memory tracking (fast, prevents spam during same session)
+2. Database checking (persistent, limits to once per day)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 HOW IT WORKS:
+
+🔹 FIRST VIEW TODAY (9:00 AM):
+   User A views Employee 123
+   → In-memory check: Not viewed ✓
+   → Database check: Not viewed today ✓
+   → Result: ✅ AUDIT LOG CREATED
+   → Adds to in-memory Map
+
+🔹 REFRESH PAGE (9:01 AM):
+   User A refreshes Employee 123 page
+   → In-memory check: Already viewed ✗
+   → Result: ⛔ NO AUDIT LOG (in-memory prevents spam)
+
+🔹 BACKEND RESTARTS (10:00 AM):
+   In-memory Map cleared
+   User A views Employee 123 again
+   → In-memory check: Not in memory (was cleared)
+   → Database check: Already logged today ✗
+   → Result: ⛔ NO AUDIT LOG (database prevents spam)
+   → Adds back to in-memory Map (for fast checks)
+
+🔹 NEXT DAY (Tomorrow 9:00 AM):
+   User A views Employee 123
+   → In-memory check: Not in memory (overnight clear)
+   → Database check: No log for today (new day) ✓
+   → Result: ✅ NEW AUDIT LOG CREATED
+   → Fresh tracking starts
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 BENEFITS:
+
+✅ Security Best Practice:
+   - ONE audit log per user per employee per day
+   - Proper audit trail for compliance
+   - Not spammed with duplicates
+
+✅ Performance Optimized:
+   - In-memory check is FAST (no database query)
+   - Database check only on first access after restart
+   - Best of both worlds!
+
+✅ Survives Restarts:
+   - Backend restart doesn't create duplicate logs
+   - Database check ensures once-per-day limit
+   - Persistent across sessions
+
+✅ No Spam:
+   - Page refresh → No log
+   - Backend restart → No log
+   - Same day access → No log
+   - Only NEW DAY creates new log
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📅 EXAMPLE SCENARIO:
+
+Monday 9:00 AM:
+   HR User views Employee 123
+   ✅ Audit log created (#1)
+
+Monday 9:05 AM:
+   HR User refreshes page 10 times
+   ⛔ NO additional logs (in-memory check)
+
+Monday 2:00 PM:
+   Backend restarted for deployment
+   HR User views Employee 123 again
+   ⛔ NO log (database check: already logged today)
+
+Tuesday 9:00 AM:
+   HR User views Employee 123
+   ✅ NEW audit log created (#2) - NEW DAY!
+
+Result: Only 2 audit logs (one per day) instead of 12+ spam logs!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 TECHNICAL DETAILS:
+
+In-Memory Map Structure:
+   Map<userId, Set<employeeId>>
+   
+   Example:
+   {
+     "user-abc-123": Set["emp-1", "emp-2", "emp-3"],
+     "user-def-456": Set["emp-1", "emp-5"]
+   }
+
+Database Check Query:
+   SELECT * FROM audit_logs
+   WHERE user_id = ? 
+     AND action = 'VIEW_EMPLOYEE_PROFILE'
+     AND resource_id = ?
+     AND created_at >= start_of_today
+   LIMIT 1
+
+Logic Flow:
+   1. Check in-memory Map (O(1) fast lookup)
+      → If found: Skip audit log, return data
+      
+   2. If not in memory, check database
+      → Query for today's logs
+      → If found: Skip audit log, add to memory
+      → If not found: Create audit log, add to memory
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 DEPLOYMENT ON EC2:
+
+cd ~/fyp_system && \
+git pull && \
+cd backend && \
+npm run build && \
+cd .. && \
+pm2 restart backend && \
+sleep 3 && \
+pm2 logs backend --lines 30
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🧪 TESTING:
+
+1. First view of employee:
+   pm2 logs backend | grep "AUDIT SPAM DEBUG"
+   Should see:
+   ✓ "hasViewedInMemory=false, hasViewedToday=false"
+   ✓ "Creating audit log - First view TODAY"
+
+2. Refresh page:
+   pm2 logs backend | grep "AUDIT SPAM DEBUG"
+   Should see:
+   ✓ "hasViewedInMemory=true"
+   ✓ "Skipping audit log - Already viewed in this session"
+
+3. Restart backend:
+   pm2 restart backend
+   View same employee again
+   pm2 logs backend | grep "AUDIT SPAM DEBUG"
+   Should see:
+   ✓ "hasViewedInMemory=false, hasViewedToday=true"
+   ✓ "Skipping audit log - Already viewed today (database check)"
+
+4. Check audit log count:
+   pm2 logs backend --lines 200 | grep "Employee View" | wc -l
+   Should be LOW (1 per employee per day, not 50+)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 WHAT CHANGED:
+
+File: backend/src/employees/hr.controller.ts
+- Added database check (shouldLogEmployeeView)
+- Combined with in-memory Map tracking
+- Improved debug logging
+- Better comments
+
+File: backend/src/employees/hr.service.ts
+- shouldLogEmployeeView() method (checks database)
+- Uses created_at >= start_of_today
+- Returns true if should log (not viewed today)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎉 SUMMARY:
+
+OLD BEHAVIOR:
+   - Every page refresh → New audit log (SPAM!)
+   - 10 refreshes → 10 duplicate logs
+
+NEW BEHAVIOR:
+   - First view today → Audit log created ✓
+   - 100 refreshes → NO additional logs ✓
+   - Backend restarts → Still no duplicates ✓
+   - Tomorrow → New audit log (once per day) ✓
+
+Result: Clean, professional audit trail! 🎯
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Commit: e86f150
+Ready to deploy and test!

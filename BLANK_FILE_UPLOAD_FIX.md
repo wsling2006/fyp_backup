@@ -102,19 +102,29 @@ if (request.method !== 'GET' && request.method !== 'HEAD') {
 }
 
 // Make the proxied request
+// Note: duplex: 'half' is required when using a ReadableStream body
 const response = await fetch(url.toString(), {
   method: request.method,
   headers,
   body,  // ✅ Sends binary data correctly
   credentials: 'include',
-});
+  duplex: 'half', // ✅ Required by Fetch API for streaming bodies
+} as RequestInit);
 ```
 
 **What changed:**
 - ✅ Use `request.body` (ReadableStream) instead of `request.text()`
 - ✅ This preserves binary data for file uploads
 - ✅ Works for both text (JSON) and binary (files) requests
+- ✅ Added `duplex: 'half'` option (required by Fetch API spec)
 - ✅ No conversion = No corruption
+
+### ⚠️ Important Note: Duplex Option
+
+When using `request.body` as a ReadableStream, the Fetch API requires the `duplex: 'half'` option.
+Without it, you'll get: `RequestInit: duplex option is required when sending a body`
+
+This is part of the Fetch API specification for streaming request bodies.
 
 ---
 

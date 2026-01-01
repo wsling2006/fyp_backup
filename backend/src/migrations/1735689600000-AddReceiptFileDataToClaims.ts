@@ -21,41 +21,57 @@ import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
  */
 export class AddReceiptFileDataToClaims1735689600000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Add BYTEA column to store file data in database
-    await queryRunner.addColumn(
-      'claims',
-      new TableColumn({
-        name: 'receipt_file_data',
-        type: 'bytea',
-        isNullable: true,
-        comment: 'Receipt file binary data stored in database (preferred over file_path)',
-      }),
-    );
+    const table = await queryRunner.getTable('claims');
+    
+    // Add BYTEA column to store file data in database (only if it doesn't exist)
+    if (table && !table.findColumnByName('receipt_file_data')) {
+      await queryRunner.addColumn(
+        'claims',
+        new TableColumn({
+          name: 'receipt_file_data',
+          type: 'bytea',
+          isNullable: true,
+          comment: 'Receipt file binary data stored in database (preferred over file_path)',
+        }),
+      );
+      console.log('✓ Added receipt_file_data column to claims table');
+    } else {
+      console.log('ℹ receipt_file_data column already exists in claims table');
+    }
 
-    // Add size column to track file size
-    await queryRunner.addColumn(
-      'claims',
-      new TableColumn({
-        name: 'receipt_file_size',
-        type: 'bigint',
-        isNullable: true,
-        comment: 'File size in bytes',
-      }),
-    );
+    // Add size column to track file size (only if it doesn't exist)
+    if (table && !table.findColumnByName('receipt_file_size')) {
+      await queryRunner.addColumn(
+        'claims',
+        new TableColumn({
+          name: 'receipt_file_size',
+          type: 'bigint',
+          isNullable: true,
+          comment: 'File size in bytes',
+        }),
+      );
+      console.log('✓ Added receipt_file_size column to claims table');
+    } else {
+      console.log('ℹ receipt_file_size column already exists in claims table');
+    }
 
-    // Add mimetype column for proper content-type handling
-    await queryRunner.addColumn(
-      'claims',
-      new TableColumn({
-        name: 'receipt_file_mimetype',
-        type: 'varchar',
-        length: '100',
-        isNullable: true,
-        comment: 'MIME type of the receipt file',
-      }),
-    );
+    // Add mimetype column for proper content-type handling (only if it doesn't exist)
+    if (table && !table.findColumnByName('receipt_file_mimetype')) {
+      await queryRunner.addColumn(
+        'claims',
+        new TableColumn({
+          name: 'receipt_file_mimetype',
+          type: 'varchar',
+          length: '100',
+          isNullable: true,
+          comment: 'MIME type of the receipt file',
+        }),
+      );
+      console.log('✓ Added receipt_file_mimetype column to claims table');
+    } else {
+      console.log('ℹ receipt_file_mimetype column already exists in claims table');
+    }
 
-    console.log('✓ Added receipt_file_data, receipt_file_size, and receipt_file_mimetype columns to claims table');
     console.log('  New uploads will store files in database instead of disk');
     console.log('  This matches the working accountant_files implementation');
   }

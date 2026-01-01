@@ -13,6 +13,7 @@ import {
   Req,
   BadRequestException,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -45,6 +46,8 @@ import { AuditService } from '../audit/audit.service';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.HR, Role.SUPER_ADMIN)
 export class HRController {
+  private readonly logger = new Logger(HRController.name);
+
   constructor(
     private readonly hrService: HRService,
     private readonly clamavService: ClamavService,
@@ -59,19 +62,26 @@ export class HRController {
    */
   @Get('employees')
   async getEmployeeList(@Req() req: any) {
-    const employees = await this.hrService.getEmployeeList();
+    try {
+      const employees = await this.hrService.getEmployeeList();
 
-    // Log access (not sensitive - just list view)
-    await this.auditService.logFromRequest(
-      req,
-      req.user.userId,
-      'HR_VIEW_EMPLOYEE_LIST',
-      'employee',
-      undefined,
-      { count: employees.length },
-    );
+      // Log access (not sensitive - just list view)
+      await this.auditService.logFromRequest(
+        req,
+        req.user.userId,
+        'HR_VIEW_EMPLOYEE_LIST',
+        'employee',
+        undefined,
+        { count: employees?.length || 0 },
+      );
 
-    return { employees };
+      // Always return an array, even if empty
+      return { employees: employees || [] };
+    } catch (error) {
+      this.logger.error(`Failed to get employee list: ${error.message}`);
+      // Return empty array on error to prevent frontend crash
+      return { employees: [] };
+    }
   }
 
   /**

@@ -49,11 +49,12 @@ export default function EmployeesPage() {
       setLoading(true);
       setError(null);
       const response = await api.get('/hr/employees');
-      console.log('[HR] Loaded employees:', response.data.length);
-      setEmployees(response.data);
+      console.log('[HR] Loaded employees:', response.data.employees);
+      setEmployees(response.data.employees || []);
     } catch (err: any) {
       console.error('[HR] Failed to load employees:', err);
       setError(err.response?.data?.message || 'Failed to load employees');
+      setEmployees([]); // Set empty array on error
       
       if (err.response?.status === 401) {
         logout();
@@ -83,7 +84,7 @@ export default function EmployeesPage() {
   };
 
   // Filter employees based on search query
-  const filteredEmployees = employees.filter((emp) => {
+  const filteredEmployees = (employees || []).filter((emp) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (

@@ -54,7 +54,6 @@ export default function EmployeeDetailPage() {
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   useEffect(() => {
     if (!isInitialized) {
@@ -72,9 +71,14 @@ export default function EmployeeDetailPage() {
     }
 
     if (employeeId) {
+      // Check if this employee has been viewed before in this session
+      // Use sessionStorage to persist across page refreshes (but not browser close)
+      const sessionKey = `hr_viewed_employee_${employeeId}`;
+      const hasViewedBefore = sessionStorage.getItem(sessionKey) === 'true';
+      
       // Check if this is a post-update refresh (should use silent mode)
       const refreshParam = searchParams?.get('refresh');
-      const useSilentMode = refreshParam === 'silent' || hasLoadedOnce;
+      const useSilentMode = refreshParam === 'silent' || hasViewedBefore;
       
       loadEmployeeDetails(useSilentMode);
       loadEmployeeDocuments();
@@ -108,10 +112,10 @@ export default function EmployeeDetailPage() {
       console.log(`[HR] Loaded employee details (silent=${silent})`);
       setEmployee(response.data?.employee || response.data);
       
-      // Mark that we've loaded once
-      if (!hasLoadedOnce) {
-        setHasLoadedOnce(true);
-      }
+      // Mark that this employee has been viewed in this session
+      // This persists across page refreshes (F5) but not browser close
+      const sessionKey = `hr_viewed_employee_${employeeId}`;
+      sessionStorage.setItem(sessionKey, 'true');
     } catch (err: any) {
       console.error('[HR] Failed to load employee:', err);
       setError(err.response?.data?.message || 'Failed to load employee details');

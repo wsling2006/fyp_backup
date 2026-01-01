@@ -732,11 +732,14 @@ function CreateRequestModal({
               <input
                 type="number"
                 step="0.01"
+                min="0.01"
                 value={formData.estimated_amount}
                 onChange={(e) => setFormData({ ...formData, estimated_amount: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder="0.00"
+                required
               />
+              <p className="text-xs text-gray-500 mt-1">Must be a positive amount (minimum $0.01)</p>
             </div>
 
             <div className="border-t pt-4">
@@ -919,13 +922,15 @@ function ReviewRequestModal({
                 <input
                   type="number"
                   step="0.01"
+                  min="0.01"
+                  max={request.estimated_amount}
                   value={formData.approved_amount}
                   onChange={(e) => setFormData({ ...formData, approved_amount: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
-                  max={request.estimated_amount}
+                  required
                 />
-                <p className="text-xs text-gray-500 mt-1">Must not exceed estimated amount: ${formatCurrency(request.estimated_amount)}</p>
+                <p className="text-xs text-gray-500 mt-1">Must be positive and not exceed estimated amount: ${formatCurrency(request.estimated_amount)}</p>
               </div>
             )}
 
@@ -1135,11 +1140,13 @@ function UploadClaimModal({
             <input
               type="number"
               step="0.01"
+              min="0.01"
+              max={request.approved_amount || undefined}
               value={formData.amount_claimed}
               onChange={(e) => setFormData({ ...formData, amount_claimed: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               placeholder="0.00"
-              max={request.approved_amount || undefined}
+              required
             />
             {request.claims && request.claims.length > 0 ? (
               (() => {

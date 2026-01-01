@@ -21,7 +21,7 @@ export class CreatePurchaseRequestDto {
   priority: number;
 
   @IsNumber()
-  @Min(0)
+  @Min(0.01, { message: 'Estimated amount must be at least $0.01' })
   estimated_amount: number;
 
   @IsOptional()
@@ -47,7 +47,7 @@ export class UpdatePurchaseRequestDto {
 
   @IsOptional()
   @IsNumber()
-  @Min(0)
+  @Min(0.01, { message: 'Estimated amount must be at least $0.01' })
   estimated_amount?: number;
 
   @IsOptional()
@@ -67,7 +67,7 @@ export class ReviewPurchaseRequestDto {
 
   @IsOptional()
   @IsNumber()
-  @Min(0)
+  @Min(0.01, { message: 'Approved amount must be at least $0.01' })
   approved_amount?: number;
 
   @IsString()
@@ -85,7 +85,7 @@ export class CreateClaimDto {
   vendor_name: string;
 
   @IsNumber()
-  @Min(0)
+  @Min(0.01, { message: 'Amount claimed must be at least $0.01' })
   amount_claimed: number;
 
   @IsString()

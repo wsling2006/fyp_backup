@@ -903,7 +903,7 @@ function UploadClaimModal({
 
         <div className="bg-gray-50 rounded-lg p-4 mb-6">
           <h3 className="font-semibold text-gray-900 mb-2">{request.title}</h3>
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-2 gap-3 text-sm mb-4">
             <div>
               <span className="text-gray-500">Approved Amount:</span>
               <p className="font-medium text-green-600">${formatCurrency(request.approved_amount)}</p>
@@ -1064,9 +1064,12 @@ function ViewClaimsModal({
   request: PurchaseRequest;
   onClose: () => void;
 }) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [claims, setClaims] = useState<any[]>([]);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     loadClaims();
@@ -1112,6 +1115,27 @@ function ViewClaimsModal({
     }
   };
 
+  const handleDelete = async (claimId: string) => {
+    try {
+      setError(null);
+      setSuccess(null);
+      await api.delete(`/purchase-requests/claims/${claimId}`);
+      setSuccess('Claim deleted successfully');
+      setDeleteConfirm(null);
+      // Reload claims
+      await loadClaims();
+    } catch (err: any) {
+      console.error('Failed to delete claim:', err);
+      setError(err.response?.data?.message || 'Failed to delete claim');
+      setDeleteConfirm(null);
+    }
+  };
+
+  // Check if user can delete claims (accountant or super_admin)
+  const canDeleteClaim = () => {
+    return user?.role === 'accountant' || user?.role === 'super_admin';
+  };
+
   const getStatusBadgeColor = (status: string) => {
     const colors: { [key: string]: string } = {
       PENDING: 'bg-yellow-100 text-yellow-800',
@@ -1132,6 +1156,12 @@ function ViewClaimsModal({
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
             <p className="text-red-800 text-sm">{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+            <p className="text-green-800 text-sm">{success}</p>
           </div>
         )}
 
@@ -1213,6 +1243,38 @@ function ViewClaimsModal({
                       Download Receipt
                     </button>
                   </div>
+
+                  {canDeleteClaim() && claim.status === 'VERIFIED' && (
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        onClick={() => setDeleteConfirm(claim.id)}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v1a1 1 0 001 1h1v10a2 2 0 002 2h8a2 2 0 002-2V7h1a1 1 0 001-1V6a2 2 0 00-2-2h-1V3a1 1 0 00-1-1H6zm8 2H6v2h8V4zm-8 4h8v10H6V8z" clipRule="evenodd" />
+                        </svg>
+                        Delete Claim
+                      </button>
+
+                      {deleteConfirm === claim.id && (
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-gray-500">Are you sure?</p>
+                          <button
+                            onClick={() => handleDelete(claim.id)}
+                            className="px-3 py-1 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors text-sm"
+                          >
+                            Yes, Delete
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirm(null)}
+                            className="px-3 py-1 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))
             )}

@@ -775,4 +775,65 @@ export class PurchaseRequestService {
 
     return saved;
   }
+
+  /**
+   * Delete a claim (Accountant or Super Admin only, must be VERIFIED status)
+   * 
+   * Business Rules:
+   * - Only accountants and super admins can delete claims
+   * - Claim must be in VERIFIED status (already reviewed)
+   * - Cannot delete PENDING or PROCESSED claims
+   * 
+   * @param claimId - UUID of the claim to delete
+   * @param userId - ID of the user performing the deletion
+   * @param userRole - Role of the user
+   * @param req - Request object for audit logging
+   */
+  async deleteClaim(
+    claimId: string,
+    userId: string,
+    userRole: string,
+    req: any,
+  ): Promise<void> {
+    // Check user has permission
+    if (userRole !== Role.ACCOUNTANT && userRole !== Role.SUPER_ADMIN) {
+      throw new ForbiddenException('Only accountants and super admins can delete claims');
+    }
+
+    // Find the claim
+    const claim = await this.claimRepo.findOne({
+      where: { id: claimId },
+      relations: ['purchaseRequest', 'uploadedBy'],
+    });
+
+    if (!claim) {
+      throw new NotFoundException('Claim not found');
+    }
+
+    // Check claim status - only allow deletion of VERIFIED claims
+    if (claim.status !== ClaimStatus.VERIFIED) {
+      throw new BadRequestException(
+        `Cannot delete claim in ${claim.status} status. Only VERIFIED claims can be deleted.`
+      );
+    }
+
+    // Log the deletion for audit trail
+    await this.auditService.logFromRequest(
+      req,
+      userId,
+      'DELETE_CLAIM',
+      'claim',
+      claimId,
+      {
+        claim_id: claimId,
+        vendor_name: claim.vendor_name,
+        amount_claimed: claim.amount_claimed,
+        purchase_request_id: claim.purchase_request_id,
+        uploaded_by: claim.uploadedBy?.email || 'Unknown',
+      },
+    );
+
+    // Delete the claim
+    await this.claimRepo.delete(claimId);
+  }
 }

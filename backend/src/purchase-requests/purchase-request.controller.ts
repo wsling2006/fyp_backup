@@ -12,6 +12,7 @@ import {
   BadRequestException,
   Res,
   NotFoundException,
+  Delete,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -459,6 +460,24 @@ export class PurchaseRequestController {
   async requestVerifyClaimOtp(@Body() body: RequestOtpDto, @Req() req: any) {
     const userId = req.user.userId;
     return this.purchaseRequestService.requestOtp(userId, body.password, 'VERIFY_CLAIM');
+  }
+
+  /**
+   * Delete claim (Accountant or Super Admin only)
+   * Only VERIFIED claims can be deleted (already reviewed)
+   */
+  @Delete('claims/:id')
+  @Roles(Role.ACCOUNTANT, Role.SUPER_ADMIN)
+  async deleteClaim(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    await this.purchaseRequestService.deleteClaim(id, userId, userRole, req);
+
+    return {
+      success: true,
+      message: 'Claim deleted successfully',
+    };
   }
 
   /**

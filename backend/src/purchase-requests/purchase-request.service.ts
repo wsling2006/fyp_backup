@@ -414,9 +414,10 @@ export class PurchaseRequestService {
       }
     }
 
-    // Status check
-    if (pr.status !== PurchaseRequestStatus.APPROVED) {
-      throw new BadRequestException('You can only submit claims for APPROVED purchase requests');
+    // Status check: Allow claim upload for APPROVED and PARTIALLY_PAID requests
+    // PARTIALLY_PAID means some claims have been paid, but user can still upload more claims
+    if (pr.status !== PurchaseRequestStatus.APPROVED && pr.status !== PurchaseRequestStatus.PARTIALLY_PAID) {
+      throw new BadRequestException('You can only submit claims for APPROVED or PARTIALLY_PAID purchase requests');
     }
 
     // REMOVED: One claim per purchase request restriction
@@ -895,14 +896,6 @@ export class PurchaseRequestService {
     console.log('[deletePurchaseRequest] Claims count:', pr.claims?.length || 0);
     console.log('[deletePurchaseRequest] Claims data:', pr.claims);
 
-    // Check if there are any claims (should be deleted first)
-    if (pr.claims && pr.claims.length > 0) {
-      throw new BadRequestException(
-        `Cannot delete purchase request with existing claims. ` +
-        `Please delete all claims first (found ${pr.claims.length} claim(s)).`
-      );
-    }
-
     // Check status - allow deletion based on status and claims
     const alwaysDeletableStatuses = [
       PurchaseRequestStatus.DRAFT,
@@ -910,25 +903,41 @@ export class PurchaseRequestService {
       PurchaseRequestStatus.REJECTED,
     ];
 
-    // APPROVED, PARTIALLY_PAID, or PAID requests can be deleted ONLY if no claims exist
-    const canDeleteApprovedOrPaid = 
-      (pr.status === PurchaseRequestStatus.APPROVED || 
-       pr.status === PurchaseRequestStatus.PARTIALLY_PAID || 
-       pr.status === PurchaseRequestStatus.PAID) && 
-      (!pr.claims || pr.claims.length === 0);
+    // PAID requests can be deleted directly (no need to delete claims first)
+    const canDeletePaid = pr.status === PurchaseRequestStatus.PAID;
+    
+    // APPROVED requests can be deleted ONLY if no claims exist
+    const canDeleteApproved = pr.status === PurchaseRequestStatus.APPROVED && 
+                              (!pr.claims || pr.claims.length === 0);
+    
+    // PARTIALLY_PAID requests CANNOT be deleted (user can still add more claims)
+    const isPartiallyPaid = pr.status === PurchaseRequestStatus.PARTIALLY_PAID;
 
-    console.log('[deletePurchaseRequest] canDeleteApprovedOrPaid:', canDeleteApprovedOrPaid);
+    console.log('[deletePurchaseRequest] canDeletePaid:', canDeletePaid);
+    console.log('[deletePurchaseRequest] canDeleteApproved:', canDeleteApproved);
+    console.log('[deletePurchaseRequest] isPartiallyPaid:', isPartiallyPaid);
     console.log('[deletePurchaseRequest] alwaysDeletableStatuses.includes:', alwaysDeletableStatuses.includes(pr.status));
 
-    if (!alwaysDeletableStatuses.includes(pr.status) && !canDeleteApprovedOrPaid) {
+    if (!alwaysDeletableStatuses.includes(pr.status) && !canDeletePaid && !canDeleteApproved) {
+      if (isPartiallyPaid) {
+        throw new BadRequestException(
+          `Cannot delete PARTIALLY_PAID requests. The user can still upload additional claims to complete the payment.`
+        );
+      }
       throw new BadRequestException(
         `Cannot delete purchase request with status ${pr.status}. ` +
-        `Only DRAFT, SUBMITTED, REJECTED, or APPROVED/PARTIALLY_PAID/PAID (with no claims) requests can be deleted. ` +
-        `UNDER_REVIEW requests have active workflows.`
+        `Only DRAFT, SUBMITTED, REJECTED, APPROVED (with no claims), or PAID requests can be deleted. ` +
+        `UNDER_REVIEW requests have active workflows. PARTIALLY_PAID requests can have more claims added.`
       );
     }
 
     console.log('[deletePurchaseRequest] ✅ Deletion allowed, proceeding...');
+
+    // If PAID, delete all associated claims first
+    if (pr.status === PurchaseRequestStatus.PAID && pr.claims && pr.claims.length > 0) {
+      console.log(`[deletePurchaseRequest] Deleting ${pr.claims.length} claims before deleting PAID request...`);
+      await this.claimRepo.delete({ purchase_request_id: prId });
+    }
 
     // Log the deletion for audit trail
     await this.auditService.logFromRequest(

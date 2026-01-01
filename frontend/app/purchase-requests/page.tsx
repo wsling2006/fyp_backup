@@ -113,7 +113,8 @@ export default function PurchaseRequestsPage() {
   };
 
   const canUploadClaim = (request: PurchaseRequest) => {
-    if (request.status !== 'APPROVED') return false;
+    // Allow upload for APPROVED and PARTIALLY_PAID requests (user can add more claims)
+    if (!['APPROVED', 'PARTIALLY_PAID'].includes(request.status)) return false;
     const isOwner = request.created_by_user_id === user?.userId;
     return (user?.role === 'sales_department' || user?.role === 'marketing' || user?.role === 'super_admin') && (isOwner || user?.role === 'super_admin');
   };
@@ -145,14 +146,25 @@ export default function PurchaseRequestsPage() {
       return true;
     }
     
-    // Can also delete APPROVED, PARTIALLY_PAID, or PAID requests IF no claims exist (no active claims workflow)
-    if (['APPROVED', 'PARTIALLY_PAID', 'PAID'].includes(request.status) && (!request.claims || request.claims.length === 0)) {
-      console.log(`[canDeleteRequest] Request ${request.id.slice(0,8)} - ${request.status} with ${request.claims?.length || 0} claims - CAN DELETE`);
+    // Can delete APPROVED requests IF no claims exist
+    if (request.status === 'APPROVED' && (!request.claims || request.claims.length === 0)) {
+      console.log(`[canDeleteRequest] Request ${request.id.slice(0,8)} - APPROVED with ${request.claims?.length || 0} claims - CAN DELETE`);
       return true;
     }
     
+    // Can delete PAID requests directly (no need to delete claims first)
+    if (request.status === 'PAID') {
+      console.log(`[canDeleteRequest] Request ${request.id.slice(0,8)} - PAID - CAN DELETE DIRECTLY`);
+      return true;
+    }
+    
+    // CANNOT delete PARTIALLY_PAID requests (user can still add more claims)
+    if (request.status === 'PARTIALLY_PAID') {
+      console.log(`[canDeleteRequest] Request ${request.id.slice(0,8)} - PARTIALLY_PAID - CANNOT DELETE (can still add claims)`);
+      return false;
+    }
+    
     console.log(`[canDeleteRequest] Request ${request.id.slice(0,8)} - Status: ${request.status}, Claims: ${request.claims?.length || 0} - CANNOT DELETE`);
-    // Cannot delete UNDER_REVIEW, PAID, PARTIALLY_PAID, or APPROVED with claims
     return false;
   };
 

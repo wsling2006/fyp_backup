@@ -101,18 +101,40 @@ async function handler(request: NextRequest, { params }: { params: { path: strin
     const contentType = response.headers.get('content-type') || '';
     let responseData: any;
     
-    // For binary/blob responses (files, images, etc.), use arrayBuffer
+    // For binary/blob responses (files, images, etc.), stream the response directly
+    // This preserves binary data integrity and works with axios responseType: 'blob'
     if (
       contentType.includes('application/octet-stream') ||
       contentType.includes('application/pdf') ||
       contentType.includes('image/') ||
       response.headers.get('content-disposition')?.includes('attachment')
     ) {
-      responseData = await response.arrayBuffer();
-    } else {
-      // For JSON/text responses, use text
-      responseData = await response.text();
+      // Use response.body directly to stream binary data without conversion
+      console.log('[API Proxy] Streaming binary response:', {
+        contentType,
+        contentLength: response.headers.get('content-length'),
+        contentDisposition: response.headers.get('content-disposition')
+      });
+      
+      // Return the response body as-is (streaming)
+      const proxyResponse = new NextResponse(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+      });
+
+      // Copy response headers
+      response.headers.forEach((value, key) => {
+        // Skip headers that Next.js manages automatically
+        if (!['content-encoding', 'transfer-encoding', 'connection'].includes(key.toLowerCase())) {
+          proxyResponse.headers.set(key, value);
+        }
+      });
+
+      return proxyResponse;
     }
+    
+    // For JSON/text responses, use text
+    responseData = await response.text();
 
     // Create response with same status and headers
     const proxyResponse = new NextResponse(responseData, {

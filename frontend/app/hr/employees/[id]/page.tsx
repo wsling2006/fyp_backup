@@ -589,7 +589,7 @@ function DeleteEmployeeModal({
       await api.delete(`/hr/employees/${employee.id}`, {
         data: {
           password,
-          otp_code: otp,
+          otpCode: otp, // Changed from otp_code to otpCode to match backend
         },
       });
 

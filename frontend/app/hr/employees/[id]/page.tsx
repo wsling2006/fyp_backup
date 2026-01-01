@@ -221,13 +221,23 @@ export default function EmployeeDetailPage() {
               Employee ID: {employee.employee_id || 'N/A'}
             </p>
           </div>
-          <span
-            className={`inline-block px-4 py-2 rounded-full text-sm font-semibold border ${getStatusBadgeColor(
-              employee.status
-            )}`}
-          >
-            {employee.status}
-          </span>
+          <div className="flex items-center gap-4">
+            <span
+              className={`inline-block px-4 py-2 rounded-full text-sm font-semibold border ${getStatusBadgeColor(
+                employee.status
+              )}`}
+            >
+              {employee.status}
+            </span>
+            <Button
+              variant="primary"
+              onClick={() => router.push(`/hr/employees/${employeeId}/edit`)}
+              className="w-auto px-6 py-2 flex items-center gap-2"
+            >
+              <span>✏️</span>
+              Edit Employee
+            </Button>
+          </div>
         </div>
 
         {/* Personal Information Card */}

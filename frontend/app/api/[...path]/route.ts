@@ -91,12 +91,14 @@ async function handler(request: NextRequest, { params }: { params: { path: strin
     }
 
     // Make the proxied request
+    // Note: duplex: 'half' is required when using a ReadableStream body
     const response = await fetch(url.toString(), {
       method: request.method,
       headers,
       body,
       credentials: 'include', // Forward cookies
-    });
+      duplex: 'half', // Required for streaming request bodies
+    } as RequestInit);
 
     // Get response body - handle both text and binary data
     const contentType = response.headers.get('content-type') || '';

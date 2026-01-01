@@ -1,11 +1,11 @@
-import { IsString, IsNotEmpty, IsNumber, IsPositive, IsDateString, IsOptional, IsIn, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsPositive, IsDateString, IsOptional, IsIn, MaxLength, Min } from 'class-validator';
 
 /**
  * DTO for creating a new revenue record
  * 
  * Validation ensures:
  * - Required fields are present
- * - Amount is positive
+ * - Amount is positive (minimum 1 cent = $0.01)
  * - Status is valid enum
  * - Date is valid ISO format
  */
@@ -28,10 +28,12 @@ export class CreateRevenueDto {
   /**
    * Amount in cents (e.g., 10000 = $100.00)
    * Prevents floating point precision issues
+   * Minimum: 1 cent = $0.01
    */
   @IsNotEmpty()
   @IsNumber()
   @IsPositive()
+  @Min(1, { message: 'Amount must be at least $0.01 (1 cent)' })
   amount: number;
 
   @IsOptional()

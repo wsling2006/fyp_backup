@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsDateString, IsOptional, IsIn, MaxLength } from 'class-validator';
+import { IsString, IsNumber, IsDateString, IsOptional, IsIn, MaxLength, Min } from 'class-validator';
 
 /**
  * DTO for updating a revenue record
@@ -25,9 +25,11 @@ export class UpdateRevenueDto {
   /**
    * Amount in cents (e.g., 10000 = $100.00)
    * Prevents floating point precision issues
+   * Minimum: 1 cent = $0.01
    */
   @IsOptional()
   @IsNumber()
+  @Min(1, { message: 'Amount must be at least $0.01 (1 cent)' })
   amount?: number;
 
   @IsOptional()

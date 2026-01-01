@@ -150,9 +150,20 @@ export default function RevenueDashboard() {
     e.preventDefault();
     setMessage(null);
 
+    // Validate amount before submission
+    const amount = parseFloat(formData.amount);
+    if (isNaN(amount) || amount <= 0) {
+      setMessage('Amount must be a positive number greater than $0.00');
+      return;
+    }
+    if (amount < 0.01) {
+      setMessage('Amount must be at least $0.01');
+      return;
+    }
+
     try {
       // Convert amount to cents
-      const amountInCents = Math.round(parseFloat(formData.amount) * 100);
+      const amountInCents = Math.round(amount * 100);
 
       await api.post('/revenue', {
         ...formData,
@@ -199,6 +210,19 @@ export default function RevenueDashboard() {
     e.preventDefault();
     if (!editingId) return;
     setMessage(null);
+
+    // Validate amount before submission
+    if (editFormData.amount) {
+      const amount = parseFloat(editFormData.amount);
+      if (isNaN(amount) || amount <= 0) {
+        setMessage('Amount must be a positive number greater than $0.00');
+        return;
+      }
+      if (amount < 0.01) {
+        setMessage('Amount must be at least $0.01');
+        return;
+      }
+    }
 
     try {
       // Convert amount to cents
@@ -630,15 +654,48 @@ export default function RevenueDashboard() {
                 placeholder="Product Sales, Consulting, etc."
                 required
               />
-              <Input
-                label="Amount (SGD) *"
-                type="number"
-                step="0.01"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                placeholder="1000.00"
-                required
-              />
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Amount (SGD) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={formData.amount}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Allow empty string for user to clear field
+                    if (value === '') {
+                      setFormData({ ...formData, amount: '' });
+                      return;
+                    }
+                    // Prevent negative values
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue) && numValue >= 0) {
+                      setFormData({ ...formData, amount: value });
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // On blur, validate and show error if negative or zero
+                    const value = parseFloat(e.target.value);
+                    if (!isNaN(value) && value < 0) {
+                      setMessage('Amount cannot be negative');
+                      setFormData({ ...formData, amount: '' });
+                    } else if (!isNaN(value) && value === 0) {
+                      setMessage('Amount must be greater than $0.00');
+                      setFormData({ ...formData, amount: '' });
+                    } else if (!isNaN(value) && value < 0.01 && value > 0) {
+                      setMessage('Amount must be at least $0.01');
+                      setFormData({ ...formData, amount: '' });
+                    } else {
+                      setMessage(null);
+                    }
+                  }}
+                  placeholder="1000.00"
+                  required
+                  className="bg-white border-2 border-gray-200 text-gray-900 rounded-xl px-4 py-3 w-full focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 hover:border-gray-300 transition-all duration-300 placeholder:text-gray-400"
+                />
+                <p className="mt-1 text-xs text-gray-500">Must be a positive amount (minimum $0.01)</p>
+              </div>
               <Input
                 label="Date *"
                 type="date"
@@ -848,15 +905,48 @@ export default function RevenueDashboard() {
                 placeholder="Product Sales, Consulting, etc."
                 required
               />
-              <Input
-                label="Amount (SGD) *"
-                type="number"
-                step="0.01"
-                value={editFormData.amount}
-                onChange={(e) => setEditFormData({ ...editFormData, amount: e.target.value })}
-                placeholder="1000.00"
-                required
-              />
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Amount (SGD) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={editFormData.amount}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Allow empty string for user to clear field
+                    if (value === '') {
+                      setEditFormData({ ...editFormData, amount: '' });
+                      return;
+                    }
+                    // Prevent negative values
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue) && numValue >= 0) {
+                      setEditFormData({ ...editFormData, amount: value });
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // On blur, validate and show error if negative or zero
+                    const value = parseFloat(e.target.value);
+                    if (!isNaN(value) && value < 0) {
+                      setMessage('Amount cannot be negative');
+                      setEditFormData({ ...editFormData, amount: '' });
+                    } else if (!isNaN(value) && value === 0) {
+                      setMessage('Amount must be greater than $0.00');
+                      setEditFormData({ ...editFormData, amount: '' });
+                    } else if (!isNaN(value) && value < 0.01 && value > 0) {
+                      setMessage('Amount must be at least $0.01');
+                      setEditFormData({ ...editFormData, amount: '' });
+                    } else {
+                      setMessage(null);
+                    }
+                  }}
+                  placeholder="1000.00"
+                  required
+                  className="bg-white border-2 border-gray-200 text-gray-900 rounded-xl px-4 py-3 w-full focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 hover:border-gray-300 transition-all duration-300 placeholder:text-gray-400"
+                />
+                <p className="mt-1 text-xs text-gray-500">Must be a positive amount (minimum $0.01)</p>
+              </div>
               <Input
                 label="Date *"
                 type="date"

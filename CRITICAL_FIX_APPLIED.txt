@@ -1,0 +1,74 @@
+╔════════════════════════════════════════════════════════════════╗
+║                                                                ║
+║              🔧 CRITICAL FIX APPLIED - READY! 🔧              ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+
+🐛 THE PROBLEM:
+   Backend was crashing with:
+   "Nest can't resolve dependencies of the HRService"
+   "AuditLogRepository" not found
+
+🔍 ROOT CAUSE:
+   HRService needs to inject AuditLog repository
+   BUT AuditModule wasn't exporting TypeOrmModule
+   = Dependency injection failed = Backend crash
+
+✅ THE FIX (Applied):
+   Updated backend/src/audit/audit.module.ts
+   Now exports: [AuditService, TypeOrmModule]
+   = HRService can now inject AuditLog repository ✓
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 NOW DEPLOY ON EC2 (Copy-Paste):
+
+cd ~/fyp_system && \
+git pull && \
+cd backend && \
+npm run build && \
+cd .. && \
+pm2 restart backend && \
+sleep 3 && \
+pm2 logs backend --lines 30
+
+⏱️  Takes 1-2 minutes
+
+✅ What you should see:
+   [Nest] Starting Nest application...
+   [Nest] InstanceLoader EmployeesModule dependencies initialized
+   [Nest] InstanceLoader HRModule dependencies initialized ✓
+   [Nest] Nest application successfully started ✓
+
+❌ Should NOT see:
+   "Can't resolve dependencies of the HRService"
+   Backend crash/restart loop
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🧪 AFTER DEPLOYMENT WORKS, TEST THE FIX:
+
+1. Clear browser cache + localStorage
+2. Login as HR user  
+3. View employee profile
+4. Check logs:
+   pm2 logs backend | grep "AUDIT SPAM DEBUG"
+5. Refresh page (F5)
+6. Check logs again - should see "Already viewed, skipping"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 COMMIT APPLIED:
+   faffa61 - Fix: Export TypeOrmModule in AuditModule
+
+   This fix allows HRService to inject the AuditLog repository
+   and prevents the dependency injection crash.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 SUMMARY:
+   ✅ TypeScript errors fixed (5d648ca)
+   ✅ Module dependency fixed (faffa61)
+   ✅ Ready to deploy!
+
+Just pull, build, restart, and test! 🎉

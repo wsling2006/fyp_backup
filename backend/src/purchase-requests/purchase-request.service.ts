@@ -869,15 +869,22 @@ export class PurchaseRequestService {
       throw new ForbiddenException('Only accountants and super admins can delete purchase requests');
     }
 
-    // Find the purchase request
+    // Find the purchase request (disable cache to get fresh data)
     const pr = await this.purchaseRequestRepo.findOne({
       where: { id: prId },
       relations: ['createdBy', 'claims'],
+      cache: false, // Disable cache to ensure fresh claims data
     });
 
     if (!pr) {
       throw new NotFoundException('Purchase request not found');
     }
+
+    // DEBUG: Log the purchase request details
+    console.log('[deletePurchaseRequest] PR ID:', prId);
+    console.log('[deletePurchaseRequest] PR Status:', pr.status);
+    console.log('[deletePurchaseRequest] Claims count:', pr.claims?.length || 0);
+    console.log('[deletePurchaseRequest] Claims data:', pr.claims);
 
     // Check if there are any claims (should be deleted first)
     if (pr.claims && pr.claims.length > 0) {
@@ -898,6 +905,9 @@ export class PurchaseRequestService {
     const canDeleteApproved = pr.status === PurchaseRequestStatus.APPROVED && 
                               (!pr.claims || pr.claims.length === 0);
 
+    console.log('[deletePurchaseRequest] canDeleteApproved:', canDeleteApproved);
+    console.log('[deletePurchaseRequest] alwaysDeletableStatuses.includes:', alwaysDeletableStatuses.includes(pr.status));
+
     if (!alwaysDeletableStatuses.includes(pr.status) && !canDeleteApproved) {
       throw new BadRequestException(
         `Cannot delete purchase request with status ${pr.status}. ` +
@@ -905,6 +915,8 @@ export class PurchaseRequestService {
         `UNDER_REVIEW or PAID requests have active workflows.`
       );
     }
+
+    console.log('[deletePurchaseRequest] ✅ Deletion allowed, proceeding...');
 
     // Log the deletion for audit trail
     await this.auditService.logFromRequest(

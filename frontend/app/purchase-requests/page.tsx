@@ -83,6 +83,10 @@ export default function PurchaseRequestsPage() {
       setLoading(true);
       setError(null);
       const response = await api.get('/purchase-requests');
+      console.log('[loadRequests] Loaded', response.data.length, 'requests');
+      response.data.forEach((req: PurchaseRequest, idx: number) => {
+        console.log(`[loadRequests] Request ${idx + 1}: ${req.id.slice(0,8)} - Status: ${req.status}, Claims: ${req.claims?.length || 0}`);
+      });
       setRequests(response.data);
     } catch (err: any) {
       console.error('Failed to load purchase requests:', err);
@@ -138,9 +142,11 @@ export default function PurchaseRequestsPage() {
     
     // Can also delete APPROVED requests IF no claims exist (no active claims workflow)
     if (request.status === 'APPROVED' && (!request.claims || request.claims.length === 0)) {
+      console.log(`[canDeleteRequest] Request ${request.id.slice(0,8)} - APPROVED with ${request.claims?.length || 0} claims - CAN DELETE`);
       return true;
     }
     
+    console.log(`[canDeleteRequest] Request ${request.id.slice(0,8)} - Status: ${request.status}, Claims: ${request.claims?.length || 0} - CANNOT DELETE`);
     // Cannot delete UNDER_REVIEW, PAID, or APPROVED with claims
     return false;
   };
@@ -503,7 +509,12 @@ export default function PurchaseRequestsPage() {
               setSelectedRequest(null);
               loadRequests(); // Reload to get updated claims list
             }}
-            onClaimChanged={loadRequests} // Reload immediately after claim is deleted/verified
+            onClaimChanged={async () => {
+              console.log('[onClaimChanged] Reloading purchase requests...');
+              // Reload requests list immediately
+              await loadRequests();
+              console.log('[onClaimChanged] Purchase requests reloaded');
+            }}
           />
         )}
       </div>

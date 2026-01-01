@@ -12,6 +12,9 @@ import { UsersModule } from '../users/users.module';
   ],
   providers: [AuditService],
   controllers: [AuditController],
-  exports: [AuditService],
+  exports: [
+    AuditService,
+    TypeOrmModule, // Export TypeOrmModule so other modules can inject AuditLog repository
+  ],
 })
 export class AuditModule {}

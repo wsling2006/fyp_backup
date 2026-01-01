@@ -645,6 +645,17 @@ function CreateRequestModal({
   };
 
   const handleSubmit = async () => {
+    // Validate amount before submission
+    const amount = parseFloat(formData.estimated_amount);
+    if (isNaN(amount) || amount <= 0) {
+      setError('Estimated amount must be a positive number greater than $0.00');
+      return;
+    }
+    if (amount < 0.01) {
+      setError('Estimated amount must be at least $0.01');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -653,7 +664,7 @@ function CreateRequestModal({
         description: formData.description,
         department: formData.department,
         priority: formData.priority,
-        estimated_amount: parseFloat(formData.estimated_amount),
+        estimated_amount: amount,
         otp: formData.otp,
       });
       onSuccess();
@@ -734,7 +745,32 @@ function CreateRequestModal({
                 step="0.01"
                 min="0.01"
                 value={formData.estimated_amount}
-                onChange={(e) => setFormData({ ...formData, estimated_amount: e.target.value })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Allow empty string for user to clear field
+                  if (value === '') {
+                    setFormData({ ...formData, estimated_amount: '' });
+                    return;
+                  }
+                  // Prevent negative values
+                  const numValue = parseFloat(value);
+                  if (!isNaN(numValue) && numValue >= 0) {
+                    setFormData({ ...formData, estimated_amount: value });
+                  }
+                }}
+                onBlur={(e) => {
+                  // On blur, validate and show error if negative
+                  const value = parseFloat(e.target.value);
+                  if (!isNaN(value) && value < 0) {
+                    setError('Amount cannot be negative');
+                    setFormData({ ...formData, estimated_amount: '' });
+                  } else if (!isNaN(value) && value === 0) {
+                    setError('Amount must be greater than $0.00');
+                    setFormData({ ...formData, estimated_amount: '' });
+                  } else {
+                    setError(null);
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder="0.00"
                 required
@@ -858,6 +894,23 @@ function ReviewRequestModal({
   };
 
   const handleSubmit = async () => {
+    // Validate approved amount if status is APPROVED
+    if (formData.status === 'APPROVED') {
+      const approvedAmount = parseFloat(formData.approved_amount);
+      if (isNaN(approvedAmount) || approvedAmount <= 0) {
+        setError('Approved amount must be a positive number greater than $0.00');
+        return;
+      }
+      if (approvedAmount < 0.01) {
+        setError('Approved amount must be at least $0.01');
+        return;
+      }
+      if (approvedAmount > request.estimated_amount) {
+        setError(`Approved amount cannot exceed estimated amount of $${formatCurrency(request.estimated_amount)}`);
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -925,12 +978,40 @@ function ReviewRequestModal({
                   min="0.01"
                   max={request.estimated_amount}
                   value={formData.approved_amount}
-                  onChange={(e) => setFormData({ ...formData, approved_amount: e.target.value })}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Allow empty string for user to clear field
+                    if (value === '') {
+                      setFormData({ ...formData, approved_amount: '' });
+                      return;
+                    }
+                    // Prevent negative values
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue) && numValue >= 0) {
+                      setFormData({ ...formData, approved_amount: value });
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // On blur, validate and show error if negative or zero
+                    const value = parseFloat(e.target.value);
+                    if (!isNaN(value) && value < 0) {
+                      setError('Approved amount cannot be negative');
+                      setFormData({ ...formData, approved_amount: '' });
+                    } else if (!isNaN(value) && value === 0) {
+                      setError('Approved amount must be greater than $0.00');
+                      setFormData({ ...formData, approved_amount: '' });
+                    } else if (!isNaN(value) && value > request.estimated_amount) {
+                      setError(`Approved amount cannot exceed estimated amount of $${formatCurrency(request.estimated_amount)}`);
+                      setFormData({ ...formData, approved_amount: request.estimated_amount.toString() });
+                    } else {
+                      setError(null);
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">Must be positive and not exceed estimated amount: ${formatCurrency(request.estimated_amount)}</p>
+                <p className="text-xs text-gray-500 mt-1">Must be positive (min $0.01) and not exceed estimated amount: ${formatCurrency(request.estimated_amount)}</p>
               </div>
             )}
 
@@ -1045,6 +1126,21 @@ function UploadClaimModal({
       return;
     }
 
+    // Validate amount_claimed
+    const claimedAmount = parseFloat(formData.amount_claimed);
+    if (isNaN(claimedAmount) || claimedAmount <= 0) {
+      setError('Claimed amount must be a positive number greater than $0.00');
+      return;
+    }
+    if (claimedAmount < 0.01) {
+      setError('Claimed amount must be at least $0.01');
+      return;
+    }
+    if (request.approved_amount && claimedAmount > request.approved_amount) {
+      setError(`Claimed amount cannot exceed approved amount of $${formatCurrency(request.approved_amount)}`);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -1143,7 +1239,35 @@ function UploadClaimModal({
               min="0.01"
               max={request.approved_amount || undefined}
               value={formData.amount_claimed}
-              onChange={(e) => setFormData({ ...formData, amount_claimed: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Allow empty string for user to clear field
+                if (value === '') {
+                  setFormData({ ...formData, amount_claimed: '' });
+                  return;
+                }
+                // Prevent negative values
+                const numValue = parseFloat(value);
+                if (!isNaN(numValue) && numValue >= 0) {
+                  setFormData({ ...formData, amount_claimed: value });
+                }
+              }}
+              onBlur={(e) => {
+                // On blur, validate and show error if negative or zero
+                const value = parseFloat(e.target.value);
+                if (!isNaN(value) && value < 0) {
+                  setError('Claimed amount cannot be negative');
+                  setFormData({ ...formData, amount_claimed: '' });
+                } else if (!isNaN(value) && value === 0) {
+                  setError('Claimed amount must be greater than $0.00');
+                  setFormData({ ...formData, amount_claimed: '' });
+                } else if (request.approved_amount && !isNaN(value) && value > request.approved_amount) {
+                  setError(`Claimed amount cannot exceed approved amount of $${formatCurrency(request.approved_amount)}`);
+                  setFormData({ ...formData, amount_claimed: request.approved_amount.toString() });
+                } else {
+                  setError(null);
+                }
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               placeholder="0.00"
               required
@@ -1161,7 +1285,7 @@ function UploadClaimModal({
                 );
               })()
             ) : (
-              <p className="text-xs text-gray-500 mt-1">Must not exceed approved amount: ${formatCurrency(request.approved_amount)}</p>
+              <p className="text-xs text-gray-500 mt-1">Must be positive (min $0.01) and not exceed approved amount: ${formatCurrency(request.approved_amount)}</p>
             )}
           </div>
 

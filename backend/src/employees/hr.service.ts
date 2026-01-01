@@ -63,9 +63,9 @@ export class HRService {
         action: 'VIEW_EMPLOYEE_PROFILE',
         resource: 'employee',
         resource_id: employeeId,
-        timestamp: MoreThanOrEqual(startOfToday),
+        created_at: MoreThanOrEqual(startOfToday),
       },
-      order: { timestamp: 'DESC' },
+      order: { created_at: 'DESC' },
     });
 
     // If no log found, should log (first view today)
@@ -286,6 +286,66 @@ export class HRService {
    * 
    * @param documentId - Document UUID
    * @returns Promise<EmployeeDocument> - Full document with binary data
+   * @throws NotFoundException if document not found
+   */
+  async getDocumentById(documentId: string): Promise<EmployeeDocument> {
+    const document = await this.documentRepo.findOne({
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    return document;
+  }
+
+  /**
+   * Delete employee document
+   * 
+   * @param documentId - Document UUID
+   * @throws NotFoundException if document not found
+   */
+  async deleteDocument(documentId: string): Promise<void> {
+    const document = await this.documentRepo.findOne({
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    await this.documentRepo.remove(document);
+  }
+
+  /**
+   * Create audit log entry
+   * Helper method to standardize audit logging
+   * 
+   * @param auditData - Audit log data
+   * @returns Promise<AuditLog> - Created audit log
+   */
+  async createAuditLog(auditData: {
+    performedBy: string;
+    action: string;
+    targetUserId?: string;
+    details?: string;
+    ipAddress?: string;
+  }): Promise<AuditLog> {
+    const auditLog = this.auditRepo.create({
+      user_id: auditData.performedBy,
+      action: auditData.action,
+      resource: 'employee',
+      resource_id: auditData.targetUserId,
+      user_agent: auditData.details, // Store details in user_agent field
+      ip_address: auditData.ipAddress,
+    });
+
+    return this.auditRepo.save(auditLog);
+  }
+
+  /**
+   * Create employee
    * 
    * @param employeeData - Employee information
    * @returns Promise<Employee> - Created employee

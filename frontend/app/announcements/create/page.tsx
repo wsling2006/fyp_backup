@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createAnnouncement, uploadAttachment } from '../../utils/announcementApi';
+import { createAnnouncement, uploadAttachment } from '@/utils/announcementApi';
 
 const CreateAnnouncementPage: React.FC = () => {
   const router = useRouter();

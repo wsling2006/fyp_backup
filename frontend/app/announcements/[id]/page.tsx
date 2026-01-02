@@ -11,7 +11,7 @@ import {
   downloadAttachment,
   Announcement,
   Comment,
-} from '../../utils/announcementApi';
+} from '@/utils/announcementApi';
 
 const REACTIONS = ['👍', '❤️', '😮', '😢', '❗'];
 
@@ -36,7 +36,7 @@ const AnnouncementDetailPage: React.FC = () => {
     setLoading(true);
     try {
       const announcements = await getAllAnnouncements();
-      const found = announcements.find((a) => a.id === announcementId);
+      const found = announcements.find((a: Announcement) => a.id === announcementId);
       setAnnouncement(found || null);
 
       const commentData = await getComments(announcementId);
@@ -153,7 +153,7 @@ const AnnouncementDetailPage: React.FC = () => {
             <div className="mb-4">
               <h5>📎 Attachments</h5>
               <div className="list-group">
-                {announcement.attachments.map((att) => (
+                {announcement.attachments.map((att: any) => (
                   <button
                     key={att.id}
                     className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"

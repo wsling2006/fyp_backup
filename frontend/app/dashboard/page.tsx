@@ -5,7 +5,6 @@ import Button from "@/components/ui/Button";
 import Loader from "@/components/ui/Loader";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card, Col, Row } from "react-bootstrap";
 export const dynamic = 'force-dynamic';
 
 export default function DashboardPage() {
@@ -64,23 +63,23 @@ export default function DashboardPage() {
       </div>
 
       {/* NEW: Announcements Card */}
-      <Row className="w-full max-w-6xl mx-auto px-4 py-8">
-        <Col md={6} lg={4} className="mb-4">
-          <Link href="/announcements" className="text-decoration-none">
-            <Card className="dashboard-card h-100">
-              <Card.Body className="text-center">
-                <div className="icon-circle bg-purple mb-3">
-                  <i className="bi bi-megaphone-fill fs-1 text-white"></i>
+      <div className="w-full max-w-6xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Link href="/announcements" className="no-underline">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl border border-white/20 hover:border-purple-400/50 transition-all duration-300 transform hover:scale-105 h-full">
+              <div className="p-6 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <span className="text-3xl">📢</span>
                 </div>
-                <Card.Title>Announcements</Card.Title>
-                <Card.Text className="text-muted">
+                <h3 className="text-xl font-bold text-white mb-2">Announcements</h3>
+                <p className="text-blue-200 text-sm">
                   View company announcements and updates
-                </Card.Text>
-              </Card.Body>
-            </Card>
+                </p>
+              </div>
+            </div>
           </Link>
-        </Col>
-      </Row>
+        </div>
+      </div>
     </div>
   );
 }

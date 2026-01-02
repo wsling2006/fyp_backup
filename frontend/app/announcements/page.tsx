@@ -8,8 +8,8 @@ import {
   addReaction,
   Announcement,
   downloadAttachment,
-} from '../utils/announcementApi';
-import UrgentAnnouncementModal from '../components/UrgentAnnouncementModal';
+} from '@/utils/announcementApi';
+import UrgentAnnouncementModal from '@/components/UrgentAnnouncementModal';
 
 const REACTIONS = ['👍', '❤️', '😮', '😢', '❗'];
 
@@ -164,7 +164,7 @@ const AnnouncementsPage: React.FC = () => {
                 <div className="mt-3">
                   <strong>📎 Attachments:</strong>
                   <ul className="list-unstyled mt-2">
-                    {announcement.attachments.map((att) => (
+                    {announcement.attachments.map((att: any) => (
                       <li key={att.id}>
                         <button
                           className="btn btn-sm btn-outline-primary"

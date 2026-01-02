@@ -39,28 +39,77 @@ const CreateAnnouncementPage: React.FC = () => {
       // Create announcement
       const announcement = await createAnnouncement(formData);
 
+      // Track upload results
+      const uploadResults = {
+        total: files?.length || 0,
+        successful: 0,
+        failed: 0,
+        virusDetected: [] as string[],
+        otherErrors: [] as string[],
+      };
+
       // Upload attachments if any
       if (files && files.length > 0) {
         for (let i = 0; i < files.length; i++) {
           try {
             await uploadAttachment(announcement.id, files[i]);
+            uploadResults.successful++;
           } catch (error: any) {
+            uploadResults.failed++;
             console.error(`Failed to upload ${files[i].name}:`, error);
+            
             // Check if it's a virus detection error
-            if (error.response?.status === 400 && error.response?.data?.message?.includes('virus')) {
-              showToast(`🦠 Virus detected in ${files[i].name}. File blocked for security.`, 'error');
+            const errorMessage = error.response?.data?.message || error.message || '';
+            if (errorMessage.toLowerCase().includes('virus') || 
+                errorMessage.toLowerCase().includes('malware')) {
+              uploadResults.virusDetected.push(files[i].name);
             } else {
-              showToast(`Failed to upload ${files[i].name}. Please try again.`, 'error');
+              uploadResults.otherErrors.push(files[i].name);
             }
           }
         }
       }
 
-      showToast('✅ Announcement created successfully!', 'success');
+      // Show comprehensive success message
+      if (uploadResults.total === 0) {
+        // No files uploaded
+        showToast('✅ Announcement posted successfully!', 'success');
+      } else if (uploadResults.failed === 0) {
+        // All files uploaded successfully
+        showToast(`✅ Announcement posted successfully with ${uploadResults.successful} file(s)!`, 'success');
+      } else if (uploadResults.successful > 0) {
+        // Partial success - some files uploaded, some failed
+        let message = `✅ Announcement posted with ${uploadResults.successful} file(s).`;
+        
+        if (uploadResults.virusDetected.length > 0) {
+          const virusFiles = uploadResults.virusDetected.join(', ');
+          message += `\n\n🦠 Virus detected in: ${virusFiles}`;
+        }
+        
+        if (uploadResults.otherErrors.length > 0) {
+          const errorFiles = uploadResults.otherErrors.join(', ');
+          message += `\n\n⚠️ Failed to upload: ${errorFiles}`;
+        }
+        
+        showToast(message, uploadResults.virusDetected.length > 0 ? 'warning' : 'success');
+      } else {
+        // Announcement posted but all files failed
+        let message = '✅ Announcement posted successfully.\n\n';
+        
+        if (uploadResults.virusDetected.length > 0) {
+          const virusFiles = uploadResults.virusDetected.join(', ');
+          message += `🦠 All files blocked due to virus: ${virusFiles}`;
+        } else {
+          message += `⚠️ All ${uploadResults.total} file(s) failed to upload.`;
+        }
+        
+        showToast(message, 'warning');
+      }
+
       router.push('/announcements');
     } catch (error: any) {
       console.error('Failed to create announcement:', error);
-      showToast(`Failed to create announcement: ${error.response?.data?.message || error.message}`, 'error');
+      showToast(`❌ Failed to create announcement: ${error.response?.data?.message || error.message}`, 'error');
     }
     setLoading(false);
   };

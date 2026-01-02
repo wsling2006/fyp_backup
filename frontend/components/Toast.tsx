@@ -80,14 +80,16 @@ const Toast: React.FC<ToastProps> = ({ message, type, onClose, duration = 4000 }
         className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] flex flex-col items-center gap-4 px-8 py-6 rounded-2xl border-2 shadow-2xl ${styles.bg} animate-scale-in`}
         style={{ minWidth: '400px', maxWidth: '600px' }}
       >
-        <div className="flex items-center gap-4 w-full">
-          <div className="flex-shrink-0">
+        <div className="flex items-start gap-4 w-full">
+          <div className="flex-shrink-0 mt-1">
             {styles.icon}
           </div>
-          <p className={`flex-1 text-lg font-bold ${styles.text}`}>{message}</p>
+          <div className={`flex-1 text-lg font-bold ${styles.text} whitespace-pre-line`}>
+            {message}
+          </div>
           <button
             onClick={onClose}
-            className={`flex-shrink-0 ${styles.text} hover:opacity-70 transition-opacity`}
+            className={`flex-shrink-0 ${styles.text} hover:opacity-70 transition-opacity mt-1`}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

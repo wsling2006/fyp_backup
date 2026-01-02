@@ -38,7 +38,7 @@ export class AnnouncementsController {
   ) {
     return this.announcementsService.createAnnouncement(
       createDto,
-      req.user.id,
+      req.user.userId, // Fixed: use userId not id
       req,
     );
   }
@@ -58,7 +58,7 @@ export class AnnouncementsController {
     return this.announcementsService.uploadAttachment(
       announcementId,
       file,
-      req.user.id,
+      req.user.userId, // Fixed: use userId not id
       req,
     );
   }
@@ -66,13 +66,13 @@ export class AnnouncementsController {
   // ALL: Get all announcements
   @Get()
   async getAllAnnouncements(@Req() req: any) {
-    return this.announcementsService.getAllAnnouncements(req.user.id);
+    return this.announcementsService.getAllAnnouncements(req.user.userId);
   }
 
   // ALL: Get unacknowledged urgent announcements
   @Get('urgent/unacknowledged')
   async getUnacknowledgedUrgent(@Req() req: any) {
-    return this.announcementsService.getUnacknowledgedUrgent(req.user.id);
+    return this.announcementsService.getUnacknowledgedUrgent(req.user.userId);
   }
 
   // ALL: Acknowledge announcement
@@ -80,7 +80,7 @@ export class AnnouncementsController {
   async acknowledgeAnnouncement(@Param('id') announcementId: string, @Req() req: any) {
     await this.announcementsService.acknowledgeAnnouncement(
       announcementId,
-      req.user.id,
+      req.user.userId,
       req,
     );
     return { message: 'Announcement acknowledged' };
@@ -96,7 +96,7 @@ export class AnnouncementsController {
     await this.announcementsService.addReaction(
       announcementId,
       reactionDto,
-      req.user.id,
+      req.user.userId,
       req,
     );
     return { message: 'Reaction added' };
@@ -112,7 +112,7 @@ export class AnnouncementsController {
     return this.announcementsService.addComment(
       announcementId,
       commentDto,
-      req.user.id,
+      req.user.userId,
       req,
     );
   }
@@ -133,7 +133,7 @@ export class AnnouncementsController {
     const { buffer, filename, mimetype } =
       await this.announcementsService.downloadAttachment(
         attachmentId,
-        req.user.id,
+        req.user.userId,
         req,
       );
 

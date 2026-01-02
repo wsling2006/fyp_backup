@@ -24,8 +24,8 @@ Changed file download audit action to `DOWNLOAD_ATTACHMENT` for clarity and prop
 | `VIEW_ANNOUNCEMENT` | User views/acknowledges announcement | All users | Employee reads announcement for first time |
 | `DELETE_ANNOUNCEMENT` | Announcement soft-deleted | HR, Super Admin | HR removes outdated announcement |
 | `DOWNLOAD_ATTACHMENT` | User downloads file attachment | All users | Employee downloads PDF policy |
-| `ADD_REACTION` | User adds emoji reaction | All users | Employee clicks 👍 on announcement |
-| `ADD_COMMENT` | User adds comment | All users | Employee posts question/feedback |
+
+**Note:** Reactions and comments are NOT logged - they're not important for audit purposes.
 
 ### **Detailed Breakdown:**
 
@@ -124,56 +124,6 @@ Details: {
 
 ---
 
-#### **5. ADD_REACTION** ⭐ NEW!
-```typescript
-Action: 'ADD_REACTION'
-Resource: 'announcement'
-Resource ID: announcement.id
-Details: {
-  reaction_type: "👍"
-}
-```
-
-**When:** User adds or changes emoji reaction to announcement
-
-**Logged Data:**
-- Reaction type (👍, ❤️, 😮, 😢, ❗)
-- Announcement ID
-- User ID
-- IP address and user agent
-
-**Why This Matters:**
-- Track engagement levels
-- Analytics: which announcements get most reactions
-- Monitor employee sentiment
-
----
-
-#### **6. ADD_COMMENT** ⭐ NEW!
-```typescript
-Action: 'ADD_COMMENT'
-Resource: 'announcement'
-Resource ID: announcement.id
-Details: {
-  comment_content: "First 100 characters of comment..."
-}
-```
-
-**When:** User adds comment to announcement
-
-**Logged Data:**
-- First 100 characters of comment (for context)
-- Announcement ID
-- User ID
-- IP address and user agent
-
-**Why This Matters:**
-- Track discussion activity
-- Monitor feedback and questions
-- Compliance: audit trail of employee communications
-
----
-
 ## 🎯 Use Cases
 
 ### **Security & Compliance:**
@@ -250,30 +200,27 @@ ORDER BY download_count DESC;
 
 #### **Track Announcement Engagement:**
 ```sql
--- Get full engagement metrics for an announcement
+-- Get engagement metrics for an announcement
 SELECT 
   COUNT(DISTINCT CASE WHEN al.action = 'VIEW_ANNOUNCEMENT' THEN al.user_id END) as views,
-  COUNT(DISTINCT CASE WHEN al.action = 'DOWNLOAD_ATTACHMENT' THEN al.user_id END) as downloads,
-  COUNT(DISTINCT CASE WHEN al.action = 'ADD_REACTION' THEN al.user_id END) as reactions,
-  COUNT(DISTINCT CASE WHEN al.action = 'ADD_COMMENT' THEN al.user_id END) as comments
+  COUNT(DISTINCT CASE WHEN al.action = 'DOWNLOAD_ATTACHMENT' THEN al.user_id END) as downloads
 FROM audit_logs al
 WHERE al.resource_id = 'announcement_uuid'
-  OR al.details->>'announcement_id' = 'announcement_uuid';
+   OR al.details->>'announcement_id' = 'announcement_uuid';
 ```
 
 #### **Find Most Popular Announcements:**
 ```sql
--- Rank announcements by engagement
+-- Rank announcements by views and downloads
 SELECT 
   a.title,
   COUNT(DISTINCT CASE WHEN al.action = 'VIEW_ANNOUNCEMENT' THEN al.user_id END) as total_views,
-  COUNT(DISTINCT CASE WHEN al.action = 'ADD_REACTION' THEN al.user_id END) as total_reactions,
-  COUNT(DISTINCT CASE WHEN al.action = 'ADD_COMMENT' THEN al.user_id END) as total_comments
+  COUNT(DISTINCT CASE WHEN al.action = 'DOWNLOAD_ATTACHMENT' THEN al.user_id END) as total_downloads
 FROM announcements a
 LEFT JOIN audit_logs al ON al.resource_id = a.id
 WHERE a.is_deleted = false
 GROUP BY a.id, a.title
-ORDER BY total_views DESC, total_reactions DESC
+ORDER BY total_views DESC
 LIMIT 10;
 ```
 
@@ -283,9 +230,7 @@ LIMIT 10;
 SELECT 
   u.email,
   COUNT(CASE WHEN al.action = 'VIEW_ANNOUNCEMENT' THEN 1 END) as announcements_viewed,
-  COUNT(CASE WHEN al.action = 'DOWNLOAD_ATTACHMENT' THEN 1 END) as files_downloaded,
-  COUNT(CASE WHEN al.action = 'ADD_REACTION' THEN 1 END) as reactions_given,
-  COUNT(CASE WHEN al.action = 'ADD_COMMENT' THEN 1 END) as comments_posted
+  COUNT(CASE WHEN al.action = 'DOWNLOAD_ATTACHMENT' THEN 1 END) as files_downloaded
 FROM users u
 LEFT JOIN audit_logs al ON al.user_id = u.id
 WHERE al.created_at > NOW() - INTERVAL '30 days'
@@ -301,29 +246,27 @@ ORDER BY announcements_viewed DESC;
 ```
 Action: VIEW_ANNOUNCEMENT, Details: { acknowledged: true }
 Action: VIEW_ANNOUNCEMENT, Details: { downloaded: true }         ❌ Confusing
-Action: VIEW_ANNOUNCEMENT, Details: { reaction_type: '👍' }      ❌ Confusing
-Action: VIEW_ANNOUNCEMENT, Details: { comment_added: true }      ❌ Confusing
 ```
-❌ **Problem:** Everything is "VIEW_ANNOUNCEMENT" - can't distinguish actions!
+❌ **Problem:** Can't distinguish between viewing and downloading!
 
 ### **After (Clear):**
 ```
 Action: VIEW_ANNOUNCEMENT, Details: { acknowledged: true }       ✅ User viewed
 Action: DOWNLOAD_ATTACHMENT, Details: { filename: "policy.pdf" } ✅ User downloaded
-Action: ADD_REACTION, Details: { reaction_type: '👍' }           ✅ User reacted
-Action: ADD_COMMENT, Details: { comment_content: "Great..." }   ✅ User commented
 ```
-✅ **Solution:** Each action has its own type - easy to filter and analyze!
+✅ **Solution:** File downloads have their own action type!
+
+**Note:** Reactions and comments are NOT logged - not important for audit purposes.
 
 ---
 
-## ✅ All Improvements Applied!
+## ✅ Improvement Applied!
 
-I've updated ALL announcement actions for better clarity:
+I've updated the file download action for better clarity:
 1. ✅ Acknowledgment → `VIEW_ANNOUNCEMENT` (First view of announcement)
 2. ✅ Download → `DOWNLOAD_ATTACHMENT` (File download tracking)
-3. ✅ Reaction → `ADD_REACTION` (Emoji reactions)
-4. ✅ Comment → `ADD_COMMENT` (User comments)
+3. ❌ Reaction → **Not logged** (not important)
+4. ❌ Comment → **Not logged** (not important)
 
 ---
 
@@ -363,58 +306,23 @@ await this.auditService.logFromRequest(
 );
 ```
 
-#### **2. Add Reaction (Lines ~320):**
+#### **2. Reactions - NOT LOGGED**
 ```typescript
-// BEFORE:
-await this.auditService.logFromRequest(
-  req,
-  userId,
-  'VIEW_ANNOUNCEMENT',  // ❌ Too generic
-  'announcement',
-  announcementId,
-  {
-    reaction_type: reactionDto.reaction_type,
-  },
-);
-
-// AFTER:
-await this.auditService.logFromRequest(
-  req,
-  userId,
-  'ADD_REACTION',  // ✅ Specific action
-  'announcement',
-  announcementId,
-  {
-    reaction_type: reactionDto.reaction_type,
-  },
-);
+// Reactions are NOT logged - not important for audit
+await this.reactionRepo.save({
+  announcement_id: announcementId,
+  user_id: userId,
+  reaction_type: reactionDto.reaction_type as ReactionType,
+});
+// No audit logging
 ```
 
-#### **3. Add Comment (Lines ~360):**
+#### **3. Comments - NOT LOGGED**
 ```typescript
-// BEFORE:
-await this.auditService.logFromRequest(
-  req,
-  userId,
-  'VIEW_ANNOUNCEMENT',  // ❌ Too generic
-  'announcement',
-  announcementId,
-  {
-    comment_added: true,
-  },
-);
-
-// AFTER:
-await this.auditService.logFromRequest(
-  req,
-  userId,
-  'ADD_COMMENT',  // ✅ Specific action
-  'announcement',
-  announcementId,
-  {
-    comment_content: commentDto.content.substring(0, 100), // ✅ First 100 chars for audit
-  },
-);
+// Comments are NOT logged - not important for audit
+const saved = await this.commentRepo.save(comment);
+// No audit logging
+return saved;
 ```
 
 ---
@@ -434,22 +342,12 @@ await this.auditService.logFromRequest(
 
 ### **Test 2: Add Reaction**
 ```
-1. Go to announcement
-2. Click 👍 reaction button
-3. Check audit logs:
-   ✅ Should show: action = 'ADD_REACTION'
-   ✅ Should show: resource = 'announcement'
-   ✅ Should show: reaction_type = '👍' in details
+Reactions are NOT logged - no audit entry created
 ```
 
 ### **Test 3: Add Comment**
 ```
-1. Go to announcement
-2. Post a comment: "This is a great policy!"
-3. Check audit logs:
-   ✅ Should show: action = 'ADD_COMMENT'
-   ✅ Should show: resource = 'announcement'
-   ✅ Should show: comment_content = 'This is a great policy!' in details
+Comments are NOT logged - no audit entry created
 ```
 
 ### **Test 4: Query All Actions**
@@ -469,8 +367,7 @@ ORDER BY al.created_at DESC;
 -- Expected output:
 -- VIEW_ANNOUNCEMENT (acknowledged)
 -- DOWNLOAD_ATTACHMENT (file download)
--- ADD_REACTION (emoji reaction)
--- ADD_COMMENT (user comment)
+-- (No reaction or comment logs)
 ```
 
 ---
@@ -491,8 +388,7 @@ ORDER BY al.created_at DESC;
 ### **3. Analytics**
 - Which files are most downloaded?
 - Which announcements have highest engagement?
-- Employee sentiment analysis (reactions)
-- Discussion activity tracking (comments)
+- Employee document access patterns
 
 ### **4. Compliance**
 - Prove employee downloaded policy document
@@ -501,25 +397,25 @@ ORDER BY al.created_at DESC;
 - Audit trail of employee feedback
 
 ### **5. Granular Reporting**
-- Separate metrics for each action type
+- Separate metrics for views vs downloads
 - Easy filtering by action in database
-- Better insights into user behavior
-- More accurate engagement analytics
+- Focus on important actions only (no noise from reactions/comments)
+- More accurate security and compliance tracking
 
 ---
 
 ## 🎉 Status
 
-- ✅ Code updated (3 changes)
+- ✅ Code updated (1 change)
 - ✅ TypeScript checks pass
 - ✅ Backend build successful
 - ✅ Documentation created
 - 🚀 Ready to deploy to EC2
 
 ### **Summary of Changes:**
-1. ✅ `DOWNLOAD_ATTACHMENT` - File downloads now tracked separately
-2. ✅ `ADD_REACTION` - Emoji reactions now tracked separately
-3. ✅ `ADD_COMMENT` - User comments now tracked separately
+1. ✅ `DOWNLOAD_ATTACHMENT` - File downloads now tracked separately (IMPORTANT)
+2. ❌ Reactions - NOT logged (not important)
+3. ❌ Comments - NOT logged (not important)
 4. ✅ `VIEW_ANNOUNCEMENT` - Still used for first-time acknowledgment (unchanged)
 
 ---

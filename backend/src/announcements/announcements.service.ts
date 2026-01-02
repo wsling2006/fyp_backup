@@ -318,16 +318,7 @@ export class AnnouncementsService {
       reaction_type: reactionDto.reaction_type as ReactionType,
     });
 
-    await this.auditService.logFromRequest(
-      req,
-      userId,
-      'ADD_REACTION',
-      'announcement',
-      announcementId,
-      {
-        reaction_type: reactionDto.reaction_type,
-      },
-    );
+    // No audit logging for reactions - not important
   }
 
   // Add comment
@@ -352,16 +343,7 @@ export class AnnouncementsService {
 
     const saved = await this.commentRepo.save(comment);
 
-    await this.auditService.logFromRequest(
-      req,
-      userId,
-      'ADD_COMMENT',
-      'announcement',
-      announcementId,
-      {
-        comment_content: commentDto.content.substring(0, 100), // First 100 chars for audit
-      },
-    );
+    // No audit logging for comments - not important
 
     return saved;
   }

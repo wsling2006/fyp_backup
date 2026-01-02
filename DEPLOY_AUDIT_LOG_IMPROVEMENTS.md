@@ -3,15 +3,16 @@
 ## ✅ Changes Made
 
 ### **Improved Audit Action Names:**
-1. ✅ `DOWNLOAD_ATTACHMENT` - Was: VIEW_ANNOUNCEMENT
-2. ✅ `ADD_REACTION` - Was: VIEW_ANNOUNCEMENT  
-3. ✅ `ADD_COMMENT` - Was: VIEW_ANNOUNCEMENT
+1. ✅ `DOWNLOAD_ATTACHMENT` - Was: VIEW_ANNOUNCEMENT (IMPORTANT - tracks file downloads)
+2. ❌ Reactions - NOT logged (not important)
+3. ❌ Comments - NOT logged (not important)
 
 ### **Why This Matters:**
-- 🔍 Clear distinction between actions
-- 📊 Better analytics and reporting
-- 🔒 Improved security monitoring
-- ✅ Easier compliance tracking
+- 🔍 Clear distinction between viewing and downloading
+- 📊 Better analytics for file access
+- 🔒 Improved security monitoring for document downloads
+- ✅ Easier compliance tracking (who downloaded what)
+- 🎯 Cleaner audit logs (no noise from reactions/comments)
 
 ---
 
@@ -102,36 +103,14 @@ pm2 logs backend --lines 50
 
 ### **Test 2: Add Reaction**
 ```
-1. Go to any announcement
-2. Click 👍 reaction
-3. Check audit logs:
-   
-   Query:
-   SELECT * FROM audit_logs 
-   WHERE action = 'ADD_REACTION' 
-   ORDER BY created_at DESC LIMIT 1;
-   
-   Expected:
-   ✅ action = 'ADD_REACTION'
-   ✅ resource = 'announcement'
-   ✅ details contains reaction_type = '👍'
+Reactions are NOT logged
+✅ No audit entry should be created
 ```
 
 ### **Test 3: Add Comment**
 ```
-1. Go to any announcement
-2. Post a comment
-3. Check audit logs:
-   
-   Query:
-   SELECT * FROM audit_logs 
-   WHERE action = 'ADD_COMMENT' 
-   ORDER BY created_at DESC LIMIT 1;
-   
-   Expected:
-   ✅ action = 'ADD_COMMENT'
-   ✅ resource = 'announcement'
-   ✅ details contains comment_content (first 100 chars)
+Comments are NOT logged
+✅ No audit entry should be created
 ```
 
 ---
@@ -143,9 +122,7 @@ pm2 logs backend --lines 50
 -- Replace 'announcement_uuid' with actual ID
 SELECT 
   COUNT(DISTINCT CASE WHEN al.action = 'VIEW_ANNOUNCEMENT' THEN al.user_id END) as views,
-  COUNT(DISTINCT CASE WHEN al.action = 'DOWNLOAD_ATTACHMENT' THEN al.user_id END) as downloads,
-  COUNT(DISTINCT CASE WHEN al.action = 'ADD_REACTION' THEN al.user_id END) as reactions,
-  COUNT(DISTINCT CASE WHEN al.action = 'ADD_COMMENT' THEN al.user_id END) as comments
+  COUNT(DISTINCT CASE WHEN al.action = 'DOWNLOAD_ATTACHMENT' THEN al.user_id END) as downloads
 FROM audit_logs al
 WHERE al.resource_id = 'announcement_uuid'
    OR al.details->>'announcement_id' = 'announcement_uuid';
@@ -170,9 +147,7 @@ LIMIT 10;
 SELECT 
   u.email,
   COUNT(CASE WHEN al.action = 'VIEW_ANNOUNCEMENT' THEN 1 END) as announcements_viewed,
-  COUNT(CASE WHEN al.action = 'DOWNLOAD_ATTACHMENT' THEN 1 END) as files_downloaded,
-  COUNT(CASE WHEN al.action = 'ADD_REACTION' THEN 1 END) as reactions_given,
-  COUNT(CASE WHEN al.action = 'ADD_COMMENT' THEN 1 END) as comments_posted
+  COUNT(CASE WHEN al.action = 'DOWNLOAD_ATTACHMENT' THEN 1 END) as files_downloaded
 FROM users u
 LEFT JOIN audit_logs al ON al.user_id = u.id
 WHERE al.created_at > NOW() - INTERVAL '30 days'
@@ -190,9 +165,7 @@ SELECT action, details FROM audit_logs WHERE resource_id = 'abc123';
 
 Result:
 action='VIEW_ANNOUNCEMENT', details='{"acknowledged": true}'
-action='VIEW_ANNOUNCEMENT', details='{"downloaded": true}'      ❌
-action='VIEW_ANNOUNCEMENT', details='{"reaction_type": "👍"}'   ❌
-action='VIEW_ANNOUNCEMENT', details='{"comment_added": true}'   ❌
+action='VIEW_ANNOUNCEMENT', details='{"downloaded": true}'      ❌ Can't tell apart!
 ```
 
 ### **After (Clear):**
@@ -200,10 +173,9 @@ action='VIEW_ANNOUNCEMENT', details='{"comment_added": true}'   ❌
 SELECT action, details FROM audit_logs WHERE resource_id = 'abc123';
 
 Result:
-action='VIEW_ANNOUNCEMENT', details='{"acknowledged": true}'    ✅
-action='DOWNLOAD_ATTACHMENT', details='{"filename": "..."}'     ✅
-action='ADD_REACTION', details='{"reaction_type": "👍"}'         ✅
-action='ADD_COMMENT', details='{"comment_content": "..."}'      ✅
+action='VIEW_ANNOUNCEMENT', details='{"acknowledged": true}'    ✅ User viewed
+action='DOWNLOAD_ATTACHMENT', details='{"filename": "..."}'     ✅ User downloaded file!
+(No reaction or comment logs - keeping it clean)
 ```
 
 ---
@@ -252,9 +224,9 @@ After deployment, verify:
 - [ ] Can download files from announcements
 - [ ] Download action logs as 'DOWNLOAD_ATTACHMENT'
 - [ ] Can add reactions to announcements
-- [ ] Reaction action logs as 'ADD_REACTION'
+- [ ] Reactions do NOT create audit logs
 - [ ] Can add comments to announcements
-- [ ] Comment action logs as 'ADD_COMMENT'
+- [ ] Comments do NOT create audit logs
 - [ ] Old acknowledgment still logs as 'VIEW_ANNOUNCEMENT'
 - [ ] SQL queries return correct results
 
@@ -312,10 +284,10 @@ Includes:
 ## 🎉 Summary
 
 ### **What Changed:**
-- 3 audit actions renamed for clarity
-- Better analytics capabilities
-- Improved security monitoring
-- More granular reporting
+- 1 audit action renamed for clarity
+- Reactions and comments no longer logged (not important)
+- Cleaner audit logs focusing on important actions
+- Better security monitoring for file downloads
 
 ### **Files Modified:**
 - `backend/src/announcements/announcements.service.ts`

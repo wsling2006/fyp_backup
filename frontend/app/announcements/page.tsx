@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import {
   getAllAnnouncements,
   acknowledgeAnnouncement,
@@ -15,13 +16,19 @@ const REACTIONS = ['👍', '❤️', '😮', '😢', '❗'];
 
 const AnnouncementsPage: React.FC = () => {
   const router = useRouter();
+  const { user, isInitialized } = useAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'ALL' | 'URGENT' | 'IMPORTANT' | 'GENERAL'>('ALL');
 
   useEffect(() => {
+    if (!isInitialized) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
     loadAnnouncements();
-  }, []);
+  }, [isInitialized, user, router]);
 
   const loadAnnouncements = async () => {
     setLoading(true);
@@ -70,11 +77,23 @@ const AnnouncementsPage: React.FC = () => {
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case 'URGENT':
-        return <span className="badge bg-danger">🚨 URGENT</span>;
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-300">
+            🚨 URGENT
+          </span>
+        );
       case 'IMPORTANT':
-        return <span className="badge bg-warning text-dark">⚠️ IMPORTANT</span>;
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800 border border-yellow-300">
+            ⚠️ IMPORTANT
+          </span>
+        );
       case 'GENERAL':
-        return <span className="badge bg-secondary">📢 GENERAL</span>;
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-800 border border-gray-300">
+            📢 GENERAL
+          </span>
+        );
       default:
         return null;
     }
@@ -82,9 +101,10 @@ const AnnouncementsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="container mt-5 text-center">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600 font-medium">Loading announcements...</p>
         </div>
       </div>
     );
@@ -94,134 +114,195 @@ const AnnouncementsPage: React.FC = () => {
     <>
       <UrgentAnnouncementModal />
       
-      <div className="container mt-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2>
-            <i className="bi bi-megaphone me-2"></i>
-            Company Announcements
-          </h2>
-          <button className="btn btn-outline-secondary" onClick={loadAnnouncements}>
-            <i className="bi bi-arrow-clockwise me-1"></i>
-            Refresh
-          </button>
-        </div>
-
-        {/* Filter buttons */}
-        <div className="btn-group mb-4" role="group">
-          <button
-            className={`btn ${filter === 'ALL' ? 'btn-primary' : 'btn-outline-primary'}`}
-            onClick={() => setFilter('ALL')}
-          >
-            All
-          </button>
-          <button
-            className={`btn ${filter === 'URGENT' ? 'btn-danger' : 'btn-outline-danger'}`}
-            onClick={() => setFilter('URGENT')}
-          >
-            Urgent
-          </button>
-          <button
-            className={`btn ${filter === 'IMPORTANT' ? 'btn-warning' : 'btn-outline-warning'}`}
-            onClick={() => setFilter('IMPORTANT')}
-          >
-            Important
-          </button>
-          <button
-            className={`btn ${filter === 'GENERAL' ? 'btn-secondary' : 'btn-outline-secondary'}`}
-            onClick={() => setFilter('GENERAL')}
-          >
-            General
-          </button>
-        </div>
-
-        {filteredAnnouncements.length === 0 && (
-          <div className="alert alert-info">
-            <i className="bi bi-info-circle me-2"></i>
-            No announcements found.
-          </div>
-        )}
-
-        {/* Announcements list */}
-        {filteredAnnouncements.map((announcement) => (
-          <div
-            key={announcement.id}
-            className={`card mb-3 ${!announcement.is_acknowledged && announcement.priority !== 'GENERAL' ? 'border-primary' : ''}`}
-          >
-            <div className="card-header d-flex justify-content-between align-items-center">
-              <div>
-                {getPriorityBadge(announcement.priority)}
-                <span className="ms-2 fw-bold">{announcement.title}</span>
-              </div>
-              {!announcement.is_acknowledged && (
-                <span className="badge bg-danger">New</span>
-              )}
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-800 flex items-center gap-3">
+                📢 Company Announcements
+              </h1>
+              <p className="text-gray-600 mt-2">Stay updated with the latest company news</p>
             </div>
-            <div className="card-body">
-              <div style={{ whiteSpace: 'pre-wrap' }}>{announcement.content}</div>
+            <button
+              onClick={loadAnnouncements}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+            </button>
+          </div>
 
-              {/* Attachments */}
-              {announcement.attachments && announcement.attachments.length > 0 && (
-                <div className="mt-3">
-                  <strong>📎 Attachments:</strong>
-                  <ul className="list-unstyled mt-2">
-                    {announcement.attachments.map((att: any) => (
-                      <li key={att.id}>
-                        <button
-                          className="btn btn-sm btn-outline-primary"
-                          onClick={() => handleDownload(att.id, att.original_filename)}
-                        >
-                          <i className="bi bi-download me-1"></i>
-                          {att.original_filename}
-                          <span className="ms-2 text-muted">
-                            ({(att.file_size / 1024).toFixed(1)} KB)
-                          </span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+          {/* Filter Buttons */}
+          <div className="flex gap-3 mb-8">
+            <button
+              onClick={() => setFilter('ALL')}
+              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                filter === 'ALL'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setFilter('URGENT')}
+              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                filter === 'URGENT'
+                  ? 'bg-red-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              🚨 Urgent
+            </button>
+            <button
+              onClick={() => setFilter('IMPORTANT')}
+              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                filter === 'IMPORTANT'
+                  ? 'bg-yellow-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              ⚠️ Important
+            </button>
+            <button
+              onClick={() => setFilter('GENERAL')}
+              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                filter === 'GENERAL'
+                  ? 'bg-gray-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              📢 General
+            </button>
+          </div>
+
+          {/* Empty State */}
+          {filteredAnnouncements.length === 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+              <div className="text-6xl mb-4">📭</div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">No announcements found</h3>
+              <p className="text-gray-600">Check back later for updates</p>
+            </div>
+          )}
+
+          {/* Announcements List */}
+          <div className="space-y-6">
+            {filteredAnnouncements.map((announcement) => (
+              <div
+                key={announcement.id}
+                className={`bg-white rounded-xl shadow-sm border transition-all hover:shadow-md ${
+                  !announcement.is_acknowledged && announcement.priority !== 'GENERAL'
+                    ? 'border-blue-400 ring-2 ring-blue-100'
+                    : 'border-gray-200'
+                }`}
+              >
+                {/* Card Header */}
+                <div className="flex justify-between items-center p-6 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    {getPriorityBadge(announcement.priority)}
+                    <h3 className="text-xl font-bold text-gray-800">{announcement.title}</h3>
+                  </div>
+                  {!announcement.is_acknowledged && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-500 text-white animate-pulse">
+                      New
+                    </span>
+                  )}
                 </div>
-              )}
 
-              {/* Reactions */}
-              <div className="mt-3 d-flex gap-2 align-items-center">
-                {REACTIONS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    className={`btn btn-sm ${announcement.user_reaction === emoji ? 'btn-primary' : 'btn-outline-secondary'}`}
-                    onClick={() => handleReaction(announcement.id, emoji)}
-                  >
-                    {emoji} {announcement.reaction_counts[emoji] || 0}
-                  </button>
-                ))}
-                <button
-                  className="btn btn-sm btn-outline-info ms-auto"
-                  onClick={() => router.push(`/announcements/${announcement.id}`)}
-                >
-                  <i className="bi bi-chat-dots me-1"></i>
-                  {announcement.comment_count} Comments
-                </button>
+                {/* Card Body */}
+                <div className="p-6">
+                  <div className="text-gray-700 whitespace-pre-wrap mb-4">
+                    {announcement.content}
+                  </div>
+
+                  {/* Attachments */}
+                  {announcement.attachments && announcement.attachments.length > 0 && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <p className="font-semibold text-gray-700 mb-3">📎 Attachments:</p>
+                      <div className="space-y-2">
+                        {announcement.attachments.map((att: any) => (
+                          <button
+                            key={att.id}
+                            onClick={() => handleDownload(att.id, att.original_filename)}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-400 transition-colors w-full text-left"
+                          >
+                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span className="font-medium text-gray-800">{att.original_filename}</span>
+                            <span className="text-sm text-gray-500 ml-auto">
+                              ({(att.file_size / 1024).toFixed(1)} KB)
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Reactions */}
+                  <div className="mt-6 flex flex-wrap gap-2 items-center">
+                    {REACTIONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => handleReaction(announcement.id, emoji)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                          announcement.user_reaction === emoji
+                            ? 'bg-blue-100 text-blue-800 border-2 border-blue-400 shadow-sm'
+                            : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                        }`}
+                      >
+                        {emoji} {announcement.reaction_counts[emoji] || 0}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => router.push(`/announcements/${announcement.id}`)}
+                      className="ml-auto flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-400 transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                      <span className="font-medium">{announcement.comment_count} Comments</span>
+                    </button>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="mt-6 flex items-center justify-between pt-4 border-t border-gray-100">
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <span className="font-medium">{announcement.author?.email || 'HR Department'}</span>
+                      </div>
+                      <span className="text-gray-400">•</span>
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>{new Date(announcement.created_at).toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    {!announcement.is_acknowledged && (
+                      <button
+                        onClick={() => handleAcknowledge(announcement.id)}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm font-medium"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Mark as Read
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
-
-              <div className="mt-3 text-muted small">
-                <i className="bi bi-person-circle me-1"></i>
-                {announcement.author?.name || 'HR Department'}
-                <span className="mx-2">•</span>
-                <i className="bi bi-calendar me-1"></i>
-                {new Date(announcement.created_at).toLocaleString()}
-              </div>
-
-              {!announcement.is_acknowledged && (
-                <button
-                  className="btn btn-success btn-sm mt-2"
-                  onClick={() => handleAcknowledge(announcement.id)}
-                >
-                  <i className="bi bi-check-circle me-1"></i>
-                  Mark as Read
-                </button>
-              )}
-            </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
     </>
   );

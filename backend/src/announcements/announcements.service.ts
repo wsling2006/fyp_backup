@@ -413,6 +413,45 @@ export class AnnouncementsService {
     };
   }
 
+  // Delete announcement (HR only, soft delete)
+  async deleteAnnouncement(
+    announcementId: string,
+    userId: string,
+    req: any,
+  ): Promise<void> {
+    const announcement = await this.announcementRepo.findOne({
+      where: { id: announcementId, is_deleted: false },
+    });
+
+    if (!announcement) {
+      throw new NotFoundException('Announcement not found');
+    }
+
+    // Soft delete: mark as deleted instead of removing
+    announcement.is_deleted = true;
+    await this.announcementRepo.save(announcement);
+
+    // Also soft delete all attachments
+    await this.attachmentRepo.update(
+      { announcement_id: announcementId },
+      { is_deleted: true },
+    );
+
+    // Audit log
+    await this.auditService.logFromRequest(
+      req,
+      userId,
+      'DELETE_ANNOUNCEMENT',
+      'announcement',
+      announcementId,
+      {
+        title: announcement.title,
+        priority: announcement.priority,
+        created_by: announcement.created_by,
+      },
+    );
+  }
+
   // Helper: Get reaction counts
   private async getReactionCounts(announcementId: string): Promise<Record<string, number>> {
     const reactions = await this.reactionRepo.find({

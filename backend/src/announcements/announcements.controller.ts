@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Body,
   Param,
   UseGuards,
@@ -41,6 +42,24 @@ export class AnnouncementsController {
       req.user.userId, // Fixed: use userId not id
       req,
     );
+  }
+
+  // HR: Delete announcement
+  @Delete(':id')
+  @Roles(Role.HR)
+  async deleteAnnouncement(
+    @Param('id') announcementId: string,
+    @Req() req: any,
+  ) {
+    await this.announcementsService.deleteAnnouncement(
+      announcementId,
+      req.user.userId,
+      req,
+    );
+    return {
+      success: true,
+      message: 'Announcement deleted successfully',
+    };
   }
 
   // HR: Upload attachment to announcement

@@ -55,6 +55,12 @@ export const createAnnouncement = async (announcement: {
   return data;
 };
 
+// Delete announcement (HR only)
+export const deleteAnnouncement = async (announcementId: string) => {
+  const { data } = await api.delete(`/announcements/${announcementId}`);
+  return data;
+};
+
 // Upload attachment (HR only)
 export const uploadAttachment = async (announcementId: string, file: File) => {
   const formData = new FormData();

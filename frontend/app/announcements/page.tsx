@@ -9,6 +9,7 @@ import {
   addReaction,
   Announcement,
   downloadAttachment,
+  deleteAnnouncement,
 } from '@/utils/announcementApi';
 import UrgentAnnouncementModal from '@/components/UrgentAnnouncementModal';
 
@@ -66,6 +67,21 @@ const AnnouncementsPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to download:', error);
       alert('Failed to download attachment');
+    }
+  };
+
+  const handleDelete = async (announcementId: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete "${title}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteAnnouncement(announcementId);
+      alert('Announcement deleted successfully');
+      loadAnnouncements();
+    } catch (error) {
+      console.error('Failed to delete:', error);
+      alert('Failed to delete announcement');
     }
   };
 
@@ -219,11 +235,26 @@ const AnnouncementsPage: React.FC = () => {
                     {getPriorityBadge(announcement.priority)}
                     <h3 className="text-xl font-bold text-gray-800">{announcement.title}</h3>
                   </div>
-                  {!announcement.is_acknowledged && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-500 text-white animate-pulse">
-                      New
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {!announcement.is_acknowledged && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-500 text-white animate-pulse">
+                        New
+                      </span>
+                    )}
+                    {/* Delete Button - Only for HR and Super Admin */}
+                    {user && (user.role === 'human_resources' || user.role === 'super_admin') && (
+                      <button
+                        onClick={() => handleDelete(announcement.id, announcement.title)}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors border border-red-200"
+                        title="Delete announcement"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Card Body */}

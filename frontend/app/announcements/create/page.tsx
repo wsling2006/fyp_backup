@@ -15,7 +15,7 @@ const CreateAnnouncementPage: React.FC = () => {
     content: '',
     priority: 'GENERAL',
   });
-  const [files, setFiles] = useState<FileList | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
 
   React.useEffect(() => {
@@ -244,7 +244,14 @@ const CreateAnnouncementPage: React.FC = () => {
                     type="file"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                     multiple
-                    onChange={(e) => setFiles(e.target.files)}
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        const newFiles = Array.from(e.target.files);
+                        setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+                        // Reset input so same file can be selected again
+                        e.target.value = '';
+                      }
+                    }}
                   />
                 </div>
                 <p className="text-sm text-gray-600 mt-2 flex items-center gap-2">
@@ -257,20 +264,42 @@ const CreateAnnouncementPage: React.FC = () => {
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                   </svg>
-                  💡 Tip: Hold <kbd className="px-2 py-1 text-xs bg-gray-200 rounded">Ctrl</kbd> or <kbd className="px-2 py-1 text-xs bg-gray-200 rounded">Cmd</kbd> to select multiple files
+                  💡 Tip: Click "Choose Files" multiple times to add files one by one, or hold <kbd className="px-2 py-1 text-xs bg-gray-200 rounded">Ctrl</kbd>/<kbd className="px-2 py-1 text-xs bg-gray-200 rounded">Cmd</kbd> for bulk selection
                 </p>
                 
                 {files && files.length > 0 && (
                   <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="font-semibold text-gray-700 mb-2">Selected Files:</p>
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="font-semibold text-gray-700">Selected Files ({files.length}):</p>
+                      <button
+                        type="button"
+                        onClick={() => setFiles([])}
+                        className="text-xs text-red-600 hover:text-red-800 font-medium"
+                      >
+                        Clear All
+                      </button>
+                    </div>
                     <div className="space-y-2">
-                      {Array.from(files).map((file, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
-                          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                          </svg>
-                          <span className="font-medium">{file.name}</span>
-                          <span className="text-gray-500">({(file.size / 1024).toFixed(1)} KB)</span>
+                      {files.map((file, idx) => (
+                        <div key={idx} className="flex items-center justify-between gap-2 text-sm text-gray-600 p-2 bg-white rounded border border-gray-200">
+                          <div className="flex items-center gap-2 flex-1">
+                            <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <span className="font-medium truncate">{file.name}</span>
+                            <span className="text-gray-500 flex-shrink-0">({(file.size / 1024).toFixed(1)} KB)</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFiles((prevFiles) => prevFiles.filter((_, i) => i !== idx));
+                            }}
+                            className="text-red-500 hover:text-red-700 flex-shrink-0"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
                         </div>
                       ))}
                     </div>

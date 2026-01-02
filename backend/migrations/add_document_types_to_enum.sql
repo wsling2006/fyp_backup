@@ -2,6 +2,9 @@
 -- Date: 2026-01-02
 -- Issue: Frontend allows CERTIFICATION, EMPLOYMENT_AGREEMENT, PERFORMANCE_REVIEW
 --        but database enum only has RESUME, EMPLOYMENT_CONTRACT, OFFER_LETTER, IDENTITY_DOCUMENT, OTHER
+--
+-- Run with: psql -U fyp_user -d fyp_db -f migrations/add_document_types_to_enum.sql
+-- Or: PGPASSWORD='GL5jYNDqsOVkx6tIfIS2eUonM' psql -U fyp_user -d fyp_db -f migrations/add_document_types_to_enum.sql
 
 -- Step 1: Add new values to the enum type
 ALTER TYPE employee_documents_document_type_enum ADD VALUE IF NOT EXISTS 'EMPLOYMENT_AGREEMENT';

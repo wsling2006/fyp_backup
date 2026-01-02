@@ -89,8 +89,13 @@ export class AnnouncementsService {
     await this.auditService.logFromRequest(
       req,
       userId,
-      'HR_CREATE_ANNOUNCEMENT',
-      `Created announcement: ${saved.title} (${saved.priority})`,
+      'CREATE_ANNOUNCEMENT',
+      'announcement',
+      saved.id,
+      {
+        title: saved.title,
+        priority: saved.priority,
+      },
     );
 
     return saved;
@@ -138,8 +143,13 @@ export class AnnouncementsService {
       await this.auditService.logFromRequest(
         req,
         userId,
-        'MALWARE_DETECTED_ANNOUNCEMENT',
-        `Malware detected in file: ${file.originalname}`,
+        'MALWARE_DETECTED',
+        'announcement_attachment',
+        undefined,
+        {
+          filename: file.originalname,
+          mimetype: file.mimetype,
+        },
       );
       throw new BadRequestException('Malware detected in uploaded file');
     }
@@ -172,8 +182,15 @@ export class AnnouncementsService {
     await this.auditService.logFromRequest(
       req,
       userId,
-      'HR_UPLOAD_ANNOUNCEMENT_ATTACHMENT',
-      `Uploaded attachment: ${file.originalname} (${file.size} bytes, ${file.mimetype})`,
+      'UPLOAD_ATTACHMENT',
+      'announcement_attachment',
+      saved.id,
+      {
+        announcement_id: announcementId,
+        filename: file.originalname,
+        file_size: file.size,
+        mime_type: file.mimetype,
+      },
     );
 
     return saved;
@@ -263,8 +280,13 @@ export class AnnouncementsService {
       await this.auditService.logFromRequest(
         req,
         userId,
-        'USER_ACK_ANNOUNCEMENT',
-        `Acknowledged announcement: ${announcement.title}`,
+        'VIEW_ANNOUNCEMENT',
+        'announcement',
+        announcementId,
+        {
+          title: announcement.title,
+          acknowledged: true,
+        },
       );
     }
   }
@@ -299,8 +321,12 @@ export class AnnouncementsService {
     await this.auditService.logFromRequest(
       req,
       userId,
-      'USER_REACT_ANNOUNCEMENT',
-      `Reacted ${reactionDto.reaction_type} to: ${announcement.title}`,
+      'VIEW_ANNOUNCEMENT',
+      'announcement',
+      announcementId,
+      {
+        reaction_type: reactionDto.reaction_type,
+      },
     );
   }
 
@@ -329,8 +355,12 @@ export class AnnouncementsService {
     await this.auditService.logFromRequest(
       req,
       userId,
-      'USER_COMMENT_ANNOUNCEMENT',
-      `Commented on: ${announcement.title}`,
+      'VIEW_ANNOUNCEMENT',
+      'announcement',
+      announcementId,
+      {
+        comment_added: true,
+      },
     );
 
     return saved;
@@ -367,8 +397,13 @@ export class AnnouncementsService {
     await this.auditService.logFromRequest(
       req,
       userId,
-      'USER_DOWNLOAD_ANNOUNCEMENT_ATTACHMENT',
-      `Downloaded: ${attachment.original_filename}`,
+      'VIEW_ANNOUNCEMENT',
+      'announcement_attachment',
+      attachmentId,
+      {
+        filename: attachment.original_filename,
+        downloaded: true,
+      },
     );
 
     return {

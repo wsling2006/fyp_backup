@@ -3,11 +3,13 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { createAnnouncement, uploadAttachment } from '@/utils/announcementApi';
 
 const CreateAnnouncementPage: React.FC = () => {
   const router = useRouter();
   const { user, isInitialized } = useAuth();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -42,18 +44,23 @@ const CreateAnnouncementPage: React.FC = () => {
         for (let i = 0; i < files.length; i++) {
           try {
             await uploadAttachment(announcement.id, files[i]);
-          } catch (error) {
+          } catch (error: any) {
             console.error(`Failed to upload ${files[i].name}:`, error);
-            alert(`Failed to upload ${files[i].name}. ${error}`);
+            // Check if it's a virus detection error
+            if (error.response?.status === 400 && error.response?.data?.message?.includes('virus')) {
+              showToast(`🦠 Virus detected in ${files[i].name}. File blocked for security.`, 'error');
+            } else {
+              showToast(`Failed to upload ${files[i].name}. Please try again.`, 'error');
+            }
           }
         }
       }
 
-      alert('Announcement created successfully!');
+      showToast('✅ Announcement created successfully!', 'success');
       router.push('/announcements');
     } catch (error: any) {
       console.error('Failed to create announcement:', error);
-      alert(`Failed to create announcement: ${error.response?.data?.message || error.message}`);
+      showToast(`Failed to create announcement: ${error.response?.data?.message || error.message}`, 'error');
     }
     setLoading(false);
   };

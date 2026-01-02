@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import {
   getAllAnnouncements,
   acknowledgeAnnouncement,
@@ -18,6 +19,7 @@ const REACTIONS = ['👍', '❤️', '😮', '😢', '❗'];
 const AnnouncementsPage: React.FC = () => {
   const router = useRouter();
   const { user, isInitialized } = useAuth();
+  const { showToast } = useToast();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'ALL' | 'URGENT' | 'IMPORTANT' | 'GENERAL'>('ALL');
@@ -38,7 +40,7 @@ const AnnouncementsPage: React.FC = () => {
       setAnnouncements(data);
     } catch (error) {
       console.error('Failed to load announcements:', error);
-      alert('Failed to load announcements');
+      showToast('Failed to load announcements. Please refresh the page.', 'error');
     }
     setLoading(false);
   };
@@ -64,9 +66,10 @@ const AnnouncementsPage: React.FC = () => {
   const handleDownload = async (attachmentId: string, filename: string) => {
     try {
       await downloadAttachment(attachmentId, filename);
+      showToast(`📥 Downloaded ${filename}`, 'success');
     } catch (error) {
       console.error('Failed to download:', error);
-      alert('Failed to download attachment');
+      showToast('Failed to download attachment. Please try again.', 'error');
     }
   };
 
@@ -77,11 +80,11 @@ const AnnouncementsPage: React.FC = () => {
 
     try {
       await deleteAnnouncement(announcementId);
-      alert('Announcement deleted successfully');
+      showToast('🗑️ Announcement deleted successfully', 'success');
       loadAnnouncements();
     } catch (error) {
       console.error('Failed to delete:', error);
-      alert('Failed to delete announcement');
+      showToast('Failed to delete announcement. Please try again.', 'error');
     }
   };
 

@@ -1,0 +1,201 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║              HR UPLOAD FIX - DEPLOYMENT QUICK GUIDE                        ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+🎯 ISSUE FOUND AND FIXED!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Error: invalid input value for enum employee_documents_document_type_enum: "CERTIFICATION"
+
+Root Cause: Database enum missing document types that frontend offers!
+- Frontend: 8 document types ✅
+- Database: 5 document types ❌
+- Mismatch: CERTIFICATION, EMPLOYMENT_AGREEMENT, PERFORMANCE_REVIEW missing
+
+✅ FIXES APPLIED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. ✅ Updated entity enum (employee-document.entity.ts)
+2. ✅ Created database migration SQL
+3. ✅ Comprehensive documentation
+4. ✅ Committed and pushed to GitHub
+
+🚀 DEPLOYMENT STEPS (EC2)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: SSH to EC2
+──────────────────
+ssh -i /path/to/key.pem ubuntu@YOUR_EC2_IP
+
+
+Step 2: Pull Latest Code
+─────────────────────────
+cd /home/ubuntu/fyp_system
+git pull origin main
+
+
+Step 3: Run Database Migration ⚠️ CRITICAL
+───────────────────────────────────────────
+cd /home/ubuntu/fyp_system/backend
+psql -U postgres -d fyp_system -f migrations/add_document_types_to_enum.sql
+
+# Or run interactively:
+psql -U postgres -d fyp_system
+
+# Then paste these commands:
+ALTER TYPE employee_documents_document_type_enum ADD VALUE IF NOT EXISTS 'EMPLOYMENT_AGREEMENT';
+ALTER TYPE employee_documents_document_type_enum ADD VALUE IF NOT EXISTS 'CERTIFICATION';
+ALTER TYPE employee_documents_document_type_enum ADD VALUE IF NOT EXISTS 'PERFORMANCE_REVIEW';
+\q
+
+
+Step 4: Verify Migration
+─────────────────────────
+psql -U postgres -d fyp_system -c "SELECT unnest(enum_range(NULL::employee_documents_document_type_enum));"
+
+# Should show ALL 8 values:
+# - RESUME
+# - EMPLOYMENT_CONTRACT
+# - OFFER_LETTER
+# - IDENTITY_DOCUMENT
+# - OTHER
+# - EMPLOYMENT_AGREEMENT (NEW)
+# - CERTIFICATION (NEW)
+# - PERFORMANCE_REVIEW (NEW)
+
+
+Step 5: Rebuild Backend
+────────────────────────
+cd /home/ubuntu/fyp_system/backend
+npm run build
+
+
+Step 6: Restart Backend
+────────────────────────
+pm2 restart backend
+pm2 status
+
+# Both backend and frontend should be "online"
+
+
+Step 7: Watch Logs
+──────────────────
+pm2 logs backend --lines 0
+
+# Keep this running in a separate terminal
+
+
+🧪 TESTING (After Deployment)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Test 1: Upload CERTIFICATION (Previously Failed)
+─────────────────────────────────────────────────
+1. Go to: http://YOUR_EC2_IP:3001/hr/employees
+2. Click any employee
+3. Click "📤 Upload Document"
+4. Select a PDF file
+5. Choose "🎓 Certification / Qualification"
+6. Click "Upload Document"
+7. ✅ Should succeed in 30-60 seconds!
+
+Test 2: Upload EMPLOYMENT_AGREEMENT
+────────────────────────────────────
+1. Choose "📝 Employment Agreement"
+2. Upload PDF
+3. ✅ Should succeed!
+
+Test 3: Upload PERFORMANCE_REVIEW
+──────────────────────────────────
+1. Choose "⭐ Performance Review"
+2. Upload PDF
+3. ✅ Should succeed!
+
+Test 4: Verify in Database
+───────────────────────────
+psql -U postgres -d fyp_system -c "SELECT id, filename, document_type FROM employee_documents ORDER BY created_at DESC LIMIT 5;"
+
+# Should show your newly uploaded documents with correct types
+
+
+✅ SUCCESS LOG OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+When upload succeeds, you'll see:
+
+[HR] Validating file: document.pdf
+[HR] Scanning file with ClamAV: document.pdf
+[ClamavService] File is clean: document.pdf
+[HR] ClamAV scan passed: document.pdf
+[HR] Uploading document to database for employee: abc-123
+[uploadDocument] Starting upload for employee: abc-123
+[uploadDocument] File: document.pdf, Type: CERTIFICATION
+[uploadDocument] Employee found: John Doe
+[uploadDocument] No duplicate found
+[uploadDocument] Document record created, saving to database...
+[uploadDocument] Document saved successfully with ID: doc-789  ← SUCCESS!
+[HR] Document uploaded successfully: doc-789
+
+
+❌ TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Issue: Still getting enum error
+Solution:
+  ❌ Migration didn't run successfully
+  → Re-run Step 3 and verify in Step 4
+
+Issue: Backend won't start
+Solution:
+  → Check logs: pm2 logs backend
+  → npm install might be needed: cd backend && npm install
+
+Issue: Frontend shows old error
+Solution:
+  → Clear browser cache (Ctrl+Shift+R or Cmd+Shift+R)
+  → Rebuild frontend: cd frontend && npm run build && pm2 restart frontend
+
+Issue: Upload timeout
+Solution:
+  → ClamAV might not be running
+  → sudo systemctl status clamav-daemon
+  → sudo systemctl start clamav-daemon
+
+
+📊 MONITORING COMMANDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+pm2 status              # Check services
+pm2 logs backend        # View backend logs
+pm2 logs frontend       # View frontend logs
+pm2 restart all         # Restart all services
+pm2 stop all            # Stop all services
+
+
+📚 DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HR_UPLOAD_ENUM_FIX.md              - Complete technical analysis
+HR_UPLOAD_DEBUG_GUIDE.md           - Debugging guide
+backend/migrations/add_document_types_to_enum.sql  - Database migration
+
+
+⏱️ ESTIMATED TIME
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Step 1 (SSH):                    10 seconds
+Step 2 (Pull code):               30 seconds
+Step 3 (Migration):               10 seconds  ⚠️ CRITICAL
+Step 4 (Verify):                  10 seconds
+Step 5 (Rebuild):                 2 minutes
+Step 6 (Restart):                 10 seconds
+Step 7 (Testing):                 2 minutes
+─────────────────────────────────────────────
+Total:                            ~5 minutes
+
+
+🎉 SUCCESS CRITERIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ All 8 document types upload successfully
+✅ No enum mismatch errors in logs
+✅ Documents appear in employee document list
+✅ Backend logs show "Document saved successfully"
+✅ Frontend shows success message
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║  CRITICAL: Don't forget Step 3 (Database Migration)!                      ║
+║  Code changes alone won't fix it - database enum must be updated!         ║
+╚════════════════════════════════════════════════════════════════════════════╝

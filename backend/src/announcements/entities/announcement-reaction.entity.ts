@@ -8,7 +8,7 @@ import {
   Unique,
 } from 'typeorm';
 import { Announcement } from './announcement.entity';
-import { User } from '../../users/entities/user.entity';
+import { User } from '../../users/user.entity';
 
 export enum ReactionType {
   THUMBS_UP = '👍',

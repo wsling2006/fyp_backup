@@ -8,7 +8,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
+import { User } from '../../users/user.entity';
 import { AnnouncementPriority } from '../enums/announcement-priority.enum';
 import { AnnouncementAcknowledgment } from './announcement-acknowledgment.entity';
 import { AnnouncementReaction } from './announcement-reaction.entity';

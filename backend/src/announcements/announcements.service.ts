@@ -99,7 +99,7 @@ export class AnnouncementsService {
   // Upload attachment with SECURITY CONTROLS
   async uploadAttachment(
     announcementId: string,
-    file: Express.Multer.File,
+    file: any,
     userId: string,
     req: any,
   ): Promise<AnnouncementAttachment> {

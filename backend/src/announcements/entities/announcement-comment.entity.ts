@@ -7,7 +7,7 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { Announcement } from './announcement.entity';
-import { User } from '../../users/entities/user.entity';
+import { User } from '../../users/user.entity';
 
 @Entity('announcement_comments')
 export class AnnouncementComment {

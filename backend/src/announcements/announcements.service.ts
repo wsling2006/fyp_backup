@@ -154,16 +154,8 @@ export class AnnouncementsService {
       throw new BadRequestException('Malware detected in uploaded file');
     }
 
-    // SECURITY CHECK 5: SHA-256 hashing for duplicate detection
+    // SECURITY CHECK 5: SHA-256 hashing for file integrity
     const fileHash = crypto.createHash('sha256').update(file.buffer).digest('hex');
-
-    // Check for duplicate
-    const existingFile = await this.attachmentRepo.findOne({
-      where: { file_hash: fileHash, is_deleted: false },
-    });
-    if (existingFile) {
-      throw new BadRequestException('This file has already been uploaded');
-    }
 
     // Store file in database (BYTEA storage)
     const attachment = this.attachmentRepo.create({

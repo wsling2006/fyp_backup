@@ -267,7 +267,7 @@ export class CreateAnnouncementTables1700000000000 implements MigrationInterface
             name: 'file_hash',
             type: 'varchar',
             length: '64',
-            isUnique: true,
+            // Removed isUnique: allows same file in multiple announcements
           },
           {
             name: 'file_data',

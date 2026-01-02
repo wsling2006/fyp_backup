@@ -73,13 +73,23 @@ export class EmployeeDocument {
 
   /**
    * Document type classification
+   * Updated to match frontend options and controller validation
    */
   @Column({ 
     type: 'enum',
-    enum: ['RESUME', 'EMPLOYMENT_CONTRACT', 'OFFER_LETTER', 'IDENTITY_DOCUMENT', 'OTHER'],
+    enum: [
+      'RESUME',
+      'EMPLOYMENT_AGREEMENT',
+      'EMPLOYMENT_CONTRACT',
+      'OFFER_LETTER',
+      'IDENTITY_DOCUMENT',
+      'CERTIFICATION',
+      'PERFORMANCE_REVIEW',
+      'OTHER'
+    ],
     default: 'OTHER'
   })
-  document_type: 'RESUME' | 'EMPLOYMENT_CONTRACT' | 'OFFER_LETTER' | 'IDENTITY_DOCUMENT' | 'OTHER';
+  document_type: 'RESUME' | 'EMPLOYMENT_AGREEMENT' | 'EMPLOYMENT_CONTRACT' | 'OFFER_LETTER' | 'IDENTITY_DOCUMENT' | 'CERTIFICATION' | 'PERFORMANCE_REVIEW' | 'OTHER';
 
   /**
    * Optional description or notes about the document

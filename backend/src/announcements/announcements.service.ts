@@ -321,7 +321,7 @@ export class AnnouncementsService {
     await this.auditService.logFromRequest(
       req,
       userId,
-      'VIEW_ANNOUNCEMENT',
+      'ADD_REACTION',
       'announcement',
       announcementId,
       {
@@ -355,11 +355,11 @@ export class AnnouncementsService {
     await this.auditService.logFromRequest(
       req,
       userId,
-      'VIEW_ANNOUNCEMENT',
+      'ADD_COMMENT',
       'announcement',
       announcementId,
       {
-        comment_added: true,
+        comment_content: commentDto.content.substring(0, 100), // First 100 chars for audit
       },
     );
 
@@ -397,12 +397,12 @@ export class AnnouncementsService {
     await this.auditService.logFromRequest(
       req,
       userId,
-      'VIEW_ANNOUNCEMENT',
+      'DOWNLOAD_ATTACHMENT',
       'announcement_attachment',
       attachmentId,
       {
         filename: attachment.original_filename,
-        downloaded: true,
+        announcement_id: attachment.announcement_id,
       },
     );
 

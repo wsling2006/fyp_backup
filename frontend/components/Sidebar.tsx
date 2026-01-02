@@ -7,15 +7,17 @@ import { useAuth } from '../context/AuthContext';
 
 const menu = [
   { label: 'Dashboard', href: '/dashboard', icon: '📊', roles: [] },
-  { label: 'Employees', href: '/employees', icon: '👥', roles: ['super_admin', 'HR'] },
-  { label: 'Attendance', href: '/attendance', icon: '⏰', roles: ['super_admin', 'HR'] },
-  { label: 'Announcements', href: '/announcements', icon: '📢', roles: ['super_admin', 'HR'] },
-  { label: 'Documents', href: '/documents', icon: '📁', roles: ['super_admin', 'HR'] },
-  { label: 'Activity Logs', href: '/activity-logs', icon: '📝', roles: ['super_admin', 'HR'] },
+  { label: 'Announcements', href: '/announcements', icon: '📢', roles: [] }, // ALL users can view
+  { label: 'Purchase Requests', href: '/purchase-requests', icon: '�', roles: ['super_admin', 'accountant', 'sales_department', 'marketing'] },
+  // HR-specific features
+  { label: 'Employees', href: '/employees', icon: '👥', roles: ['super_admin', 'human_resources'] },
+  { label: 'Attendance', href: '/attendance', icon: '⏰', roles: ['super_admin', 'human_resources'] },
+  { label: 'Documents', href: '/documents', icon: '📁', roles: ['super_admin', 'human_resources'] },
+  { label: 'Activity Logs', href: '/activity-logs', icon: '📝', roles: ['super_admin', 'human_resources'] },
+  // Accountant-specific features
   { label: 'Company Revenue', href: '/revenue/accountant', icon: '💰', roles: ['super_admin', 'accountant'] },
   { label: 'Cash Flow', href: '/cash-flow', icon: '💵', roles: ['super_admin', 'accountant'] },
   { label: 'Financial Statements', href: '/financial-statements', icon: '📈', roles: ['super_admin', 'accountant'] },
-  { label: 'Purchase Requests', href: '/purchase-requests', icon: '🛒', roles: ['super_admin', 'accountant', 'sales_department', 'marketing'] },
   { label: 'Suppliers', href: '/suppliers', icon: '🏢', roles: ['super_admin', 'accountant'] },
   { label: 'Annual Expenses', href: '/annual-expenses', icon: '💸', roles: ['super_admin', 'accountant'] },
   { label: 'Payroll Reports', href: '/payroll-reports', icon: '💼', roles: ['super_admin', 'accountant'] },

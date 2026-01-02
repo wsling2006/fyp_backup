@@ -5,3 +5,8 @@
 body {
   @apply bg-gray-100 text-gray-900;
 }
+
+// Add purple color for announcements icon
+.icon-circle.bg-purple {
+  background-color: #6f42c1 !important;
+}

@@ -12,6 +12,7 @@ import { RevenueModule } from './revenue/revenue.module';
 import { AuditModule } from './audit/audit.module';
 import { PurchaseRequestModule } from './purchase-requests/purchase-request.module';
 import { AccountantModule } from './accountant/accountant.module';
+import { AnnouncementsModule } from './announcements/announcements.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { AccountantModule } from './accountant/accountant.module';
     AuditModule,
     PurchaseRequestModule,
     AccountantModule,
+    AnnouncementsModule,
   ],
   controllers: [],
   providers: [],

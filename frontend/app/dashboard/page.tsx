@@ -4,6 +4,8 @@ import { useAuth } from "@/context/AuthContext";
 import Button from "@/components/ui/Button";
 import Loader from "@/components/ui/Loader";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Card, Col, Row } from "react-bootstrap";
 export const dynamic = 'force-dynamic';
 
 export default function DashboardPage() {
@@ -60,6 +62,25 @@ export default function DashboardPage() {
           </span>
         </Button>
       </div>
+
+      {/* NEW: Announcements Card */}
+      <Row className="w-full max-w-6xl mx-auto px-4 py-8">
+        <Col md={6} lg={4} className="mb-4">
+          <Link href="/announcements" className="text-decoration-none">
+            <Card className="dashboard-card h-100">
+              <Card.Body className="text-center">
+                <div className="icon-circle bg-purple mb-3">
+                  <i className="bi bi-megaphone-fill fs-1 text-white"></i>
+                </div>
+                <Card.Title>Announcements</Card.Title>
+                <Card.Text className="text-muted">
+                  View company announcements and updates
+                </Card.Text>
+              </Card.Body>
+            </Card>
+          </Link>
+        </Col>
+      </Row>
     </div>
   );
 }

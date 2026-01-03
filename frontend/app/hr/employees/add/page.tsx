@@ -1,15 +1,54 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
 
 export default function AddEmployeePage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading, isInitialized } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // SECURITY: Check user role - Only HR and Super Admin can access
+  useEffect(() => {
+    if (!authLoading && isInitialized) {
+      if (!user) {
+        // Not logged in - redirect to login
+        router.replace('/login');
+      } else if (user.role !== 'human_resources' && user.role !== 'super_admin') {
+        // Not authorized - redirect to dashboard with alert
+        alert('⚠️ Access Denied: Only HR personnel can add employees.');
+        router.replace('/dashboard');
+      }
+    }
+  }, [user, authLoading, isInitialized, router]);
+
+  // Show loading while checking authentication
+  if (authLoading || !isInitialized || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Double-check authorization (defense in depth)
+  if (user.role !== 'human_resources' && user.role !== 'super_admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🚫</div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h1>
+          <p className="text-gray-600">You don't have permission to access this page.</p>
+        </div>
+      </div>
+    );
+  }
 
   // Form state
   const [formData, setFormData] = useState({

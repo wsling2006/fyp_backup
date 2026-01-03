@@ -26,7 +26,7 @@ interface Employee {
 }
 
 export default function EditEmployeePage() {
-  const { user, logout, isInitialized } = useAuth();
+  const { user, logout, loading: authLoading, isInitialized } = useAuth();
   const router = useRouter();
   const params = useParams();
   const employeeId = params?.id as string;
@@ -36,6 +36,20 @@ export default function EditEmployeePage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // SECURITY: Check user role - Only HR and Super Admin can access
+  useEffect(() => {
+    if (!authLoading && isInitialized) {
+      if (!user) {
+        // Not logged in - redirect to login
+        router.replace('/login');
+      } else if (user.role !== 'human_resources' && user.role !== 'super_admin') {
+        // Not authorized - redirect to dashboard with alert
+        alert('⚠️ Access Denied: Only HR personnel can edit employees.');
+        router.replace('/dashboard');
+      }
+    }
+  }, [user, authLoading, isInitialized, router]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -52,25 +66,15 @@ export default function EditEmployeePage() {
     status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE' | 'TERMINATED',
   });
 
+  // Load employee data after authorization check passes
   useEffect(() => {
-    if (!isInitialized) {
-      return;
+    if (!authLoading && isInitialized && user && employeeId) {
+      // Only load if user is authorized (check already done above)
+      if (user.role === 'human_resources' || user.role === 'super_admin') {
+        loadEmployeeDetails();
+      }
     }
-
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-
-    if (user.role !== 'human_resources' && user.role !== 'super_admin') {
-      router.push('/dashboard');
-      return;
-    }
-
-    if (employeeId) {
-      loadEmployeeDetails();
-    }
-  }, [isInitialized, user, router, employeeId]);
+  }, [authLoading, isInitialized, user, employeeId]);
 
   const loadEmployeeDetails = async () => {
     try {
@@ -161,6 +165,34 @@ export default function EditEmployeePage() {
       [name]: value
     }));
   };
+
+  // Show loading while checking authentication
+  if (authLoading || !isInitialized || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="text-center">
+          <Loader />
+          <p className="text-gray-600 mt-4 text-lg">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Double-check authorization (defense in depth)
+  if (user.role !== 'human_resources' && user.role !== 'super_admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🚫</div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h1>
+          <p className="text-gray-600 mb-4">You don't have permission to access this page.</p>
+          <Button variant="primary" onClick={() => router.push('/dashboard')}>
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

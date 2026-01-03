@@ -350,7 +350,8 @@ export class AnnouncementsService {
 
     return comments.map((c) => ({
       ...c,
-      user_email: c.user?.email || 'Unknown',
+      user_name: c.user?.email || 'Unknown User',
+      user_email: c.user?.email || 'unknown@example.com',
     }));
   }
 

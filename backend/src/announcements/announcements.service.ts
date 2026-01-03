@@ -388,6 +388,78 @@ export class AnnouncementsService {
     };
   }
 
+  // Update announcement (HR only)
+  async updateAnnouncement(
+    announcementId: string,
+    updateDto: { title?: string; content?: string; priority?: string },
+    userId: string,
+    req: any,
+  ): Promise<Announcement> {
+    const announcement = await this.announcementRepo.findOne({
+      where: { id: announcementId, is_deleted: false },
+    });
+
+    if (!announcement) {
+      throw new NotFoundException('Announcement not found');
+    }
+
+    // Store original values for audit log
+    const originalValues = {
+      title: announcement.title,
+      content: announcement.content,
+      priority: announcement.priority,
+    };
+
+    // Track what fields changed
+    const changedFields: string[] = [];
+    const oldValues: Record<string, any> = {};
+    const newValues: Record<string, any> = {};
+
+    // Update only provided fields
+    if (updateDto.title !== undefined && updateDto.title !== announcement.title) {
+      changedFields.push('title');
+      oldValues.title = announcement.title;
+      newValues.title = updateDto.title;
+      announcement.title = updateDto.title;
+    }
+
+    if (updateDto.content !== undefined && updateDto.content !== announcement.content) {
+      changedFields.push('content');
+      oldValues.content = announcement.content;
+      newValues.content = updateDto.content;
+      announcement.content = updateDto.content;
+    }
+
+    if (updateDto.priority !== undefined && updateDto.priority !== announcement.priority) {
+      changedFields.push('priority');
+      oldValues.priority = announcement.priority;
+      newValues.priority = updateDto.priority;
+      announcement.priority = updateDto.priority as AnnouncementPriority;
+    }
+
+    // Save updated announcement
+    const updated = await this.announcementRepo.save(announcement);
+
+    // Audit log (only if something changed)
+    if (changedFields.length > 0) {
+      await this.auditService.logFromRequest(
+        req,
+        userId,
+        'UPDATE_ANNOUNCEMENT',
+        'announcement',
+        announcementId,
+        {
+          title: announcement.title,
+          changed_fields: changedFields,
+          old_values: oldValues,
+          new_values: newValues,
+        },
+      );
+    }
+
+    return updated;
+  }
+
   // Delete announcement (HR only, soft delete)
   async deleteAnnouncement(
     announcementId: string,

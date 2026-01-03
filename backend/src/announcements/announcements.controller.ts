@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Delete,
+  Put,
   Body,
   Param,
   UseGuards,
@@ -21,6 +22,7 @@ import { Role } from '../users/roles.enum';
 import { AnnouncementsService } from './announcements.service';
 import {
   CreateAnnouncementDto,
+  UpdateAnnouncementDto,
   AddCommentDto,
   AddReactionDto,
 } from './dto/create-announcement.dto';
@@ -59,6 +61,27 @@ export class AnnouncementsController {
     return {
       success: true,
       message: 'Announcement deleted successfully',
+    };
+  }
+
+  // HR: Update announcement
+  @Put(':id')
+  @Roles(Role.HR)
+  async updateAnnouncement(
+    @Param('id') announcementId: string,
+    @Body() updateDto: UpdateAnnouncementDto,
+    @Req() req: any,
+  ) {
+    const updated = await this.announcementsService.updateAnnouncement(
+      announcementId,
+      updateDto,
+      req.user.userId,
+      req,
+    );
+    return {
+      success: true,
+      message: 'Announcement updated successfully',
+      announcement: updated,
     };
   }
 

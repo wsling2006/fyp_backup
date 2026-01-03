@@ -55,6 +55,19 @@ export const createAnnouncement = async (announcement: {
   return data;
 };
 
+// Update announcement (HR only)
+export const updateAnnouncement = async (
+  announcementId: string,
+  announcement: {
+    title?: string;
+    content?: string;
+    priority?: string;
+  }
+) => {
+  const { data } = await api.put(`/announcements/${announcementId}`, announcement);
+  return data;
+};
+
 // Delete announcement (HR only)
 export const deleteAnnouncement = async (announcementId: string) => {
   const { data } = await api.delete(`/announcements/${announcementId}`);

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import {
   getAllAnnouncements,
   addComment,
@@ -18,6 +19,7 @@ const REACTIONS = ['👍', '❤️', '😮', '😢', '❗'];
 const AnnouncementDetailPage: React.FC = () => {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const announcementId = params?.id as string;
 
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
@@ -25,6 +27,9 @@ const AnnouncementDetailPage: React.FC = () => {
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  // Check if current user is HR or Super Admin
+  const isHRorAdmin = user && (user.role === 'human_resources' || user.role === 'super_admin');
 
   useEffect(() => {
     if (announcementId) {
@@ -155,16 +160,31 @@ const AnnouncementDetailPage: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-      {/* Back Button */}
-      <button
-        onClick={() => router.back()}
-        className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        <span className="font-medium">Back to Announcements</span>
-      </button>
+      {/* Back Button and Edit Button */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span className="font-medium">Back to Announcements</span>
+        </button>
+
+        {/* Edit Button (HR/Admin only) */}
+        {isHRorAdmin && announcement && (
+          <button
+            onClick={() => router.push(`/announcements/${announcementId}/edit`)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md hover:shadow-lg font-medium"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Edit Announcement
+          </button>
+        )}
+      </div>
 
       {/* Announcement Card */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">

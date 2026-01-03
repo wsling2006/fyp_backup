@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsNotEmpty, MaxLength } from 'class-validator';
+import { IsString, IsEnum, IsNotEmpty, MaxLength, IsOptional } from 'class-validator';
 import { AnnouncementPriority } from '../enums/announcement-priority.enum';
 
 export class CreateAnnouncementDto {
@@ -14,6 +14,21 @@ export class CreateAnnouncementDto {
   @IsEnum(AnnouncementPriority)
   @IsNotEmpty()
   priority: AnnouncementPriority;
+}
+
+export class UpdateAnnouncementDto {
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  title?: string;
+
+  @IsString()
+  @IsOptional()
+  content?: string;
+
+  @IsEnum(AnnouncementPriority)
+  @IsOptional()
+  priority?: AnnouncementPriority;
 }
 
 export class AddCommentDto {

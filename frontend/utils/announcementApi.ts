@@ -112,16 +112,16 @@ export const addComment = async (announcementId: string, content: string) => {
 };
 
 // Update comment
-export const updateComment = async (commentId: string, content: string) => {
-  const { data } = await api.put(`/announcements/comments/${commentId}`, {
+export const updateComment = async (announcementId: string, commentId: string, content: string) => {
+  const { data } = await api.put(`/announcements/${announcementId}/comments/${commentId}`, {
     content,
   });
   return data;
 };
 
 // Delete comment
-export const deleteComment = async (commentId: string) => {
-  const { data } = await api.delete(`/announcements/comments/${commentId}`);
+export const deleteComment = async (announcementId: string, commentId: string) => {
+  const { data } = await api.delete(`/announcements/${announcementId}/comments/${commentId}`);
   return data;
 };
 

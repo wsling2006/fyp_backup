@@ -91,7 +91,7 @@ const AnnouncementDetailPage: React.FC = () => {
     }
 
     try {
-      await updateComment(commentId, editingContent);
+      await updateComment(announcementId, commentId, editingContent);
       setEditingCommentId(null);
       setEditingContent('');
       showToast('Comment updated successfully!', 'success');
@@ -109,7 +109,7 @@ const AnnouncementDetailPage: React.FC = () => {
     }
 
     try {
-      await deleteComment(commentId);
+      await deleteComment(announcementId, commentId);
       showToast('Comment deleted successfully!', 'success');
       loadData();
     } catch (error: any) {

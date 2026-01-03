@@ -166,8 +166,9 @@ export class AnnouncementsController {
   }
 
   // ALL: Update own comment
-  @Put('comments/:commentId')
+  @Put(':announcementId/comments/:commentId')
   async updateComment(
+    @Param('announcementId') announcementId: string,
     @Param('commentId') commentId: string,
     @Body() updateDto: { content: string },
     @Req() req: any,
@@ -181,8 +182,9 @@ export class AnnouncementsController {
   }
 
   // ALL: Delete own comment
-  @Delete('comments/:commentId')
+  @Delete(':announcementId/comments/:commentId')
   async deleteComment(
+    @Param('announcementId') announcementId: string,
     @Param('commentId') commentId: string,
     @Req() req: any,
   ) {

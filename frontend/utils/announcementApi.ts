@@ -28,6 +28,7 @@ export interface Announcement {
 export interface Comment {
   id: string;
   content: string;
+  user_id: string;
   user_name: string;
   user_email: string;
   created_at: string;
@@ -107,6 +108,20 @@ export const addComment = async (announcementId: string, content: string) => {
   const { data } = await api.post(`/announcements/${announcementId}/comments`, {
     content,
   });
+  return data;
+};
+
+// Update comment
+export const updateComment = async (commentId: string, content: string) => {
+  const { data } = await api.put(`/announcements/comments/${commentId}`, {
+    content,
+  });
+  return data;
+};
+
+// Delete comment
+export const deleteComment = async (commentId: string) => {
+  const { data } = await api.delete(`/announcements/comments/${commentId}`);
   return data;
 };
 

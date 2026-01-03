@@ -165,6 +165,38 @@ export class AnnouncementsController {
     return this.announcementsService.getComments(announcementId);
   }
 
+  // ALL: Update own comment
+  @Put('comments/:commentId')
+  async updateComment(
+    @Param('commentId') commentId: string,
+    @Body() updateDto: { content: string },
+    @Req() req: any,
+  ) {
+    return this.announcementsService.updateComment(
+      commentId,
+      updateDto.content,
+      req.user.userId,
+      req,
+    );
+  }
+
+  // ALL: Delete own comment
+  @Delete('comments/:commentId')
+  async deleteComment(
+    @Param('commentId') commentId: string,
+    @Req() req: any,
+  ) {
+    await this.announcementsService.deleteComment(
+      commentId,
+      req.user.userId,
+      req,
+    );
+    return {
+      success: true,
+      message: 'Comment deleted successfully',
+    };
+  }
+
   // ALL: Download attachment (secure streaming)
   @Get('attachments/:attachmentId/download')
   async downloadAttachment(

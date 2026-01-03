@@ -3,9 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import {
   getAllAnnouncements,
   addComment,
+  updateComment,
+  deleteComment,
   getComments,
   addReaction,
   acknowledgeAnnouncement,
@@ -20,6 +23,7 @@ const AnnouncementDetailPage: React.FC = () => {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const announcementId = params?.id as string;
 
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
@@ -27,6 +31,8 @@ const AnnouncementDetailPage: React.FC = () => {
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState('');
 
   // Check if current user is HR or Super Admin
   const isHRorAdmin = user && (user.role === 'human_resources' || user.role === 'super_admin');
@@ -66,6 +72,51 @@ const AnnouncementDetailPage: React.FC = () => {
       alert('Failed to add comment');
     }
     setSubmitting(false);
+  };
+
+  const handleEditComment = (commentId: string, content: string) => {
+    setEditingCommentId(commentId);
+    setEditingContent(content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setEditingContent('');
+  };
+
+  const handleUpdateComment = async (commentId: string) => {
+    if (!editingContent.trim()) {
+      showToast('Comment cannot be empty', 'error');
+      return;
+    }
+
+    try {
+      await updateComment(commentId, editingContent);
+      setEditingCommentId(null);
+      setEditingContent('');
+      showToast('Comment updated successfully!', 'success');
+      loadData();
+    } catch (error: any) {
+      console.error('Failed to update comment:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to update comment';
+      showToast(errorMessage, 'error');
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('Are you sure you want to delete this comment?')) {
+      return;
+    }
+
+    try {
+      await deleteComment(commentId);
+      showToast('Comment deleted successfully!', 'success');
+      loadData();
+    } catch (error: any) {
+      console.error('Failed to delete comment:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to delete comment';
+      showToast(errorMessage, 'error');
+    }
   };
 
   const handleReaction = async (reactionType: string) => {
@@ -430,8 +481,67 @@ const AnnouncementDetailPage: React.FC = () => {
                           {comment.content}
                         </p>
                       </div>
+
+                      {/* Edit & Delete Buttons (for own comments) */}
+                      {user?.id === comment.user_id && (
+                        <div className="flex gap-2 mt-2">
+                          {/* Edit Button */}
+                          <button
+                            onClick={() => handleEditComment(comment.id, comment.content)}
+                            className="flex items-center gap-1 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-all shadow-md"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit
+                          </button>
+
+                          {/* Delete Button */}
+                          <button
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="flex items-center gap-1 px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 transition-all shadow-md"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Delete
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
+
+                  {/* Edit Comment Form (if editing) */}
+                  {editingCommentId === comment.id && (
+                    <div className="mt-4">
+                      <textarea
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                        rows={3}
+                        value={editingContent}
+                        onChange={(e) => setEditingContent(e.target.value)}
+                      />
+                      <div className="flex justify-end gap-2 mt-2">
+                        <button
+                          onClick={() => handleUpdateComment(comment.id)}
+                          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-md"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Save
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

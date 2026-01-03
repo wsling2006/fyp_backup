@@ -355,6 +355,62 @@ export class AnnouncementsService {
     }));
   }
 
+  // Update own comment
+  async updateComment(
+    commentId: string,
+    newContent: string,
+    userId: string,
+    req: any,
+  ): Promise<AnnouncementComment> {
+    const comment = await this.commentRepo.findOne({
+      where: { id: commentId, is_deleted: false },
+    });
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    // Check if user owns this comment
+    if (comment.user_id !== userId) {
+      throw new ForbiddenException('You can only edit your own comments');
+    }
+
+    const oldContent = comment.content;
+    comment.content = newContent;
+
+    const updated = await this.commentRepo.save(comment);
+
+    // No audit logging for comment edits - not important
+
+    return updated;
+  }
+
+  // Delete own comment (soft delete)
+  async deleteComment(
+    commentId: string,
+    userId: string,
+    req: any,
+  ): Promise<void> {
+    const comment = await this.commentRepo.findOne({
+      where: { id: commentId, is_deleted: false },
+    });
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    // Check if user owns this comment
+    if (comment.user_id !== userId) {
+      throw new ForbiddenException('You can only delete your own comments');
+    }
+
+    // Soft delete
+    comment.is_deleted = true;
+    await this.commentRepo.save(comment);
+
+    // No audit logging for comment deletion - not important
+  }
+
   // Download attachment (secure streaming)
   async downloadAttachment(
     attachmentId: string,

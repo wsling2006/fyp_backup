@@ -20,7 +20,7 @@ interface FileItem {
 }
 
 export default function AccountantDashboard() {
-  const { user, token, logout } = useAuth();
+  const { user, token, logout, loading: authLoading, isInitialized } = useAuth();
   const router = useRouter();
   const [files, setFiles] = useState<FileItem[]>([]);
   // selectedFile holds the file chosen by the user before upload
@@ -30,6 +30,18 @@ export default function AccountantDashboard() {
   const [message, setMessage] = useState<string | null>(null);
   // Delete confirmation dialog state
   const [deleteDialog, setDeleteDialog] = useState<{ show: boolean; fileId: string; filename: string } | null>(null);
+
+  // SECURITY: Only Accountant and Super Admin can access
+  useEffect(() => {
+    if (!authLoading && isInitialized) {
+      if (!user) {
+        router.replace('/login');
+      } else if (user.role !== 'accountant' && user.role !== 'super_admin') {
+        alert('⚠️ Access Denied: Only accountants can access this page');
+        router.replace('/dashboard');
+      }
+    }
+  }, [user, authLoading, isInitialized, router]);
 
   const allowedRole = user?.role === 'accountant' || user?.role === 'super_admin';
 

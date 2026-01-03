@@ -26,7 +26,7 @@ interface AuditLog {
 }
 
 export default function AuditLogDashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading, isInitialized } = useAuth();
   const router = useRouter();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,14 +48,25 @@ export default function AuditLogDashboard() {
   const [clearAllPassword, setClearAllPassword] = useState('');
   const [clearAllOtp, setClearAllOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+
+  // SECURITY: Only Super Admin can access audit logs
+  useEffect(() => {
+    if (!authLoading && isInitialized) {
+      if (!user) {
+        router.replace('/login');
+      } else if (user.role !== 'super_admin') {
+        alert('⚠️ Access Denied: Only Super Admin can view audit logs');
+        router.replace('/dashboard');
+      }
+    }
+  }, [user, authLoading, isInitialized, router]);
   const [clearingAll, setClearingAll] = useState(false);
 
-  const allowedRole = user?.role === 'super_admin';
-
   useEffect(() => {
-    if (!allowedRole) return;
-    loadLogs();
-  }, [allowedRole]);
+    if (!authLoading && isInitialized && user && user.role === 'super_admin') {
+      loadLogs();
+    }
+  }, [authLoading, isInitialized, user]);
 
   const loadLogs = async () => {
     try {
@@ -197,11 +208,32 @@ export default function AuditLogDashboard() {
     return 'bg-gray-100 text-gray-800';
   };
 
+  // Show loading while checking authentication
+  if (authLoading || !isInitialized || !user) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check authorization
+  const allowedRole = user?.role === 'super_admin';
+
   if (!allowedRole) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-        <p className="text-gray-600">You do not have access to the Audit Log dashboard.</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center p-6">
+          <div className="text-6xl mb-4">🚫</div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h1>
+          <p className="text-gray-600 mb-4">Only Super Admin can view audit logs.</p>
+          <Button onClick={() => router.push('/dashboard')} className="bg-blue-600 hover:bg-blue-700 text-white w-auto">
+            Go to Dashboard
+          </Button>
+        </div>
       </div>
     );
   }

@@ -37,7 +37,19 @@ interface RevenueSummary {
 }
 
 export default function RevenueDashboard() {
-  const { user, token, logout } = useAuth();
+  const { user, token, logout, loading: authLoading, isInitialized } = useAuth();
+
+  // SECURITY: Only Accountant and Super Admin can access
+  useEffect(() => {
+    if (!authLoading && isInitialized) {
+      if (!user) {
+        router.replace('/login');
+      } else if (user.role !== 'accountant' && user.role !== 'super_admin') {
+        alert('⚠️ Access Denied: Only accountants can access revenue data');
+        router.replace('/dashboard');
+      }
+    }
+  }, [user, authLoading, isInitialized]);
   const router = useRouter();
   const [revenues, setRevenues] = useState<RevenueRecord[]>([]);
   const [summary, setSummary] = useState<RevenueSummary | null>(null);

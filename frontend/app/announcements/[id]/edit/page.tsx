@@ -4,11 +4,13 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getAllAnnouncements, updateAnnouncement, Announcement } from '@/utils/announcementApi';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
 
 const EditAnnouncementPage: React.FC = () => {
   const params = useParams();
   const router = useRouter();
   const { showToast } = useToast();
+  const { user, loading: authLoading, isInitialized } = useAuth();
   const announcementId = params?.id as string;
 
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
@@ -18,11 +20,27 @@ const EditAnnouncementPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  // SECURITY: Check authorization - Only HR and Super Admin can edit announcements
   useEffect(() => {
-    if (announcementId) {
-      loadAnnouncement();
+    if (!authLoading && isInitialized) {
+      if (!user) {
+        showToast('Please login to continue', 'error');
+        router.replace('/login');
+      } else if (user.role !== 'human_resources' && user.role !== 'super_admin') {
+        showToast('⚠️ Access Denied: Only HR can edit announcements', 'error');
+        router.replace('/announcements');
+      }
     }
-  }, [announcementId]);
+  }, [user, authLoading, isInitialized, router]);
+
+  useEffect(() => {
+    if (!authLoading && isInitialized && user && announcementId) {
+      // Only load if user is authorized
+      if (user.role === 'human_resources' || user.role === 'super_admin') {
+        loadAnnouncement();
+      }
+    }
+  }, [authLoading, isInitialized, user, announcementId]);
 
   const loadAnnouncement = async () => {
     setLoading(true);
@@ -81,6 +99,37 @@ const EditAnnouncementPage: React.FC = () => {
   const handleCancel = () => {
     router.push(`/announcements/${announcementId}`);
   };
+
+  // Show loading while checking authentication
+  if (authLoading || !isInitialized || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Double-check authorization (defense in depth)
+  if (user.role !== 'human_resources' && user.role !== 'super_admin') {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🚫</div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h1>
+          <p className="text-gray-600 mb-4">Only HR can edit announcements.</p>
+          <button
+            onClick={() => router.push('/announcements')}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            Back to Announcements
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

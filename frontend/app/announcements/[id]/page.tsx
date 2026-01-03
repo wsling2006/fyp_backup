@@ -92,9 +92,10 @@ const AnnouncementDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="container mt-5 text-center">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading announcement...</p>
         </div>
       </div>
     );
@@ -102,12 +103,25 @@ const AnnouncementDetailPage: React.FC = () => {
 
   if (!announcement) {
     return (
-      <div className="container mt-5">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle me-2"></i>
-          Announcement not found
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-6 mb-6">
+          <div className="flex items-center gap-3">
+            <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <h3 className="text-lg font-semibold text-red-800">Announcement Not Found</h3>
+              <p className="text-red-700">The announcement you're looking for doesn't exist or has been removed.</p>
+            </div>
+          </div>
         </div>
-        <button className="btn btn-secondary" onClick={() => router.back()}>
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors shadow-md"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
           Go Back
         </button>
       </div>
@@ -117,165 +131,291 @@ const AnnouncementDetailPage: React.FC = () => {
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case 'URGENT':
-        return <span className="badge bg-danger">🚨 URGENT</span>;
+        return (
+          <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-semibold">
+            🚨 URGENT
+          </span>
+        );
       case 'IMPORTANT':
-        return <span className="badge bg-warning text-dark">⚠️ IMPORTANT</span>;
+        return (
+          <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">
+            ⚠️ IMPORTANT
+          </span>
+        );
       case 'GENERAL':
-        return <span className="badge bg-secondary">📢 GENERAL</span>;
+        return (
+          <span className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-semibold">
+            📢 GENERAL
+          </span>
+        );
       default:
         return null;
     }
   };
 
   return (
-    <div className="container mt-4">
-      <button className="btn btn-sm btn-outline-secondary mb-3" onClick={() => router.back()}>
-        <i className="bi bi-arrow-left me-1"></i>
-        Back
+    <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+      {/* Back Button */}
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span className="font-medium">Back to Announcements</span>
       </button>
 
       {/* Announcement Card */}
-      <div className="card mb-4">
-        <div className="card-header">
-          {getPriorityBadge(announcement.priority)}
-          {!announcement.is_acknowledged && (
-            <span className="badge bg-danger ms-2">New</span>
-          )}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        {/* Header with Priority Badge */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center gap-3 flex-wrap">
+            {getPriorityBadge(announcement.priority)}
+            {!announcement.is_acknowledged && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
+                NEW
+              </span>
+            )}
+          </div>
         </div>
-        <div className="card-body">
-          <h3 className="mb-3">{announcement.title}</h3>
-          <div style={{ whiteSpace: 'pre-wrap' }} className="mb-4">
-            {announcement.content}
+
+        {/* Main Content */}
+        <div className="p-6">
+          {/* Title */}
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">{announcement.title}</h1>
+
+          {/* Author & Date */}
+          <div className="flex items-center gap-4 text-sm text-gray-600 mb-6 pb-6 border-b border-gray-200">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span className="font-medium">{announcement.author?.name || 'HR Department'}</span>
+            </div>
+            <span className="text-gray-400">•</span>
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>{new Date(announcement.created_at).toLocaleString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}</span>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="prose max-w-none mb-6">
+            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-lg">
+              {announcement.content}
+            </p>
           </div>
 
           {/* Attachments */}
           {announcement.attachments && announcement.attachments.length > 0 && (
-            <div className="mb-4">
-              <h5>📎 Attachments</h5>
-              <div className="list-group">
+            <div className="mb-6 bg-gray-50 rounded-lg p-5 border border-gray-200">
+              <div className="flex items-center gap-2 mb-3">
+                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+                <h3 className="text-lg font-semibold text-gray-800">Attachments ({announcement.attachments.length})</h3>
+              </div>
+              <div className="space-y-2">
                 {announcement.attachments.map((att: any) => (
                   <button
                     key={att.id}
-                    className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
                     onClick={() => handleDownload(att.id, att.original_filename)}
+                    className="w-full flex items-center justify-between gap-3 p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all group"
                   >
-                    <div>
-                      <i className="bi bi-file-earmark me-2"></i>
-                      {att.original_filename}
-                      <span className="text-muted small ms-2">
-                        ({(att.file_size / 1024).toFixed(1)} KB)
-                      </span>
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div className="text-left flex-1 min-w-0">
+                        <p className="font-medium text-gray-800 truncate">{att.original_filename}</p>
+                        <p className="text-sm text-gray-500">{(att.file_size / 1024).toFixed(1)} KB</p>
+                      </div>
                     </div>
-                    <i className="bi bi-download"></i>
+                    <div className="flex-shrink-0">
+                      <svg className="w-6 h-6 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Author & Date */}
-          <div className="text-muted small mb-3">
-            <i className="bi bi-person-circle me-1"></i>
-            {announcement.author?.name || 'HR Department'}
-            <span className="mx-2">•</span>
-            <i className="bi bi-calendar me-1"></i>
-            {new Date(announcement.created_at).toLocaleString()}
-          </div>
-
           {/* Reactions */}
-          <div className="d-flex gap-2 mb-3">
-            {REACTIONS.map((emoji) => (
-              <button
-                key={emoji}
-                className={`btn btn-sm ${announcement.user_reaction === emoji ? 'btn-primary' : 'btn-outline-secondary'}`}
-                onClick={() => handleReaction(emoji)}
-              >
-                {emoji} {announcement.reaction_counts[emoji] || 0}
-              </button>
-            ))}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">React to this announcement</h3>
+            <div className="flex flex-wrap gap-2">
+              {REACTIONS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => handleReaction(emoji)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                    announcement.user_reaction === emoji
+                      ? 'bg-blue-600 text-white shadow-md scale-105'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
+                  }`}
+                >
+                  <span className="text-xl">{emoji}</span>
+                  <span className="text-sm font-semibold">{announcement.reaction_counts[emoji] || 0}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Acknowledge button */}
-          {!announcement.is_acknowledged && (
-            <button className="btn btn-success" onClick={handleAcknowledge}>
-              <i className="bi bi-check-circle me-2"></i>
+          {/* Acknowledge Section */}
+          {!announcement.is_acknowledged ? (
+            <button
+              onClick={handleAcknowledge}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-md hover:shadow-lg font-semibold"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               Mark as Read
             </button>
-          )}
-          {announcement.is_acknowledged && (
-            <div className="alert alert-success">
-              <i className="bi bi-check-circle-fill me-2"></i>
-              You acknowledged this announcement on{' '}
-              {new Date(announcement.acknowledged_at!).toLocaleString()}
+          ) : (
+            <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="font-semibold text-green-800">Acknowledged</p>
+                  <p className="text-sm text-green-700">
+                    You marked this as read on {new Date(announcement.acknowledged_at!).toLocaleString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
         </div>
       </div>
 
       {/* Comments Section */}
-      <div className="card">
-        <div className="card-header">
-          <h5 className="mb-0">
-            <i className="bi bi-chat-dots me-2"></i>
-            Comments ({comments.length})
-          </h5>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-800">💬 Comments</h3>
+              <p className="text-sm text-gray-600">{comments.length} {comments.length === 1 ? 'comment' : 'comments'}</p>
+            </div>
+          </div>
         </div>
-        <div className="card-body">
-          {/* Add comment form */}
-          <form onSubmit={handleAddComment} className="mb-4">
-            <div className="mb-2">
+
+        <div className="p-6">
+          {/* Add Comment Form */}
+          <form onSubmit={handleAddComment} className="mb-6">
+            <div className="mb-3">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Add your comment
+              </label>
               <textarea
-                className="form-control"
-                rows={3}
-                placeholder="Add a comment..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                rows={4}
+                placeholder="Share your thoughts..."
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 disabled={submitting}
               />
             </div>
-            <button
-              type="submit"
-              className="btn btn-primary btn-sm"
-              disabled={submitting || !newComment.trim()}
-            >
-              {submitting ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2"></span>
-                  Posting...
-                </>
-              ) : (
-                <>
-                  <i className="bi bi-send me-2"></i>
-                  Post Comment
-                </>
-              )}
-            </button>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={submitting || !newComment.trim()}
+              >
+                {submitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Posting...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                    Post Comment
+                  </>
+                )}
+              </button>
+            </div>
           </form>
 
-          {/* Comments list */}
-          {comments.length === 0 && (
-            <div className="alert alert-info">
-              <i className="bi bi-info-circle me-2"></i>
-              No comments yet. Be the first to comment!
+          {/* Comments List */}
+          {comments.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <h4 className="text-lg font-semibold text-gray-700 mb-1">No comments yet</h4>
+              <p className="text-gray-500">Be the first to share your thoughts!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {comments.map((comment, index) => (
+                <div key={comment.id} className={`${index !== comments.length - 1 ? 'border-b border-gray-200 pb-4' : ''}`}>
+                  <div className="flex gap-3">
+                    {/* Avatar */}
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                        {comment.user_name?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                    </div>
+
+                    {/* Comment Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="bg-gray-50 rounded-lg px-4 py-3 border border-gray-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-gray-800">
+                            {comment.user_name || 'Unknown User'}
+                          </span>
+                          <span className="text-xs text-gray-500">•</span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(comment.created_at).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap break-words">
+                          {comment.content}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-
-          {comments.map((comment) => (
-            <div key={comment.id} className="border-bottom pb-3 mb-3">
-              <div className="d-flex justify-content-between align-items-start">
-                <div className="flex-grow-1">
-                  <div className="fw-bold">
-                    <i className="bi bi-person-circle me-1"></i>
-                    {comment.user_name}
-                  </div>
-                  <div className="text-muted small mb-2">
-                    {new Date(comment.created_at).toLocaleString()}
-                  </div>
-                  <div style={{ whiteSpace: 'pre-wrap' }}>{comment.content}</div>
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </div>

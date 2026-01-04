@@ -14,7 +14,7 @@ const menu = [
 	{ label: 'Attendance', href: '/attendance', roles: ['SUPER_ADMIN', 'HR'] },
 	{ label: 'Announcements', href: '/announcements', roles: ['SUPER_ADMIN', 'HR'] },
 	{ label: 'Documents', href: '/documents', roles: ['SUPER_ADMIN', 'HR'] },
-	{ label: 'Activity Logs', href: '/activity-logs', roles: ['SUPER_ADMIN', 'HR'] },
+	{ label: 'Security & Audit', href: '/activity-logs', roles: ['SUPER_ADMIN'] },
 	// Accounting features
 	{ label: 'Purchase Requests', href: '/purchase-requests', roles: ['SUPER_ADMIN', 'ACCOUNTANT'] },
 ];

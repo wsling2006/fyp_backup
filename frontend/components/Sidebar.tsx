@@ -13,7 +13,7 @@ const menu = [
   { label: 'Employees', href: '/employees', icon: '👥', roles: ['super_admin', 'human_resources'] },
   { label: 'Attendance', href: '/attendance', icon: '⏰', roles: ['super_admin', 'human_resources'] },
   { label: 'Documents', href: '/documents', icon: '📁', roles: ['super_admin', 'human_resources'] },
-  { label: 'Security & Audit', href: '/activity-logs', icon: '�', roles: ['super_admin'] },
+  { label: 'Security & Audit', href: '/activity-logs', icon: '🔐', roles: ['super_admin'] },
   // Accountant-specific features
   { label: 'Company Revenue', href: '/revenue/accountant', icon: '💰', roles: ['super_admin', 'accountant'] },
 ];

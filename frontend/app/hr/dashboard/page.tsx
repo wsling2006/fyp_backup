@@ -46,53 +46,61 @@ export default function HRDashboard() {
 
         {/* Quick Actions Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <Card variant="gradient" className="hover:shadow-xl transition-shadow cursor-pointer" onClick={() => router.push('/employees')}>
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-3xl">
-                👥
+          <div onClick={() => router.push('/employees')} className="cursor-pointer">
+            <Card variant="gradient" className="hover:shadow-xl transition-shadow">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-3xl">
+                  👥
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800">Employees</h3>
+                  <p className="text-sm text-slate-600">View and manage employees</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-800">Employees</h3>
-                <p className="text-sm text-slate-600">View and manage employees</p>
-              </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
 
-          <Card variant="gradient" className="hover:shadow-xl transition-shadow cursor-pointer" onClick={() => router.push('/attendance')}>
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-3xl">
-                ⏰
+          <div onClick={() => router.push('/attendance')} className="cursor-pointer">
+            <Card variant="gradient" className="hover:shadow-xl transition-shadow">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-3xl">
+                  ⏰
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800">Attendance</h3>
+                  <p className="text-sm text-slate-600">Track attendance records</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-800">Attendance</h3>
-                <p className="text-sm text-slate-600">Track attendance records</p>
-              </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
 
-          <Card variant="gradient" className="hover:shadow-xl transition-shadow cursor-pointer" onClick={() => router.push('/documents')}>
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center text-3xl">
-                📁
+          <div onClick={() => router.push('/documents')} className="cursor-pointer">
+            <Card variant="gradient" className="hover:shadow-xl transition-shadow">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center text-3xl">
+                  📁
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800">Documents</h3>
+                  <p className="text-sm text-slate-600">Manage employee documents</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-800">Documents</h3>
-                <p className="text-sm text-slate-600">Manage employee documents</p>
-              </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
 
-          <Card variant="gradient" className="hover:shadow-xl transition-shadow cursor-pointer" onClick={() => router.push('/announcements')}>
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center text-3xl">
-                📢
+          <div onClick={() => router.push('/announcements')} className="cursor-pointer">
+            <Card variant="gradient" className="hover:shadow-xl transition-shadow">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center text-3xl">
+                  📢
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800">Announcements</h3>
+                  <p className="text-sm text-slate-600">View company announcements</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-800">Announcements</h3>
-                <p className="text-sm text-slate-600">View company announcements</p>
-              </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
         </div>
 
         {/* Info Cards */}

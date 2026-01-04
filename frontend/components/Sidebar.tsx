@@ -16,11 +16,6 @@ const menu = [
   { label: 'Activity Logs', href: '/activity-logs', icon: '📝', roles: ['super_admin', 'human_resources'] },
   // Accountant-specific features
   { label: 'Company Revenue', href: '/revenue/accountant', icon: '💰', roles: ['super_admin', 'accountant'] },
-  { label: 'Cash Flow', href: '/cash-flow', icon: '💵', roles: ['super_admin', 'accountant'] },
-  { label: 'Financial Statements', href: '/financial-statements', icon: '📈', roles: ['super_admin', 'accountant'] },
-  { label: 'Suppliers', href: '/suppliers', icon: '🏢', roles: ['super_admin', 'accountant'] },
-  { label: 'Annual Expenses', href: '/annual-expenses', icon: '💸', roles: ['super_admin', 'accountant'] },
-  { label: 'Payroll Reports', href: '/payroll-reports', icon: '💼', roles: ['super_admin', 'accountant'] },
 ];
 
 export default function Sidebar() {

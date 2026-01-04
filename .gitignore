@@ -1,9 +1,104 @@
+# Dependencies
 node_modules
-.env
-dist
-coverage
-.DS_Store
-.next
-*.log
-*.tsbuildinfo
 package-lock.json
+
+# Environment files
+.env
+.env.local
+.env*.local
+
+# Build outputs
+dist
+.next
+build
+out
+
+# Testing
+coverage
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+.idea
+
+# Temporary dump files (prevent accumulation)
+# Documentation dumps
+*_TEMP.md
+*_OLD.md
+*_BACKUP.md
+*_SUMMARY.md
+QUICK_*.md
+DEBUG_*.md
+FIX_*.md
+DEPLOY_*.md
+TEST_*.md
+URGENT_*.md
+CRITICAL_*.md
+COMPLETE_*.md
+DIAGNOSTIC_*.md
+TROUBLESHOOT_*.md
+
+# Script dumps
+debug-*.sh
+diagnose-*.sh
+fix-*.sh
+test-*.sh
+quick-*.sh
+deploy-*.sh
+verify-*.sh
+force-*.sh
+emergency-*.sh
+cleanup-*.sh
+check-*.sh
+ec2-*.sh
+
+# Temporary files
+*.backup
+*.backup[0-9]
+*.bak
+*.tmp
+*.old
+*_old.*
+*.before_edit
+*.swp
+*.swo
+
+# SQL dumps
+database-migration-*.sql
+fix-*.sql
+check-*.sql
+*-temp.sql
+
+# Debugging JS files
+decode-*.js
+check-*.js
+debug-*.js
+
+# Text dumps
+*_TEMP.txt
+*_OLD.txt
+QUICK_*.txt
+
+# Python scripts (if temporary)
+fix_*.py
+debug_*.py
+test_*.py
+
+# Keep essential files (exceptions)
+!README.md
+!CLEANUP_REPORT.md
+!PROJECT_STATUS.md
+!ecosystem.config.js
+!nginx.conf

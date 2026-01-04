@@ -1,4 +1,0 @@
-[
-  {"employee_id": "emp-001", "month": "January", "year": 2024, "gross_salary": 5000, "deductions": 300, "net_salary": 4700},
-  {"employee_id": "emp-002", "month": "January", "year": 2024, "gross_salary": 7200, "deductions": 400, "net_salary": 6800}
-]

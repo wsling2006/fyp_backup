@@ -16,13 +16,7 @@ const menu = [
 	{ label: 'Documents', href: '/documents', roles: ['SUPER_ADMIN', 'HR'] },
 	{ label: 'Activity Logs', href: '/activity-logs', roles: ['SUPER_ADMIN', 'HR'] },
 	// Accounting features
-	{ label: 'Company Revenue', href: '/company-revenue', roles: ['SUPER_ADMIN', 'ACCOUNTANT'] },
-	{ label: 'Cash Flow', href: '/cash-flow', roles: ['SUPER_ADMIN', 'ACCOUNTANT'] },
-	{ label: 'Financial Statements', href: '/financial-statements', roles: ['SUPER_ADMIN', 'ACCOUNTANT'] },
 	{ label: 'Purchase Requests', href: '/purchase-requests', roles: ['SUPER_ADMIN', 'ACCOUNTANT'] },
-	{ label: 'Suppliers', href: '/suppliers', roles: ['SUPER_ADMIN', 'ACCOUNTANT'] },
-	{ label: 'Annual Expenses', href: '/annual-expenses', roles: ['SUPER_ADMIN', 'ACCOUNTANT'] },
-	{ label: 'Payroll Reports', href: '/payroll-reports', roles: ['SUPER_ADMIN', 'ACCOUNTANT'] },
 ];
 
 export default function Sidebar() {

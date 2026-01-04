@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 const menu = [
   { label: 'Dashboard', href: '/dashboard', icon: '📊', roles: [] },
   { label: 'Announcements', href: '/announcements', icon: '📢', roles: [] }, // ALL users can view
-  { label: 'Purchase Requests', href: '/purchase-requests', icon: '�', roles: ['super_admin', 'accountant', 'sales_department', 'marketing'] },
+  { label: 'Purchase Requests', href: '/purchase-requests', icon: '📋', roles: ['super_admin', 'accountant', 'sales_department', 'marketing'] },
   // HR-specific features
   { label: 'Employees', href: '/employees', icon: '👥', roles: ['super_admin', 'human_resources'] },
   { label: 'Attendance', href: '/attendance', icon: '⏰', roles: ['super_admin', 'human_resources'] },
@@ -16,6 +16,7 @@ const menu = [
   { label: 'Security & Audit', href: '/activity-logs', icon: '🔐', roles: ['super_admin'] },
   // Accountant-specific features
   { label: 'Company Revenue', href: '/revenue/accountant', icon: '💰', roles: ['super_admin', 'accountant'] },
+  { label: 'Accountant Files', href: '/accountant-files', icon: '📂', roles: ['super_admin', 'accountant'] },
 ];
 
 export default function Sidebar() {
@@ -43,7 +44,7 @@ export default function Sidebar() {
       {/* User Info */}
       <div className="px-4 py-4 border-b border-slate-700/50">
         <div className="flex items-center space-x-3 px-3 py-2 rounded-lg bg-slate-800/50">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
             {user?.email?.[0]?.toUpperCase() || 'U'}
           </div>
           <div className="flex-1 min-w-0">

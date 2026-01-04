@@ -21,7 +21,7 @@ export default function DashboardPage() {
       } else if (user.role === "accountant") {
         router.replace("/dashboard/accountant");
       } else if (user.role === "human_resources") {
-        router.replace("/hr/employees");
+        router.replace("/hr/dashboard");
       } else if (user.role === "sales_department" || user.role === "marketing") {
         router.replace("/purchase-requests");
       }

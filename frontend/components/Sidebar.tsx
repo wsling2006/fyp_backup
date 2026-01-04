@@ -9,11 +9,13 @@ const menu = [
   { label: 'Dashboard', href: '/dashboard', icon: '📊', roles: [] },
   { label: 'Announcements', href: '/announcements', icon: '📢', roles: [] }, // ALL users can view
   { label: 'Purchase Requests', href: '/purchase-requests', icon: '📋', roles: ['super_admin', 'accountant', 'sales_department', 'marketing'] },
+  // Super Admin features
+  { label: 'User Management', href: '/user-management', icon: '👥', roles: ['super_admin'] },
+  { label: 'Security & Audit', href: '/activity-logs', icon: '🔐', roles: ['super_admin'] },
   // HR-specific features
-  { label: 'Employees', href: '/employees', icon: '👥', roles: ['super_admin', 'human_resources'] },
+  { label: 'Employees', href: '/employees', icon: '👤', roles: ['super_admin', 'human_resources'] },
   { label: 'Attendance', href: '/attendance', icon: '⏰', roles: ['super_admin', 'human_resources'] },
   { label: 'Documents', href: '/documents', icon: '📁', roles: ['super_admin', 'human_resources'] },
-  { label: 'Security & Audit', href: '/activity-logs', icon: '🔐', roles: ['super_admin'] },
   // Accountant-specific features
   { label: 'Company Revenue', href: '/revenue/accountant', icon: '💰', roles: ['super_admin', 'accountant'] },
   { label: 'Accountant Files', href: '/accountant-files', icon: '📂', roles: ['super_admin', 'accountant'] },

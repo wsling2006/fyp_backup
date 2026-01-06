@@ -1,6 +1,6 @@
 // Auth helpers for login, OTP, JWT decode
 export async function loginRequest(email: string, password: string) {
-  const res = await fetch('http://localhost:3000/auth/login', {
+  const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -9,7 +9,7 @@ export async function loginRequest(email: string, password: string) {
 }
 
 export async function verifyOtp(email: string, otp: string) {
-  const res = await fetch('http://localhost:3000/auth/verify-otp', {
+  const res = await fetch('/api/auth/verify-otp', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, otp }),

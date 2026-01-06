@@ -43,13 +43,14 @@ async function bootstrap() {
   await usersService.createSuperAdmin(adminEmail, adminPassword);
   console.log('Super Admin created or already exists.');
 
-  // PRODUCTION-READY: Bind to appropriate interface based on environment
-  // - Production (EC2): 0.0.0.0 (all interfaces, accessed via Next.js proxy)
-  // - Development: 127.0.0.1 (localhost only)
+  // PRODUCTION-READY: Bind to localhost only (accessed via reverse proxy/Next.js proxy)
+  // - Always bind to 127.0.0.1 for security (only accessible from same machine)
+  // - ALB/Nginx/Next.js proxy will forward requests from port 443/80
   const port = parseInt(process.env.PORT || '3000', 10);
-  const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+  const host = '127.0.0.1'; // Always localhost - accessed via proxy only
   await app.listen(port, host);
   console.log(`🚀 Backend running on http://${host}:${port}`);
   console.log(`📡 Accessible via Next.js proxy at <frontend-url>/api/*`);
+  console.log(`🔒 Security: Backend only accepts requests from localhost (via proxy)`);
 }
 bootstrap();
